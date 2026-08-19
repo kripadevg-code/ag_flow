@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'package:ag_flow_cli/src/generators/aggregator_updater.dart';
+import 'package:ag_flow_cli/src/generators/app_routes_updater.dart';
 import 'package:ag_flow_cli/src/generators/module_generator.dart';
 import 'package:ag_flow_cli/src/io/executor.dart';
 import 'package:ag_flow_cli/src/io/file_op.dart';
@@ -58,6 +60,12 @@ class ModuleCommand extends Command<int> {
     } on ParentModuleNotFoundException catch (e) {
       logger.err('$e');
       return ExitCode.usage.code;
+    } on AggregatorFileNotFoundException catch (e) {
+      logger.err('$e');
+      return ExitCode.config.code;
+    } on RouteConflictException catch (e) {
+      logger.err('$e');
+      return ExitCode.software.code;
     }
 
     final executor = Executor(dryRun: dryRun, logger: logger);

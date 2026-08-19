@@ -8,7 +8,7 @@ A Melos monorepo (native Dart pub workspaces) implementing **AG** — Infraon's 
 framework + CLI, built on GetX. Two packages:
 
 - [packages/ag_flow](packages/ag_flow) — the runtime framework (`AgBasePage`, `AgBaseController`, etc.). Complete for the classes listed below.
-- [packages/ag_flow_cli](packages/ag_flow_cli) — the `ag` generator CLI. `ag g m <module>` (fresh-file generation) works; `ag init`/`ag analyze` and idempotent updates to the shared aggregator files (`arguments.dart`, `app_routes.dart`, `app_pages.dart`, `route_management.dart`) are not built yet.
+- [packages/ag_flow_cli](packages/ag_flow_cli) — the `ag` generator CLI. `ag g m <module>` works end-to-end: fresh-file generation *and* idempotent updates to the shared aggregator files (`arguments.dart`, `app_routes.dart`, `app_pages.dart`, `route_management.dart`). `ag init`/`ag analyze` don't exist yet — the aggregator files must already exist (hand-create them once per project, matching `packages/ag_flow/example`'s `core/` files, until `ag init` lands).
 
 The binding specification is [requirments/](requirments/) (`ag_framework.md`, `routes.md`,
 `ag_endpoint_rules.md`) — precise, numbered rulesets. When extending either package, treat these as
@@ -105,20 +105,45 @@ pages,repos,services}/`, no extra wrapper folder) is authoritative for what the 
   `mason make`-equivalent call — not one brick per layer, since every layer's content differs between
   collection and detail anyway (conditionals-per-file would've been more, not less, complexity than two
   full brick sets). Generated code uses `package:<app_package_name>/...` imports throughout — never
-  relative — resolved from the *target* project's own `pubspec.yaml`, and import lines are sorted after
-  Mustache substitution (`_sortImports` in `module_generator.dart`) because whether `package:flutter/...`
-  sorts before or after the app's own package name depends on that name, so static template ordering
-  can't get it right for every consumer.
+  relative — resolved from the *target* project's own `pubspec.yaml`.
 - **`ModuleGenerator.plan()`** never writes to disk directly — it renders via an in-memory
   `GeneratorTarget`, formats with `DartFormatter`, checks existence, and returns `FileOp`s (`create` /
-  `skipExisting`) for an `Executor` to apply (or, under `--dry-run`, just report). This is what makes
-  generation idempotent and the generator unit-testable without a filesystem.
+  `update` / `skipExisting`) for an `Executor` to apply (or, under `--dry-run`, just report). This is what
+  makes generation idempotent and the generator unit-testable without a filesystem.
 - Parent-existence check (child modules) looks for the parent's controller file under the shared root's
   flat `controllers/` folder — not for a directory matching the child's own path (there isn't one).
+- **Aggregator-file updates** (`lib/src/generators/{arguments,app_routes,app_pages,route_management}
+  _updater.dart`, orchestrated by `aggregator_updater.dart`): offset-splice AST editing via
+  `package:analyzer`'s syntax-only `parseString` (no resolution needed or wanted — see below), computed as
+  `Patch(offset, end, text)` values applied in descending-offset order, then the whole file is reformatted.
+  Each updater checks for an existing entry **by name only** before inserting — never by comparing or
+  replacing a body — which is exactly how a hand-customized `goToLoginPage` survives regeneration forever
+  (requirments/routes.md §19). `RouteConflictException` is the one case that *isn't* a safe no-op:
+  re-deriving the exact same module is idempotent, but finding an existing route constant of the same name
+  pointing at a *different* path is a genuine conflict (routes.md §21) and aborts before writing anything.
+  - **A bare `Foo(...)` call parses as `MethodInvocation`, not `InstanceCreationExpression`.** This is the
+    one real bug this design produced and a debug script caught immediately: `parseString` only parses
+    syntax, and disambiguating "constructor call" from "function call" for an unprefixed identifier
+    requires semantic resolution, which offset-splice editing deliberately never does. `GetPage(...)` in
+    `app_pages_updater.dart` is matched as `MethodInvocation` for exactly this reason — don't
+    "fix" that back to `InstanceCreationExpression`.
+  - **`ClassDeclaration` doesn't have `.name`/`.members` directly in the pinned analyzer version** — it's
+    `classDecl.namePart.typeName.lexeme` for the name and `classDecl.body.members` for the member list
+    (`ClassBody`, a wrapper introduced for Dart's class-modifiers/augmentation support). This surprised
+    every updater's first draft; if a future analyzer major changes this shape again, re-verify against
+    the pinned version's actual docs before assuming either the old or new shape.
+  - **Import sorting must be group-aware** (`sortImports` in `import_utils.dart`): `dart:` / `package:` /
+    relative, each alphabetical within its group, one blank line between groups — a flat alphabetical sort
+    would put a relative import like `app_routes.dart` before any `package:` import purely on the letter
+    "a" vs. "p", which is wrong. Needed because whether `package:flutter/...` sorts before or after the
+    consuming app's own package name depends on that name, so static template ordering can't get it right
+    for every consumer, and inserting a new import at a fixed anchor point isn't where it alphabetically
+    belongs.
 
 ## Known deferred work (not bugs — see the build plan for phase boundaries)
 
-- `ag init`, `ag analyze`, and idempotent updates to the shared aggregator files are unbuilt.
+- `ag init` and `ag analyze` are unbuilt; `endpoints.dart` is deliberately never auto-updated by `ag g m`
+  (endpoints are grouped by backend domain, not frontend module hierarchy — ag_endpoint_rules.md §5).
 - `tool/check_bundles_fresh.dart` (a CI guard against editing a brick without re-bundling) is deferred to
   the polish phase.
 - The example app's `InitialBinding` points at a real public API (`jsonplaceholder.typicode.com`) — fine

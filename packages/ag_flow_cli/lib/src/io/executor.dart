@@ -29,6 +29,16 @@ class Executor {
             logger.info('${lightGreen.wrap('create')}  ${_relative(op.path)}');
             written++;
           }
+        case FileOpKind.update:
+          if (dryRun) {
+            logger.info(
+              '${lightCyan.wrap('would update')}  ${_relative(op.path)}',
+            );
+          } else {
+            await File(op.path).writeAsString(op.content);
+            logger.info('${lightCyan.wrap('update')}  ${_relative(op.path)}');
+            written++;
+          }
         case FileOpKind.skipExisting:
           logger.detail(
             '${lightYellow.wrap('skip (exists)')}  ${_relative(op.path)}',

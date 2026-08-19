@@ -3,10 +3,13 @@ enum FileOpKind {
   /// The file didn't exist and was written.
   create,
 
-  /// The file already existed, so it was left untouched — this is what
-  /// makes fresh-file generation idempotent (requirments/ag_framework.md
-  /// §53/§54): re-running `ag g m` never clobbers a file a developer has
-  /// already customized.
+  /// The file already existed and its content changed — e.g. inserting a
+  /// new route constant into `app_routes.dart`.
+  update,
+
+  /// Nothing needed to change: either a fresh file already existed (left
+  /// untouched, per requirments/ag_framework.md §53/§54), or an aggregator
+  /// file already contained the entry this operation would have added.
   skipExisting,
 }
 
@@ -21,6 +24,10 @@ class FileOp {
     : kind = FileOpKind.create,
       _content = content;
 
+  const FileOp.update({required this.path, required String content})
+    : kind = FileOpKind.update,
+      _content = content;
+
   const FileOp.skipExisting({required this.path})
     : kind = FileOpKind.skipExisting,
       _content = null;
@@ -32,12 +39,13 @@ class FileOp {
 
   final String? _content;
 
-  /// The file content to write. Only present for [FileOpKind.create].
+  /// The file content to write. Only present for [FileOpKind.create] and
+  /// [FileOpKind.update].
   String get content {
     final content = _content;
     if (content == null) {
       throw StateError(
-        'FileOp.content is only available for FileOpKind.create ($path)',
+        'FileOp.content is only available for create/update ($path)',
       );
     }
     return content;

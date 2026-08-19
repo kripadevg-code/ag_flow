@@ -24,7 +24,7 @@ Dart pub workspaces.
 | Package | Status | Purpose |
 |---|---|---|
 | [`packages/ag_flow`](packages/ag_flow) | Available | The runtime framework: `AgBasePage`, `AgBaseController`, `AgListBuilder`, `AgBaseRepo`, `AgBaseService`, `ApiProvider`, and the rest of the classes every generated module is built from. |
-| [`packages/ag_flow_cli`](packages/ag_flow_cli) | `ag g m` available; `ag init`/`ag analyze` planned | The `ag` CLI. `ag g m <module>` generates and wires a module's page/controller/repo/service/binding/component files today. Named `ag_flow_cli` (not `ag_cli`) to avoid colliding with the maintainer's unrelated, separately published `ag-cli` package. |
+| [`packages/ag_flow_cli`](packages/ag_flow_cli) | `ag g m` available end-to-end; `ag init`/`ag analyze` planned | The `ag` CLI. `ag g m <module>` generates a module's page/controller/repo/service/binding/component files *and* idempotently wires its route/argument/nav-method into the shared aggregator files today. Named `ag_flow_cli` (not `ag_cli`) to avoid colliding with the maintainer's unrelated, separately published `ag-cli` package. |
 
 ## Installing (enterprise-internal)
 

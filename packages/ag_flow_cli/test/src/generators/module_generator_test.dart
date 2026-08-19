@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'package:ag_flow_cli/src/generators/aggregator_updater.dart';
+import 'package:ag_flow_cli/src/generators/app_routes_updater.dart';
 import 'package:ag_flow_cli/src/generators/module_generator.dart';
 import 'package:ag_flow_cli/src/io/executor.dart';
 import 'package:ag_flow_cli/src/io/file_op.dart';
@@ -9,11 +11,77 @@ import 'package:mason_logger/mason_logger.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
-Directory _createSampleApp() {
+const _appRoutesSeed = '''
+abstract class AppRoutes {
+  static const String initial = _Routes.initial;
+  static const String login = _Routes.login;
+}
+
+abstract class _Routes {
+  static const String initial = '/';
+  static const String login = '/login';
+}
+''';
+
+const _appPagesSeed = '''
+import 'package:ag_flow/ag_flow.dart';
+
+import 'app_routes.dart';
+
+abstract class AppPages {
+  static const Transition defaultTransition = Transition.rightToLeft;
+
+  static final List<GetPage<dynamic>> pages = [];
+}
+''';
+
+// The exact hand-customized navigation method from requirments/routes.md
+// §19 — the canonical example of developer-owned routing logic that must
+// survive regeneration untouched, no matter what else gets generated.
+const _routeManagementSeed = '''
+import 'package:ag_flow/ag_flow.dart';
+
+import 'app_routes.dart';
+
+abstract class RouteManagement {
+  static void goToLoginPage({
+    LoginPageArgument? model,
+    bool canPopCurrentRoute = false,
+  }) {
+    Get.delete<LoginController>();
+    if (canPopCurrentRoute) {
+      Get.offNamed(AppRoutes.login, arguments: model);
+    } else {
+      Get.toNamed(AppRoutes.login, arguments: model);
+    }
+  }
+}
+''';
+
+const _argumentsSeed = '// Navigation argument classes.\n';
+
+void _seedAggregatorFiles(Directory appDir) {
+  final coreDir = p.join(appDir.path, 'lib', 'core');
+  File(p.join(coreDir, 'routes', 'app_routes.dart'))
+    ..createSync(recursive: true)
+    ..writeAsStringSync(_appRoutesSeed);
+  File(p.join(coreDir, 'routes', 'app_pages.dart'))
+    ..createSync(recursive: true)
+    ..writeAsStringSync(_appPagesSeed);
+  File(p.join(coreDir, 'routes', 'route_management.dart'))
+    ..createSync(recursive: true)
+    ..writeAsStringSync(_routeManagementSeed);
+  File(p.join(coreDir, 'arguments', 'arguments.dart'))
+    ..createSync(recursive: true)
+    ..writeAsStringSync(_argumentsSeed);
+}
+
+Directory _createSampleApp({bool seedAggregatorFiles = true}) {
   final dir = Directory.systemTemp.createTempSync('ag_flow_cli_test_');
   File(
     p.join(dir.path, 'pubspec.yaml'),
   ).writeAsStringSync('name: sample_app\n');
+  if (seedAggregatorFiles) _seedAggregatorFiles(dir);
   return dir;
 }
 
@@ -55,9 +123,6 @@ void _expectMatchesGolden(Directory generatedRoot, Directory goldenRoot) {
 /// check, for tests that only care about a *child* module's own output.
 void _touchParentController(Directory appDir, ModulePath parentPath) {
   final project = Project(appDir);
-  // A minimal, throwaway pluralizer-independent stand-in is unnecessary
-  // here — the parent-existence check only looks at whether the parent's
-  // controller file exists, not its content.
   final parentFileName = parentPath.isRoot
       ? '${_pluralizeRootForTest(parentPath.rootSegment)}_controller.dart'
       : '${parentPath.segments.join('_')}_controller.dart';
@@ -78,6 +143,9 @@ void _touchParentController(Directory appDir, ModulePath parentPath) {
 // naming module already tests it.
 String _pluralizeRootForTest(String rootSegment) => '${rootSegment}s';
 
+String _coreFile(Directory appDir, String relativePath) =>
+    File(p.join(appDir.path, 'lib', 'core', relativePath)).readAsStringSync();
+
 void main() {
   final quietLogger = Logger(level: Level.quiet);
   final goldensDir = Directory(
@@ -94,7 +162,7 @@ void main() {
     appDir.deleteSync(recursive: true);
   });
 
-  group('ModuleGenerator — golden file tests', () {
+  group('ModuleGenerator — golden file tests (fresh-file layer only)', () {
     test('a fresh root module matches the collection_module golden', () async {
       final ops = await ModuleGenerator(
         project: Project(appDir),
@@ -102,8 +170,10 @@ void main() {
       await Executor(dryRun: false, logger: quietLogger).execute(ops);
 
       _expectMatchesGolden(
-        Directory(p.join(appDir.path, 'lib')),
-        Directory(p.join(goldensDir.path, 'collection_module', 'lib')),
+        Directory(p.join(appDir.path, 'lib', 'product')),
+        Directory(
+          p.join(goldensDir.path, 'collection_module', 'lib', 'product'),
+        ),
       );
     });
 
@@ -130,23 +200,175 @@ void main() {
     });
   });
 
-  group('ModuleGenerator — idempotency and parent handling', () {
+  group('ModuleGenerator — aggregator file updates', () {
     test(
-      're-running the same module a second time performs no writes and changes nothing on disk',
+      'generating a root module registers its route and GetPage, and never touches arguments.dart',
+      () async {
+        final ops = await ModuleGenerator(
+          project: Project(appDir),
+        ).plan(ModulePath.parse('product'));
+        await Executor(dryRun: false, logger: quietLogger).execute(ops);
+
+        final appRoutes = _coreFile(
+          appDir,
+          p.join('routes', 'app_routes.dart'),
+        );
+        expect(
+          appRoutes,
+          contains('static const String product = _Routes.product;'),
+        );
+        expect(
+          appRoutes,
+          contains("static const String product = '/product';"),
+        );
+
+        final appPages = _coreFile(appDir, p.join('routes', 'app_pages.dart'));
+        expect(appPages, contains('name: AppRoutes.product,'));
+        expect(appPages, contains('page: ProductsPage.new,'));
+        expect(appPages, contains('binding: ProductsBinding(),'));
+
+        final routeManagement = _coreFile(
+          appDir,
+          p.join('routes', 'route_management.dart'),
+        );
+        expect(routeManagement, contains('static void goToProductsPage()'));
+        expect(routeManagement, contains('Get.toNamed(AppRoutes.product);'));
+
+        expect(
+          _coreFile(appDir, p.join('arguments', 'arguments.dart')),
+          _argumentsSeed,
+          reason: 'root modules take no argument',
+        );
+      },
+    );
+
+    test(
+      'generating a detail module registers its argument class, route, GetPage, and nav method',
+      () async {
+        _touchParentController(appDir, ModulePath.parse('product'));
+
+        final ops = await ModuleGenerator(
+          project: Project(appDir),
+        ).plan(ModulePath.parse('product/details'));
+        await Executor(dryRun: false, logger: quietLogger).execute(ops);
+
+        final arguments = _coreFile(
+          appDir,
+          p.join('arguments', 'arguments.dart'),
+        );
+        expect(arguments, contains('class ProductDetailsPageArgument {'));
+
+        final appRoutes = _coreFile(
+          appDir,
+          p.join('routes', 'app_routes.dart'),
+        );
+        expect(
+          appRoutes,
+          contains(
+            'static const String productDetails = _Routes.productDetails;',
+          ),
+        );
+        expect(
+          appRoutes,
+          contains("static const String productDetails = '/product/details';"),
+        );
+
+        final appPages = _coreFile(appDir, p.join('routes', 'app_pages.dart'));
+        expect(appPages, contains('name: AppRoutes.productDetails,'));
+        expect(appPages, contains('page: ProductDetailsPage.new,'));
+        expect(appPages, contains('binding: ProductDetailsBinding(),'));
+        expect(
+          appPages,
+          contains(
+            "import 'package:sample_app/product/pages/product_details_page.dart';",
+          ),
+        );
+        expect(
+          appPages,
+          contains(
+            "import 'package:sample_app/product/bindings/product_details_binding.dart';",
+          ),
+        );
+
+        final routeManagement = _coreFile(
+          appDir,
+          p.join('routes', 'route_management.dart'),
+        );
+        expect(
+          routeManagement,
+          contains(
+            'static void goToProductDetailsPage(ProductDetailsPageArgument argument)',
+          ),
+        );
+        expect(
+          routeManagement,
+          contains(
+            'Get.toNamed(AppRoutes.productDetails, arguments: argument);',
+          ),
+        );
+        expect(
+          routeManagement,
+          contains(
+            "import 'package:sample_app/core/arguments/arguments.dart';",
+          ),
+        );
+      },
+    );
+
+    test(
+      'a hand-customized navigation method survives generating an unrelated new module, byte-for-byte',
+      () async {
+        final ops = await ModuleGenerator(
+          project: Project(appDir),
+        ).plan(ModulePath.parse('product'));
+        await Executor(dryRun: false, logger: quietLogger).execute(ops);
+
+        final routeManagement = _coreFile(
+          appDir,
+          p.join('routes', 'route_management.dart'),
+        );
+        expect(
+          routeManagement,
+          contains(
+            'static void goToLoginPage({\n'
+            '    LoginPageArgument? model,\n'
+            '    bool canPopCurrentRoute = false,\n'
+            '  }) {\n'
+            '    Get.delete<LoginController>();\n'
+            '    if (canPopCurrentRoute) {\n'
+            '      Get.offNamed(AppRoutes.login, arguments: model);\n'
+            '    } else {\n'
+            '      Get.toNamed(AppRoutes.login, arguments: model);\n'
+            '    }\n'
+            '  }',
+          ),
+        );
+      },
+    );
+
+    test(
+      're-running the same module leaves every aggregator file byte-identical the second time',
       () async {
         final generator = ModuleGenerator(project: Project(appDir));
         final modulePath = ModulePath.parse('product');
 
         final firstOps = await generator.plan(modulePath);
         await Executor(dryRun: false, logger: quietLogger).execute(firstOps);
+        final coreFiles = [
+          'routes/app_routes.dart',
+          'routes/app_pages.dart',
+          'routes/route_management.dart',
+        ];
         final afterFirstRun = {
-          for (final f in _listFiles(Directory(p.join(appDir.path, 'lib'))))
-            f: File(p.join(appDir.path, 'lib', f)).readAsStringSync(),
+          for (final f in coreFiles) f: _coreFile(appDir, f),
         };
 
         final secondOps = await generator.plan(modulePath);
+        final aggregatorOps = secondOps.where(
+          (op) => op.path.contains('${p.separator}core${p.separator}'),
+        );
         expect(
-          secondOps,
+          aggregatorOps,
           everyElement(
             isA<FileOp>().having(
               (op) => op.kind,
@@ -155,15 +377,119 @@ void main() {
             ),
           ),
         );
-        final written = await Executor(
-          dryRun: false,
-          logger: quietLogger,
-        ).execute(secondOps);
-        expect(written, 0);
+        await Executor(dryRun: false, logger: quietLogger).execute(secondOps);
 
         final afterSecondRun = {
-          for (final f in _listFiles(Directory(p.join(appDir.path, 'lib'))))
-            f: File(p.join(appDir.path, 'lib', f)).readAsStringSync(),
+          for (final f in coreFiles) f: _coreFile(appDir, f),
+        };
+        expect(afterSecondRun, afterFirstRun);
+      },
+    );
+
+    test(
+      'a route constant that already exists pointing at a different path is reported as a conflict, and '
+      'nothing at all is written',
+      () async {
+        final appRoutesPath = p.join(
+          appDir.path,
+          'lib',
+          'core',
+          'routes',
+          'app_routes.dart',
+        );
+        File(appRoutesPath).writeAsStringSync('''
+abstract class AppRoutes {
+  static const String initial = _Routes.initial;
+  static const String product = _Routes.product;
+}
+
+abstract class _Routes {
+  static const String initial = '/';
+  static const String product = '/something-else-entirely';
+}
+''');
+
+        final generator = ModuleGenerator(project: Project(appDir));
+        await expectLater(
+          generator.plan(ModulePath.parse('product')),
+          throwsA(
+            isA<RouteConflictException>()
+                .having((e) => e.routeConstant, 'routeConstant', 'product')
+                .having(
+                  (e) => e.existingPath,
+                  'existingPath',
+                  '/something-else-entirely',
+                )
+                .having((e) => e.newPath, 'newPath', '/product'),
+          ),
+        );
+
+        expect(
+          Directory(p.join(appDir.path, 'lib', 'product')).existsSync(),
+          isFalse,
+        );
+        expect(
+          File(appRoutesPath).readAsStringSync(),
+          isNot(contains('ProductsPage')),
+        );
+      },
+    );
+
+    test(
+      'a project that has not run "ag init" (missing aggregator files) reports a clear error',
+      () async {
+        final freshAppDir = _createSampleApp(seedAggregatorFiles: false);
+        addTearDown(() => freshAppDir.deleteSync(recursive: true));
+
+        final generator = ModuleGenerator(project: Project(freshAppDir));
+        await expectLater(
+          generator.plan(ModulePath.parse('product')),
+          throwsA(
+            isA<AggregatorFileNotFoundException>().having(
+              (e) => e.toString(),
+              'message',
+              contains('lib/core/routes/app_routes.dart does not exist'),
+            ),
+          ),
+        );
+      },
+    );
+  });
+
+  group('ModuleGenerator — idempotency and parent handling', () {
+    test(
+      're-running the same module a second time performs no fresh-file writes and changes nothing under it',
+      () async {
+        final generator = ModuleGenerator(project: Project(appDir));
+        final modulePath = ModulePath.parse('product');
+
+        final firstOps = await generator.plan(modulePath);
+        await Executor(dryRun: false, logger: quietLogger).execute(firstOps);
+        final productDir = Directory(p.join(appDir.path, 'lib', 'product'));
+        final afterFirstRun = {
+          for (final f in _listFiles(productDir))
+            f: File(p.join(productDir.path, f)).readAsStringSync(),
+        };
+
+        final secondOps = await generator.plan(modulePath);
+        final freshFileOps = secondOps.where(
+          (op) => !op.path.contains('${p.separator}core${p.separator}'),
+        );
+        expect(
+          freshFileOps,
+          everyElement(
+            isA<FileOp>().having(
+              (op) => op.kind,
+              'kind',
+              FileOpKind.skipExisting,
+            ),
+          ),
+        );
+        await Executor(dryRun: false, logger: quietLogger).execute(secondOps);
+
+        final afterSecondRun = {
+          for (final f in _listFiles(productDir))
+            f: File(p.join(productDir.path, f)).readAsStringSync(),
         };
         expect(afterSecondRun, afterFirstRun);
       },
@@ -190,12 +516,19 @@ void main() {
           ),
         );
 
-        expect(Directory(p.join(appDir.path, 'lib')).existsSync(), isFalse);
+        expect(
+          Directory(p.join(appDir.path, 'lib', 'ticket')).existsSync(),
+          isFalse,
+        );
+        expect(
+          Directory(p.join(appDir.path, 'lib', 'product')).existsSync(),
+          isFalse,
+        );
       },
     );
 
     test(
-      'dry-run reports create operations but writes nothing to disk',
+      'dry-run reports create/update operations but writes nothing to disk',
       () async {
         final ops = await ModuleGenerator(
           project: Project(appDir),
@@ -208,12 +541,13 @@ void main() {
         expect(written, 0);
         expect(ops, isNotEmpty);
         expect(
-          ops,
-          everyElement(
-            isA<FileOp>().having((op) => op.kind, 'kind', FileOpKind.create),
-          ),
+          Directory(p.join(appDir.path, 'lib', 'product')).existsSync(),
+          isFalse,
         );
-        expect(Directory(p.join(appDir.path, 'lib')).existsSync(), isFalse);
+        expect(
+          _coreFile(appDir, p.join('routes', 'app_routes.dart')),
+          _appRoutesSeed,
+        );
       },
     );
   });
@@ -283,11 +617,13 @@ void main() {
         final rootOps = await ModuleGenerator(
           project: Project(appDir),
         ).plan(ModulePath.parse('product'));
+        await Executor(dryRun: false, logger: quietLogger).execute(rootOps);
         final detailOps = await ModuleGenerator(
           project: Project(appDir),
         ).plan(ModulePath.parse('product/details'));
 
         for (final op in [...rootOps, ...detailOps]) {
+          if (op.path.contains('${p.separator}core${p.separator}')) continue;
           expect(p.basename(op.path), isNot(contains('endpoints')));
           expect(
             p.basename(op.path),
@@ -322,17 +658,23 @@ void main() {
         );
         await Executor(dryRun: false, logger: quietLogger).execute(bOps);
 
-        // Neither run should have been forced to skip anything — if the
-        // naming scheme collided, the second run's files would already
+        // Neither run should have been forced to skip a *fresh* file — if
+        // the naming scheme collided, the second run's files would already
         // exist (written by the first) and be silently skipped instead.
+        final aFreshOps = aOps.where(
+          (op) => !op.path.contains('${p.separator}core${p.separator}'),
+        );
+        final bFreshOps = bOps.where(
+          (op) => !op.path.contains('${p.separator}core${p.separator}'),
+        );
         expect(
-          aOps,
+          aFreshOps,
           everyElement(
             isA<FileOp>().having((op) => op.kind, 'kind', FileOpKind.create),
           ),
         );
         expect(
-          bOps,
+          bFreshOps,
           everyElement(
             isA<FileOp>().having((op) => op.kind, 'kind', FileOpKind.create),
           ),

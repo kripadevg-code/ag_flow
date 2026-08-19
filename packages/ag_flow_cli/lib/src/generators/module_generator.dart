@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:ag_flow_cli/src/generators/aggregator_updater.dart';
+import 'package:ag_flow_cli/src/generators/import_utils.dart';
 import 'package:ag_flow_cli/src/io/file_op.dart';
 import 'package:ag_flow_cli/src/io/project.dart';
 import 'package:ag_flow_cli/src/naming/module_path.dart';
@@ -31,14 +33,12 @@ class ParentModuleNotFoundException implements Exception {
   }
 }
 
-/// Generates the fresh page/controller/repo/service/binding/component files
-/// for a new module.
-///
-/// Deliberately does not touch the shared aggregator files
-/// (`arguments.dart`, `app_routes.dart`, `app_pages.dart`,
-/// `route_management.dart`) — idempotently updating those is a separate,
-/// later concern (they're hand-owned files that may already contain
-/// developer customizations).
+/// Generates a new module's fresh page/controller/repo/service/binding/
+/// component files, and idempotently wires it into the shared aggregator
+/// files (`app_routes.dart`, `app_pages.dart`, `route_management.dart`,
+/// and — for detail modules — `arguments.dart`) via [AggregatorUpdater].
+/// The aggregator files must already exist (`ag init`); see
+/// [AggregatorFileNotFoundException].
 class ModuleGenerator {
   ModuleGenerator({required this.project, this.pluralizer = defaultPluralizer});
 
@@ -94,36 +94,14 @@ class ModuleGenerator {
       ops.add(
         FileOp.create(
           path: outputPath,
-          content: _formatter.format(_sortImports(entry.value)),
+          content: _formatter.format(sortImports(entry.value)),
         ),
       );
     }
+
+    ops.addAll(AggregatorUpdater(project: project).plan(spec));
     return ops;
   }
-}
-
-/// Sorts a rendered file's leading `import '...';` lines alphabetically.
-///
-/// Needed because template-level ordering can't be static: whether
-/// `package:flutter/...` sorts before or after `package:{{app_package_name}}
-/// /...` depends on the *consuming* app's own package name, which varies
-/// per project. `dart_style`'s formatter never reorders directives (only
-/// the separate `directives_ordering` lint's `dart fix` does), so this is
-/// done by hand rather than left to the formatter.
-String _sortImports(String source) {
-  final lines = source.split('\n');
-  final importLineIndices = [
-    for (var i = 0; i < lines.length; i++)
-      if (lines[i].startsWith('import ')) i,
-  ];
-  if (importLineIndices.isEmpty) return source;
-
-  final sortedImportLines = [for (final i in importLineIndices) lines[i]]
-    ..sort();
-  for (var j = 0; j < importLineIndices.length; j++) {
-    lines[importLineIndices[j]] = sortedImportLines[j];
-  }
-  return lines.join('\n');
 }
 
 /// Records rendered files in memory instead of writing them to disk — lets
