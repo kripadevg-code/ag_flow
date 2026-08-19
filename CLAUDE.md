@@ -8,7 +8,10 @@ A Melos monorepo (native Dart pub workspaces) implementing **AG** — Infraon's 
 framework + CLI, built on GetX. Two packages:
 
 - [packages/ag_flow](packages/ag_flow) — the runtime framework (`AgBasePage`, `AgBaseController`, etc.). Complete for the classes listed below.
-- [packages/ag_flow_cli](packages/ag_flow_cli) — the `ag` generator CLI. `ag g m <module>` works end-to-end: fresh-file generation *and* idempotent updates to the shared aggregator files (`arguments.dart`, `app_routes.dart`, `app_pages.dart`, `route_management.dart`). `ag init`/`ag analyze` don't exist yet — the aggregator files must already exist (hand-create them once per project, matching `packages/ag_flow/example`'s `core/` files, until `ag init` lands).
+- [packages/ag_flow_cli](packages/ag_flow_cli) — the `ag` generator CLI. `ag init` bootstraps a bare
+  project's `lib/core/` skeleton, and `ag g m <module>` works end-to-end from there: fresh-file generation
+  *and* idempotent updates to the shared aggregator files (`arguments.dart`, `app_routes.dart`,
+  `app_pages.dart`, `route_management.dart`). `ag analyze` doesn't exist yet.
 
 The binding specification is [requirments/](requirments/) (`ag_framework.md`, `routes.md`,
 `ag_endpoint_rules.md`) — precise, numbered rulesets. When extending either package, treat these as
@@ -140,12 +143,29 @@ pages,repos,services}/`, no extra wrapper folder) is authoritative for what the 
     for every consumer, and inserting a new import at a fixed anchor point isn't where it alphabetically
     belongs.
 
+- **`ag init`** (`lib/src/generators/init_generator.dart`): scaffolds the 6-file `lib/core/` skeleton
+  (`arguments.dart`, `endpoints.dart`, `routes/{app_routes,app_pages,route_management}.dart`,
+  `bindings/initial_binding.dart`) via the same `FileOp`/`Executor` boundary as `ag g m` — each file is
+  `create`d only if missing, `skipExisting` otherwise, so re-running `ag init` (or running it after a
+  developer has already hand-edited one of those files) is a pure no-op, never an overwrite. Deliberately
+  *not* a Mason brick like the module generators: these are fixed, parameter-free skeletons with no
+  per-invocation variables to template, so a brick would add indirection without buying anything.
+  `endpoints.dart`'s skeleton is comment-only guidance (endpoints are hand-authored, grouped by backend
+  domain — never auto-updated by `ag g m`, see below). Verified end-to-end against a real `flutter
+  create`d app (not just the bare-pubspec test fixtures): `ag init` → `ag g m product` → `ag g m
+  product/details` → `flutter pub get` → `flutter analyze --fatal-infos` reports zero issues, and
+  re-running all three `ag` commands a second time is a confirmed no-op.
+
 ## Known deferred work (not bugs — see the build plan for phase boundaries)
 
-- `ag init` and `ag analyze` are unbuilt; `endpoints.dart` is deliberately never auto-updated by `ag g m`
+- `ag analyze` is unbuilt; `endpoints.dart` is deliberately never auto-updated by `ag g m`
   (endpoints are grouped by backend domain, not frontend module hierarchy — ag_endpoint_rules.md §5).
 - `tool/check_bundles_fresh.dart` (a CI guard against editing a brick without re-bundling) is deferred to
   the polish phase.
+- `.github/workflows/generator-integration.yaml` is intentionally the *reduced* init-only job (scaffold →
+  `ag init` → `flutter analyze`) per the build plan's phase boundary — it does not yet run `ag g m` or
+  byte-diff the aggregator files for idempotency. That fuller job (matching what's been manually verified
+  above) is deferred to the polish phase, alongside `tool/check_bundles_fresh.dart`.
 - The example app's `InitialBinding` points at a real public API (`jsonplaceholder.typicode.com`) — fine
   for manual `flutter run` demos, deliberately never exercised by an automated widget test (an early
   attempt at that hit a real pending-timer failure from live network I/O inside `flutter_test`'s strict

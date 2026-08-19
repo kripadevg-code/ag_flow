@@ -14,17 +14,18 @@ dart pub global activate --source git <enterprise-git-host>/ag_flow.git --git-pa
 ## Usage
 
 ```bash
-ag g m product            # a collection (root) module
-ag g m product/details    # a detail (child) module — requires product to already exist
+ag init                    # once per project — bootstraps lib/core/
+ag g m product              # a collection (root) module
+ag g m product/details      # a detail (child) module — requires product to already exist
 ag g m product/details/reviews/comments   # nesting to any depth
 ```
 
-Requires the project to already have the `lib/core/{arguments/arguments
-.dart, routes/{app_routes,app_pages,route_management}.dart}` skeleton in
-place (`ag init` will create this automatically once it exists — see
-"What this package does not do yet" below; for now, create the skeleton
-by hand once per project, matching [`packages/ag_flow/example`](../ag_flow/example)'s
-`core/` files).
+`ag init` creates the `lib/core/{arguments/arguments.dart, endpoints.dart,
+routes/{app_routes,app_pages,route_management}.dart,
+bindings/initial_binding.dart}` skeleton that `ag g m` wires modules into.
+It's idempotent — safe to run again on an already-initialized project (or
+one where you've since hand-edited a file under `lib/core/`) since every
+file is only ever created if missing, never overwritten.
 
 Each `ag g m <path>` generates six files under `lib/<root_segment>/`
 (flat by architectural layer, per requirments/ag_framework.md §6):
@@ -67,11 +68,12 @@ case above, which only applies when re-deriving the *exact same* module.
 
 ## What this package does not do yet
 
-- `ag init` (project bootstrap) and `ag analyze` (validation) don't exist
-  yet — see the build plan's phased roadmap.
+- `ag analyze` (validation) doesn't exist yet — see the build plan's
+  phased roadmap.
 - `endpoints.dart` is never touched by `ag g m` (by design — endpoint
   definitions are grouped by backend domain, not frontend module
-  hierarchy, per requirments/ag_endpoint_rules.md §5).
+  hierarchy, per requirments/ag_endpoint_rules.md §5). `ag init` scaffolds
+  it with comment-only guidance; add your own endpoint classes there.
 
 ## Contributing to the generator templates
 

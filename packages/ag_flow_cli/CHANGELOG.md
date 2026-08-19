@@ -23,5 +23,12 @@
 - `RouteConflictException`: a route constant that already exists pointing
   at a different path than this module would derive is reported as a
   distinct conflict, never silently overwritten.
-- Does not yet provide `ag init`/`ag analyze` — see the build plan's
-  phased roadmap.
+- `ag init`: bootstraps a bare project's `lib/core/` skeleton (`arguments
+  .dart`, `endpoints.dart`, `routes/{app_routes,app_pages,route_management}
+  .dart`, `bindings/initial_binding.dart`) so `ag g m` has somewhere to wire
+  generated modules into. Idempotent via the same `FileOp`/`Executor`
+  boundary as `ag g m` — an existing file is skipped, never overwritten.
+  Verified end-to-end against a real `flutter create`d app: `ag init` →
+  `ag g m product` → `ag g m product/details` → `flutter analyze
+  --fatal-infos` reports zero issues.
+- Does not yet provide `ag analyze` — see the build plan's phased roadmap.

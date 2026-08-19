@@ -1,0 +1,40 @@
+name: Generator Integration
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  init-and-analyze:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Activate ag_flow_cli from source
+        run: |
+          dart pub global activate --source path packages/ag_flow_cli --overwrite
+          echo "$HOME/.pub-cache/bin" >> "$GITHUB_PATH"
+
+      - name: Scaffold a throwaway app outside the workspace
+        run: >
+          flutter create --project-name generator_smoke_app
+          --org com.infraon --platforms=android
+          /tmp/generator_smoke_app
+
+      - name: Add ag_flow as a path dependency
+        working-directory: /tmp/generator_smoke_app
+        run: flutter pub add "ag_flow" --path="${{ github.workspace }}/packages/ag_flow"
+
+      - name: ag init
+        working-directory: /tmp/generator_smoke_app
+        run: ag init
+
+      - name: flutter analyze
+        working-directory: /tmp/generator_smoke_app
+        run: flutter analyze --fatal-infos

@@ -35,22 +35,23 @@ melos:
         packages/ag_flow_cli/test packages/ag_flow_cli/tool
 
     analyze:
-      description: Analyze every package in the workspace.
+      description: >-
+        Analyze the whole workspace in one shot — native pub workspaces
+        share a single analysis context, so this already covers every
+        package without needing melos's per-package `exec`.
       run: dart analyze --fatal-infos .
-      exec:
-        concurrency: 5
-      packageFilters:
-        dirExists: lib
 
     test:flow:
       description: Run ag_flow's tests (Flutter).
-      run: flutter test
+      exec:
+        command: flutter test
       packageFilters:
         scope: ag_flow
 
     test:cli:
       description: Run ag_flow_cli's tests (pure Dart).
-      run: dart test
+      exec:
+        command: dart test
       packageFilters:
         scope: ag_flow_cli
 

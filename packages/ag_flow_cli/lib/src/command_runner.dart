@@ -1,4 +1,5 @@
 import 'package:ag_flow_cli/src/commands/generate_command.dart';
+import 'package:ag_flow_cli/src/commands/init_command.dart';
 import 'package:args/command_runner.dart';
 import 'package:mason_logger/mason_logger.dart';
 
@@ -12,6 +13,7 @@ class AgCommandRunner extends CommandRunner<int> {
       negatable: false,
       help: 'Print planned file operations without writing.',
     );
+    addCommand(InitCommand(logger: this.logger));
     addCommand(GenerateCommand(logger: this.logger));
   }
 
