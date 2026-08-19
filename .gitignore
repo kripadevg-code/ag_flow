@@ -1,0 +1,29 @@
+# Dart/Flutter
+.dart_tool/
+.packages
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+pubspec.lock
+!/pubspec.lock
+
+# Melos
+melos_*.iml
+.melos_tool/
+
+# FVM
+.fvm/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Claude Code session-local state
+.claude/
+
+# macOS
+.DS_Store
+
+# Coverage
+coverage/

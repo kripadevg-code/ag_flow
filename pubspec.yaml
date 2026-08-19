@@ -1,0 +1,48 @@
+name: ag_workspace
+publish_to: none
+
+environment:
+  sdk: ^3.11.0
+
+# Native Dart pub workspace member list. ag_flow_cli is added here once it
+# exists (Phase 2) — see the build plan in requirments/ and CLAUDE.md.
+workspace:
+  - packages/ag_flow
+  - packages/ag_flow/example
+
+dev_dependencies:
+  melos: ^8.2.2
+  very_good_analysis: ^10.3.0
+
+# Melos configuration lives here (in the workspace root pubspec.yaml)
+# rather than in a separate melos.yaml — this matches Melos's own current
+# (8.x) convention of building directly on native pub workspaces.
+melos:
+  scripts:
+    format-check:
+      description: Check formatting across the whole workspace.
+      run: dart format --output=none --set-exit-if-changed .
+
+    analyze:
+      description: Analyze every package in the workspace.
+      run: dart analyze --fatal-infos .
+      exec:
+        concurrency: 5
+      packageFilters:
+        dirExists: lib
+
+    test:flow:
+      description: Run ag_flow's tests (Flutter).
+      run: flutter test
+      packageFilters:
+        scope: ag_flow
+
+    test:cli:
+      description: Run ag_flow_cli's tests (pure Dart). No-op until ag_flow_cli exists.
+      run: dart test
+      packageFilters:
+        scope: ag_flow_cli
+
+    test:
+      description: Run every package's tests.
+      run: melos run test:flow
