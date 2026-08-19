@@ -15,9 +15,29 @@ melos run analyze
 melos run test
 ```
 
-All three must pass. CI runs the same commands plus (once `ag_flow_cli`
-exists) an integration job that scaffolds a real app with the CLI and
-verifies it compiles — see `.github/workflows/`.
+All three must pass. CI runs the same commands plus (once the CLI's `ag
+init` exists — see the build plan's phased roadmap) an integration job that
+scaffolds a real app with the CLI and verifies it compiles — see
+`.github/workflows/`.
+
+## Authoring/editing `ag_flow_cli` Mason bricks
+
+`packages/ag_flow_cli/bricks/**/__brick__/**` files contain literal
+`{{mustache}}` placeholders and are not valid Dart — `dart analyze` already
+skips them (`ag_flow_cli/analysis_options.yaml` excludes `bricks/**`), but
+`dart format` has no exclude mechanism, which is why `format-check` lists
+explicit source roots instead of `.` (see that script's `pubspec.yaml`
+comment). After editing any brick, re-bundle it before committing:
+
+```bash
+dart pub global activate mason_cli   # once per machine
+cd packages/ag_flow_cli
+mason bundle bricks/<brick_name> -t dart -o lib/src/templates/generated/
+```
+
+The committed `lib/src/templates/generated/*.dart` bundle files are what
+`ag_flow_cli` actually loads at runtime (via `MasonGenerator.fromBundle`) —
+editing a brick's `__brick__/` source without re-bundling has no effect.
 
 ## Commit style
 

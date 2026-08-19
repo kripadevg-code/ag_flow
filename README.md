@@ -24,7 +24,7 @@ Dart pub workspaces.
 | Package | Status | Purpose |
 |---|---|---|
 | [`packages/ag_flow`](packages/ag_flow) | Available | The runtime framework: `AgBasePage`, `AgBaseController`, `AgListBuilder`, `AgBaseRepo`, `AgBaseService`, `ApiProvider`, and the rest of the classes every generated module is built from. |
-| `packages/ag_flow_cli` | Planned (Phase 2+) | The `ag` CLI — `ag init` / `ag g m <module>` / `ag analyze` — that scaffolds and wires new modules against `ag_flow` automatically. Named `ag_flow_cli` (not `ag_cli`) to avoid colliding with the maintainer's unrelated, separately published `ag-cli` package. |
+| [`packages/ag_flow_cli`](packages/ag_flow_cli) | `ag g m` available; `ag init`/`ag analyze` planned | The `ag` CLI. `ag g m <module>` generates and wires a module's page/controller/repo/service/binding/component files today. Named `ag_flow_cli` (not `ag_cli`) to avoid colliding with the maintainer's unrelated, separately published `ag-cli` package. |
 
 ## Installing (enterprise-internal)
 
@@ -41,8 +41,9 @@ dependencies:
       ref: ag_flow-v0.1.0
 ```
 
-(`ag_flow_cli` will be added the same way, with `path: packages/ag_flow_cli`,
-once it exists.)
+`ag_flow_cli` is added the same way, with `path: packages/ag_flow_cli`, or
+activated globally as a CLI tool — see its own
+[README](packages/ag_flow_cli/README.md).
 
 ## Working in this repo
 
@@ -54,11 +55,12 @@ melos run analyze
 melos run test
 ```
 
-Once `ag_flow_cli` exists, the intended end-to-end developer flow (see
-[routes.md](requirments/routes.md) §29) is:
+`ag g m` is available today; the full end-to-end flow (see
+[routes.md](requirments/routes.md) §29) — including `ag init` project
+bootstrap — is the target once later phases land:
 
 ```bash
-ag init
-ag g m product
-ag g m product/details
+ag init                     # planned
+ag g m product              # available
+ag g m product/details      # available
 ```

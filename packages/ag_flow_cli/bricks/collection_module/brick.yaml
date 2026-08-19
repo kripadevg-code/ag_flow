@@ -1,0 +1,29 @@
+name: collection_module
+description: >-
+  Generates the page/controller/repo/service/binding/component files for an
+  AG collection (root) module.
+version: 0.1.0
+environment:
+  mason: ">=0.1.0 <0.2.0"
+vars:
+  app_package_name:
+    type: string
+    description: The consuming app's own package name (from its pubspec.yaml).
+  root_segment:
+    type: string
+    description: The module's root path segment, e.g. product.
+  module_class_prefix:
+    type: string
+    description: Cumulative PascalCase class prefix, e.g. Products.
+  module_file_base:
+    type: string
+    description: snake_case file-name base for layer files, e.g. products.
+  component_class_prefix:
+    type: string
+    description: Cumulative, never-pluralized PascalCase prefix for components, e.g. Product.
+  component_file_base:
+    type: string
+    description: Raw, never-pluralized snake_case file-name base for components, e.g. product.
+  component_namespace:
+    type: string
+    description: Bare last path segment, used as the component folder name.

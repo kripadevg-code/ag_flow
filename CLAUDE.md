@@ -2,116 +2,126 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Repository State
+## What this repo is
 
-This repository currently contains **no implementation code** — only specification documents in
-[requirments/](requirments/) describing a Flutter framework/CLI called **AG** that has not yet been built.
-There is no `pubspec.yaml`, no `lib/`, no CLI source, and no build/test/lint tooling. There is nothing to
-run, build, or test yet.
+A Melos monorepo (native Dart pub workspaces) implementing **AG** — Infraon's opinionated Flutter
+framework + CLI, built on GetX. Two packages:
 
-When asked to implement AG (the CLI generator and/or the runtime framework classes), treat the three files
-below as the binding spec. When the three documents conflict or are ambiguous, ask before inventing
-behavior — these are precise, numbered rulesets and deviations are easy to get wrong.
+- [packages/ag_flow](packages/ag_flow) — the runtime framework (`AgBasePage`, `AgBaseController`, etc.). Complete for the classes listed below.
+- [packages/ag_flow_cli](packages/ag_flow_cli) — the `ag` generator CLI. `ag g m <module>` (fresh-file generation) works; `ag init`/`ag analyze` and idempotent updates to the shared aggregator files (`arguments.dart`, `app_routes.dart`, `app_pages.dart`, `route_management.dart`) are not built yet.
 
-- [requirments/ag_framework.md](requirments/ag_framework.md) — module structure, architectural layers, page/controller/repo/service contracts
-- [requirments/routes.md](requirments/routes.md) — routing/navigation/arguments generation rules
-- [requirments/ag_endpoint_rules.md](requirments/ag_endpoint_rules.md) — centralized API endpoint/request rules
+The binding specification is [requirments/](requirments/) (`ag_framework.md`, `routes.md`,
+`ag_endpoint_rules.md`) — precise, numbered rulesets. When extending either package, treat these as
+authoritative; when they're ambiguous or self-contradictory (this has happened — see "Naming scheme"
+below), resolve it explicitly and say so rather than guessing silently.
 
-## What AG Is
+There's a detailed build plan with a phased roadmap; ask where it's tracked if you need the full history
+of decisions behind what's built vs. not yet built.
 
-AG is an opinionated Flutter framework + CLI (built on **GetX**) for generating standardized feature
-modules via `ag g m <module_path>` (e.g. `ag g m product`, `ag g m product/details`). Core principle:
+## Commands
 
-> Automate repetitive architecture, not business decisions.
+**Toolchain gotcha**: this repo is pinned via `.fvmrc` to a specific Flutter/Dart SDK (`fvm use` already
+configured it — check `.fvmrc` for the exact version). Plain `dart`/`flutter` on `$PATH` may resolve to a
+*different* installed version than the pinned one, which silently breaks anything version-sensitive
+(globally-activated package snapshots in particular — see `mason` note below). Prefix commands with the
+pinned SDK's `bin/cache/dart-sdk/bin` and `bin` dirs, e.g.:
 
-AG owns generated infrastructure (bindings, routing, DI, page-state plumbing). The developer owns
-business logic, UI, and feature-specific API/data behavior — and these must never mix.
+```bash
+export PATH="$(pwd)/.fvm/flutter_sdk/bin/cache/dart-sdk/bin:$(pwd)/.fvm/flutter_sdk/bin:$PATH"
+```
 
-## Module Types
+Then, from the repo root:
 
-- **Collection module** (`ag g m product`): `ProductsPage → AgBasePage<ProductsController> → AgPage → AgListBuilder → Item UI`
-- **Detail module** (`ag g m product/details`): `ProductDetailsPage → AgBasePage<ProductDetailsController, ProductDetailsArguments> → AgPage → Detail UI`
+```bash
+dart pub get                                    # resolve the whole workspace (one shared lockfile)
+dart analyze . --fatal-infos                    # analyzer respects each package's analysis_options.yaml excludes
+melos run test                                  # flutter test (ag_flow) + dart test (ag_flow_cli)
+```
 
-Nested child modules are supported to arbitrary depth (`product/details/reviews/comments`). A child
-module requires its parent to already exist — the CLI must error if the parent is missing rather than
-create an invalid hierarchy.
+**Formatting has no exclude mechanism** (unlike `dart analyze`) — `ag_flow_cli/bricks/**` contains
+`{{mustache}}` template files that aren't valid Dart, so never run `dart format` (or `melos run
+format-check`, which already does this correctly) against `.` or a whole package directory. Use the
+explicit source-root list in the root `pubspec.yaml`'s `melos.scripts.format-check`, or when formatting a
+single file/dir, avoid `bricks/`.
 
-## Layer Architecture (strict, one-directional)
+Single-test-file runs:
+
+```bash
+dart test packages/ag_flow_cli/test/src/generators/module_generator_test.dart   # ag_flow_cli
+flutter test packages/ag_flow/test/page/ag_page_test.dart                        # ag_flow
+```
+
+**Editing `ag_flow_cli`'s Mason bricks**: editing anything under `bricks/*/​__brick__/` has *no effect*
+until re-bundled — `ag_flow_cli` loads the committed `lib/src/templates/generated/*_bundle.dart` files at
+runtime, not the brick sources directly:
+
+```bash
+dart pub global activate mason_cli   # once per machine — needs the pinned-SDK PATH prefix above too
+cd packages/ag_flow_cli
+mason bundle bricks/collection_module -t dart -o lib/src/templates/generated/
+mason bundle bricks/detail_module -t dart -o lib/src/templates/generated/
+```
+
+## `ag_flow` architecture (runtime)
 
 ```
 Page → Controller → Repo → Service → ApiProvider
 ```
 
-- **Page**: UI composition only. Never touches Repo/Service/ApiProvider/Dio directly. Uses `AgBasePage`.
-- **Controller**: extends `AgBaseController`. Feature state, orchestration, business logic. Never touches Service/ApiProvider/Dio directly — only calls its Repo.
-- **Repo**: extends `AgBaseRepo`. Data abstraction, calls its Service. Never touches ApiProvider/Dio directly. No `RepoImpl` classes — the repo class itself is concrete.
-- **Service**: extends `AgBaseService`. Owns API/endpoint communication via the single shared `ApiProvider`. No per-module `ApiProvider` subclasses.
-- **Binding**: wires `ApiProvider → Service → Repo → Controller` for the module; DI is fully generated, never hand-wired.
-- **Component**: reusable UI under the module's `components/` namespace; never calls Service/Repo/ApiProvider directly.
+- **`AgBasePage<C extends AgBaseController>`** — one type parameter for *both* collection and detail
+  pages (a deliberate deviation from the spec's literal 2-type-arg diagram for detail pages — Dart can't
+  have one class name support two different generic arities. `C`'s own generics already carry the
+  argument type for detail controllers, so nothing is lost).
+- **`AgBaseController<T>`** — page state via sealed `AgPageState<T>` (`initial/loading/success/empty/
+  error`), not ad-hoc booleans. `AgPageSuccess`/`AgPageError` use deep equality (`package:collection`) so
+  `T` being a `List`/`Map` of value objects compares by content, not identity.
+- **`AgListController<ItemType, PageKeyType>`** (`AgPaginationMixin`) — pagination/load-more state,
+  tracked separately from page-level state (a load-more failure never corrupts `AgPageSuccess`). Implement
+  `fetchPage(key)` as a pure function; the mixin is the sole writer of pagination state.
+- **`AgDetailController<T, A>`** — adds `late final A arguments`, resolved via `AgArguments.resolve<A>()`
+  (throws a named `AgArgumentError`, never a bare cast failure).
+- **`AgBaseRepo`** / **`AgBaseService`** (`AgCrudService<T, ID>` opt-in mixin) — no `Impl` classes.
+- **`ApiProvider`** — wraps `dio` directly; dio types never leak past it (`AgRequest` in,
+  `AgResponse`/`AgApiException` out). `AgEndpoint` is immutable/`const`-friendly (which is *why*
+  `AgHttpMethod` has no custom `==` — Dart forbids custom-equality types as `const` set elements, and
+  `AgEndpoint.methods` needs to be a `const` default).
 
-`AgBasePage`/`AgListBuilder`/`AgLoading`/`AgError`/`AgEmpty` are generic framework widgets and must
-remain feature-independent (no `ProductBasePage`, `TicketListBuilder`, etc.).
+See [packages/ag_flow/example](packages/ag_flow/example) for a complete hand-wired app (no CLI involved)
+— it's the CLI's acceptance target, so its structure (`lib/<root>/{bindings,components,controllers,
+pages,repos,services}/`, no extra wrapper folder) is authoritative for what the generator must produce.
 
-### Page-state responsibility split (important, frequently violated)
+## `ag_flow_cli` architecture (generator)
 
-- `AgBasePage`/`AgPage` own page-level state: Loading, Error, Empty, Refresh, Retry, Success. Each is
-  independently overridable without replacing the others.
-- `AgListBuilder` owns *only* collection concerns: item rendering, scrolling, load-more/pagination. It
-  must never own page-level loading/error/empty or contain business/API logic.
-- Initial-load loading/error and load-more loading/error are distinct states handled at different layers
-  — do not conflate them.
+- **Naming** (`lib/src/naming/`): fully cumulative class/route naming (`product/details/reviews/comments`
+  → `ProductDetailsReviewsComments*`) — confirmed over the spec's own inconsistent root+leaf examples,
+  because cumulative is collision-safe in the flat per-layer folders (two branches sharing a leaf segment
+  name can't collide) and root+leaf isn't. **Root-module asymmetry**: a root module's five layer
+  files/classes get pluralized (`product` → `Products*`/`products_controller.dart`), but its *components*
+  and the module's raw file base never do (`components/product/product_card.dart`, not `products_card
+  .dart`) — this is why `ModuleSpec` exposes both `classPrefix`/`layerFileBase` (pluralized) and
+  `componentClassPrefix`/`fileBase` (never pluralized), not one pair.
+- **Templates** (`bricks/`, bundled to `lib/src/templates/generated/`): two Mason bricks,
+  `collection_module` and `detail_module`, each generating all 6 files for their module type in one
+  `mason make`-equivalent call — not one brick per layer, since every layer's content differs between
+  collection and detail anyway (conditionals-per-file would've been more, not less, complexity than two
+  full brick sets). Generated code uses `package:<app_package_name>/...` imports throughout — never
+  relative — resolved from the *target* project's own `pubspec.yaml`, and import lines are sorted after
+  Mustache substitution (`_sortImports` in `module_generator.dart`) because whether `package:flutter/...`
+  sorts before or after the app's own package name depends on that name, so static template ordering
+  can't get it right for every consumer.
+- **`ModuleGenerator.plan()`** never writes to disk directly — it renders via an in-memory
+  `GeneratorTarget`, formats with `DartFormatter`, checks existence, and returns `FileOp`s (`create` /
+  `skipExisting`) for an `Executor` to apply (or, under `--dry-run`, just report). This is what makes
+  generation idempotent and the generator unit-testable without a filesystem.
+- Parent-existence check (child modules) looks for the parent's controller file under the shared root's
+  flat `controllers/` folder — not for a directory matching the child's own path (there isn't one).
 
-## Filesystem Layout (per-module, must stay flat)
+## Known deferred work (not bugs — see the build plan for phase boundaries)
 
-Architectural layers are **flat within a module** regardless of how deep the logical module hierarchy
-goes — child-module artifacts live alongside the parent's in the same shared folder, never in nested
-subfolders:
-
-```
-product/
-├── components/
-│   ├── product/       # module "product" → components/product/
-│   ├── details/        # module "product/details" → components/details/
-│   └── reviews/         # module "product/details/reviews" → components/reviews/
-├── bindings/
-├── controllers/
-├── services/
-├── repos/
-└── pages/
-```
-
-Never create `controllers/details/`, `components/details/reviews/`, or any nested architectural/
-component folder — the module hierarchy is logical (via naming/routing), not physical.
-
-Naming: module paths use `snake_case`; generated Dart classes use `PascalCase` derived from the full
-module path (e.g. `product/details/reviews` → `ProductDetailsReviewsController`).
-
-## Routing (GetX), Arguments, Endpoints — single sources of truth
-
-Exactly one of each, generated/maintained by the CLI, never duplicated per-module:
-
-```
-lib/core/
-├── arguments/arguments.dart   # every navigation argument class, e.g. ProductDetailsPageArgument
-├── endpoints.dart              # every API endpoint definition, grouped by backend domain (not by frontend module)
-└── routes/
-    ├── app_routes.dart         # route path constants (AppRoutes.productDetails), no hard-coded strings in feature code
-    ├── app_pages.dart          # GetPage registrations (page + binding + transition)
-    └── route_management.dart   # the only navigation API: RouteManagement.goToXPage(...), not raw Get.toNamed(...)
-```
-
-- Route path/constant/page/controller/binding/argument/nav-method are all derived mechanically from the
-  module path (see `routes.md` §26 for the full derivation table).
-- Detail/child modules require an argument object by default (`goToProductDetailsPage(ProductDetailsPageArgument(...))`); argument-free is the exception, not the default.
-- Endpoint definitions (`endpoints.dart`) are grouped by **backend API domain**, not mirrored to frontend
-  module structure — multiple services/modules may legitimately share one `AgEndpoint`.
-- Endpoints (`AgEndpoint`, reusable path contract) are distinct from requests (`AgRequest`, per-call
-  method/path-params/query-params/headers/body) — dynamic values never mutate the shared endpoint
-  definition; path params are resolved by AG, never hand-built as `'/products/$id'`.
-
-## Generation Invariants (apply to any CLI implementation work)
-
-- **Idempotent**: re-running `ag g m <module>` must add only missing pieces — never duplicate files, classes, routes, bindings, arguments, or imports.
-- **Never overwrite developer code**: generated infrastructure (bindings, route registration, DI, arguments registration) is CLI-owned and safe to regenerate; business logic, custom service/repo/controller methods, and custom UI are developer-owned and must be preserved across regeneration.
-- **Automatic import/formatting management**: the CLI is responsible for correct relative imports and Dart formatting on every generation/update.
-- Child modules never automatically depend on or receive their parent's Controller/Repo/Service — each module tier is independently generated and wired.
+- `ag init`, `ag analyze`, and idempotent updates to the shared aggregator files are unbuilt.
+- `tool/check_bundles_fresh.dart` (a CI guard against editing a brick without re-bundling) is deferred to
+  the polish phase.
+- The example app's `InitialBinding` points at a real public API (`jsonplaceholder.typicode.com`) — fine
+  for manual `flutter run` demos, deliberately never exercised by an automated widget test (an early
+  attempt at that hit a real pending-timer failure from live network I/O inside `flutter_test`'s strict
+  binding; don't reintroduce that pattern).

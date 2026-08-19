@@ -1,0 +1,30 @@
+name: ag_flow_cli
+description: >-
+  The `ag` CLI — generates and wires AG feature modules (page, controller,
+  repo, service, binding) against the ag_flow runtime framework.
+version: 0.1.0
+publish_to: none
+resolution: workspace
+
+environment:
+  sdk: ^3.11.0
+
+executables:
+  ag: ag
+
+dependencies:
+  args: ^2.7.0
+  dart_style: ^3.1.0
+  io: ^1.0.4
+  mason: ^0.1.0
+  mason_logger: ^0.3.0
+  meta: ^1.16.0
+  path: ^1.9.0
+  pluralize: ^0.0.8
+  yaml: ^3.1.0
+
+dev_dependencies:
+  analyzer: ">=7.0.0 <13.0.0"
+  mocktail: ^1.0.5
+  test: ^1.25.0
+  very_good_analysis: ^10.3.0

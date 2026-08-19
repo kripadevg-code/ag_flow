@@ -4,11 +4,10 @@ publish_to: none
 environment:
   sdk: ^3.11.0
 
-# Native Dart pub workspace member list. ag_flow_cli is added here once it
-# exists (Phase 2) — see the build plan in requirments/ and CLAUDE.md.
 workspace:
   - packages/ag_flow
   - packages/ag_flow/example
+  - packages/ag_flow_cli
 
 dev_dependencies:
   melos: ^8.2.2
@@ -20,8 +19,20 @@ dev_dependencies:
 melos:
   scripts:
     format-check:
-      description: Check formatting across the whole workspace.
-      run: dart format --output=none --set-exit-if-changed .
+      description: >-
+        Check formatting across the whole workspace. Deliberately does not
+        pass "." — ag_flow_cli/bricks/** are Mason templates containing
+        {{mustache}} placeholders and are not valid Dart syntax; `dart
+        format` has no exclude mechanism (unlike `dart analyze`, which
+        respects analysis_options.yaml), so real source roots are listed
+        explicitly instead. Add new top-level source dirs here as they're
+        created.
+      run: >-
+        dart format --output=none --set-exit-if-changed
+        packages/ag_flow/lib packages/ag_flow/test
+        packages/ag_flow/example/lib
+        packages/ag_flow_cli/bin packages/ag_flow_cli/lib
+        packages/ag_flow_cli/test packages/ag_flow_cli/tool
 
     analyze:
       description: Analyze every package in the workspace.
@@ -38,11 +49,11 @@ melos:
         scope: ag_flow
 
     test:cli:
-      description: Run ag_flow_cli's tests (pure Dart). No-op until ag_flow_cli exists.
+      description: Run ag_flow_cli's tests (pure Dart).
       run: dart test
       packageFilters:
         scope: ag_flow_cli
 
     test:
       description: Run every package's tests.
-      run: melos run test:flow
+      run: melos run test:flow && melos run test:cli

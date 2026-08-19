@@ -1,0 +1,8 @@
+include: ../../analysis_options.yaml
+
+analyzer:
+  exclude:
+    - "bricks/**"
+    - "lib/src/templates/generated/**"
+    - "test/fixtures/**"
+    - "test/goldens/**"
