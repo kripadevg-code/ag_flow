@@ -1,0 +1,74 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'ag_flow-v*'
+      - 'ag_flow_cli-v*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Resolve package and version from the tag
+        id: tag
+        run: |
+          tag="${GITHUB_REF_NAME}"
+          package="${tag%-v*}"
+          version="${tag##*-v}"
+          if [[ "$package" != "ag_flow" && "$package" != "ag_flow_cli" ]]; then
+            echo "Unrecognized package '$package' derived from tag '$tag'." >&2
+            exit 1
+          fi
+          echo "package=$package" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Verify pubspec.yaml's version matches the tag
+        run: |
+          pubspec_version=$(grep -m1 '^version:' "packages/${{ steps.tag.outputs.package }}/pubspec.yaml" | sed 's/^version: *//')
+          tag_version="${{ steps.tag.outputs.version }}"
+          if [[ "$pubspec_version" != "$tag_version" ]]; then
+            echo "Tag ${{ github.ref_name }} says version $tag_version, but packages/${{ steps.tag.outputs.package }}/pubspec.yaml says $pubspec_version." >&2
+            exit 1
+          fi
+
+      - name: Activate melos
+        run: dart pub global activate melos
+
+      - name: Bootstrap workspace
+        run: melos bootstrap
+
+      - name: Test the released package
+        run: melos run test:${{ steps.tag.outputs.package == 'ag_flow' && 'flow' || 'cli' }}
+
+      - name: Extract this version's changelog section
+        id: changelog
+        run: |
+          notes_file=$(mktemp)
+          awk -v ver="## ${{ steps.tag.outputs.version }}" '
+            $0 == ver { found=1; next }
+            found && /^## / { exit }
+            found { print }
+          ' "packages/${{ steps.tag.outputs.package }}/CHANGELOG.md" > "$notes_file"
+          if [[ ! -s "$notes_file" ]]; then
+            echo "No '## ${{ steps.tag.outputs.version }}' section found in packages/${{ steps.tag.outputs.package }}/CHANGELOG.md." >&2
+            exit 1
+          fi
+          echo "notes_file=$notes_file" >> "$GITHUB_OUTPUT"
+
+      - name: Create the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ github.ref_name }}" \
+            --title "${{ steps.tag.outputs.package }} ${{ steps.tag.outputs.version }}" \
+            --notes-file "${{ steps.changelog.outputs.notes_file }}"

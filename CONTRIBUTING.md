@@ -71,6 +71,14 @@ tag once you're ready for consumers to pick it up:
 git push --follow-tags
 ```
 
+Pushing a `ag_flow-v*`/`ag_flow_cli-v*` tag triggers
+`.github/workflows/release.yaml`, which verifies the tag's version
+matches `pubspec.yaml`, runs that package's tests, and creates a GitHub
+release with that version's `CHANGELOG.md` section as its notes — a
+mismatched version (a tag cut without actually running `melos version`
+first, for instance) fails the workflow loudly rather than publishing a
+release with the wrong notes.
+
 Neither package is published to public pub.dev (`publish_to: none`
 everywhere, per Infraon's enterprise-only policy) — the tag itself, on
 this repo's own enterprise git remote, is the release artifact.
