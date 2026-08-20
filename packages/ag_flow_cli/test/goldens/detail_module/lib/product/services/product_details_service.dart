@@ -11,4 +11,25 @@ class ProductDetailsService extends AgBaseService {
       'ProductDetailsService.getByArgument is not implemented yet.',
     );
   }
+
+  Future<dynamic> update(
+    ProductDetailsPageArgument argument,
+    dynamic item,
+  ) async {
+    // TODO: replace with a real AgEndpoint from core/endpoints.dart and
+    // encode/decode your detail type. Not mandatory — delete this method
+    // (and its Repo/Controller counterparts) if this module never updates.
+    throw UnimplementedError(
+      'ProductDetailsService.update is not implemented yet.',
+    );
+  }
+
+  Future<void> delete(ProductDetailsPageArgument argument) async {
+    // TODO: replace with a real AgEndpoint from core/endpoints.dart. Not
+    // mandatory — delete this method (and its Repo/Controller
+    // counterparts) if this module never deletes.
+    throw UnimplementedError(
+      'ProductDetailsService.delete is not implemented yet.',
+    );
+  }
 }

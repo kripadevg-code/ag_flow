@@ -10,4 +10,11 @@ class ProductDetailsController
 
   @override
   Future<dynamic> fetch() => _repo.getByArgument(arguments);
+
+  Future<void> update(dynamic item) async {
+    final updated = await _repo.update(arguments, item);
+    emit(AgPageState.success(updated));
+  }
+
+  Future<void> delete() => _repo.delete(arguments);
 }

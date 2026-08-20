@@ -39,11 +39,31 @@ class ParentModuleNotFoundException implements Exception {
 /// and — for detail modules — `arguments.dart`) via [AggregatorUpdater].
 /// The aggregator files must already exist (`ag init`); see
 /// [AggregatorFileNotFoundException].
+/// The mutation-method stubs `ModuleGenerator` can generate across
+/// Service/Repo/Controller, beyond the always-present read method
+/// (`getPage`/`getByArgument`). `add` only applies to collection modules —
+/// a detail module has no "create a new one" concept, so it's silently
+/// dropped for those rather than treated as an error.
+const generatableMethods = {'add', 'update', 'delete'};
+
 class ModuleGenerator {
-  ModuleGenerator({required this.project, this.pluralizer = defaultPluralizer});
+  ModuleGenerator({
+    required this.project,
+    this.pluralizer = defaultPluralizer,
+    this.methods = generatableMethods,
+  });
 
   final Project project;
   final Pluralizer pluralizer;
+
+  /// Which of [generatableMethods] to generate stubs for, in addition to
+  /// the always-present read method. Defaults to all of them — the whole
+  /// point of a generator is to hand over more working boilerplate than
+  /// a developer would've started from by hand, not less. Every
+  /// generated method is a plain, fully-owned stub with no framework
+  /// lock-in: delete whatever a module doesn't need, exactly as freely as
+  /// any other generated code.
+  final Set<String> methods;
 
   static final _formatter = DartFormatter(
     languageVersion: DartFormatter.latestLanguageVersion,
@@ -78,6 +98,9 @@ class ModuleGenerator {
       'component_class_prefix': spec.componentClassPrefix,
       'component_file_base': spec.fileBase,
       'component_namespace': spec.componentNamespace,
+      'generate_add': methods.contains('add'),
+      'generate_update': methods.contains('update'),
+      'generate_delete': methods.contains('delete'),
     };
 
     final target = _RecordingGeneratorTarget();

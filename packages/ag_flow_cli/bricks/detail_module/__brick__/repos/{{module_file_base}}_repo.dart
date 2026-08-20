@@ -8,4 +8,13 @@ class {{module_class_prefix}}Repo extends AgBaseRepo {
   final {{module_class_prefix}}Service _service;
 
   Future<dynamic> getByArgument({{module_class_prefix}}PageArgument argument) => _service.getByArgument(argument);
+{{#generate_update}}
+
+  Future<dynamic> update({{module_class_prefix}}PageArgument argument, dynamic item) =>
+      _service.update(argument, item);
+{{/generate_update}}
+{{#generate_delete}}
+
+  Future<void> delete({{module_class_prefix}}PageArgument argument) => _service.delete(argument);
+{{/generate_delete}}
 }

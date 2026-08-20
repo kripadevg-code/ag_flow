@@ -8,4 +8,25 @@ class {{module_class_prefix}}Controller extends AgListController<dynamic, int> {
 
   @override
   Future<AgListPage<dynamic, int>> fetchPage(int pageKey) => _repo.getPage(pageKey);
+{{#generate_add}}
+
+  Future<void> add(dynamic item) async {
+    await _repo.add(item);
+    await refresh();
+  }
+{{/generate_add}}
+{{#generate_update}}
+
+  Future<void> update(dynamic id, dynamic item) async {
+    await _repo.update(id, item);
+    await refresh();
+  }
+{{/generate_update}}
+{{#generate_delete}}
+
+  Future<void> delete(dynamic id) async {
+    await _repo.delete(id);
+    await refresh();
+  }
+{{/generate_delete}}
 }

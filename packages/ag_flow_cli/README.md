@@ -57,6 +57,23 @@ default pluralizer gets a root module's name wrong, override it:
 ag g m company --plural=companies   # ClassPrefix becomes "Companies", not the default guess
 ```
 
+**By default, every module's Service/Repo/Controller also get `add`/
+`update`/`delete` stubs** — a generator's whole point is to hand over more
+working boilerplate than a developer would start from by hand, not less.
+(A detail module never gets `add`: there's no "create a new one" concept
+on a page that's about one existing entity.) Every stub is a plain
+`UnimplementedError` placeholder with a `TODO` pointing at
+`core/endpoints.dart`, exactly like the always-present read method
+(`getPage`/`getByArgument`) already is — not a mixin, not framework-owned:
+delete whichever ones a module doesn't need, exactly as freely as any
+other generated code. Control which get generated with `--methods=`:
+
+```bash
+ag g m product                          # add, update, delete — all three
+ag g m product --methods=add,delete     # only these two
+ag g m product --methods=none           # only the read method
+```
+
 Running `ag g m` again for a module that already exists is always safe —
 every file, and every aggregator-file entry, is left untouched if it
 already exists, never overwritten or duplicated. A hand-customized

@@ -9,4 +9,15 @@ class {{module_class_prefix}}Controller extends AgDetailController<dynamic, {{mo
 
   @override
   Future<dynamic> fetch() => _repo.getByArgument(arguments);
+{{#generate_update}}
+
+  Future<void> update(dynamic item) async {
+    final updated = await _repo.update(arguments, item);
+    emit(AgPageState.success(updated));
+  }
+{{/generate_update}}
+{{#generate_delete}}
+
+  Future<void> delete() => _repo.delete(arguments);
+{{/generate_delete}}
 }

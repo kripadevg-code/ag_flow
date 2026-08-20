@@ -15,15 +15,26 @@ import 'package:mason_logger/mason_logger.dart';
 /// `ag generate module <module_path>` (aliased `ag g m <module_path>`).
 class ModuleCommand extends Command<int> {
   ModuleCommand({required this.logger}) {
-    argParser.addOption(
-      'plural',
-      help:
-          'Override the pluralized class/file prefix for a root module '
-          '(e.g. "company" would default to "Companys" — pass '
-          '--plural=companies to fix it). Only meaningful for root '
-          'modules; ignored for detail/child modules, which are never '
-          'pluralized.',
-    );
+    argParser
+      ..addOption(
+        'plural',
+        help:
+            'Override the pluralized class/file prefix for a root module '
+            '(e.g. "company" would default to "Companys" — pass '
+            '--plural=companies to fix it). Only meaningful for root '
+            'modules; ignored for detail/child modules, which are never '
+            'pluralized.',
+      )
+      ..addOption(
+        'methods',
+        help:
+            'Which mutation-method stubs to generate across '
+            'Service/Repo/Controller, beyond the always-present read '
+            'method — a comma-separated subset of add,update,delete '
+            '(add is silently dropped for detail modules, which have '
+            'no "create a new one" concept). Defaults to all of them; '
+            'pass --methods=none to generate only the read method.',
+      );
   }
 
   final Logger logger;
@@ -65,11 +76,31 @@ class ModuleCommand extends Command<int> {
     final dryRun = globalResults?['dry-run'] as bool? ?? false;
     final project = Project(Directory.current);
     final pluralOverride = argResults!['plural'] as String?;
+
+    final methodsOption = argResults!['methods'] as String?;
+    final Set<String> methods;
+    if (methodsOption == null) {
+      methods = generatableMethods;
+    } else if (methodsOption == 'none') {
+      methods = const {};
+    } else {
+      methods = methodsOption.split(',').map((m) => m.trim()).toSet();
+      final unknown = methods.difference(generatableMethods);
+      if (unknown.isNotEmpty) {
+        usageException(
+          'Unrecognized --methods value(s): ${unknown.join(', ')}. '
+          'Expected a comma-separated subset of '
+          '${generatableMethods.join(', ')}, or "none".',
+        );
+      }
+    }
+
     final generator = ModuleGenerator(
       project: project,
       pluralizer: pluralOverride == null
           ? defaultPluralizer
           : (_) => pascalCase(pluralOverride),
+      methods: methods,
     );
 
     final List<FileOp> ops;

@@ -231,7 +231,12 @@ dependencies:
     'flags a detail controller that never uses its inherited arguments',
     () async {
       appDir = await _freshResolvedProject();
-      final controllerFile = File(
+      // Replaces the whole file (rather than patching fetch() in place)
+      // because the default-generated controller also has update()/
+      // delete() methods that legitimately reference arguments — a
+      // partial patch leaving those in place would no longer produce a
+      // genuinely zero-usage class, and the "unused" issue wouldn't fire.
+      File(
         p.join(
           appDir.path,
           'lib',
@@ -239,13 +244,21 @@ dependencies:
           'controllers',
           'product_details_controller.dart',
         ),
-      );
-      controllerFile.writeAsStringSync(
-        controllerFile.readAsStringSync().replaceFirst(
-          RegExp(r'Future<dynamic> fetch\(\) => .*?;'),
-          "Future<dynamic> fetch() async => 'stub';",
-        ),
-      );
+      ).writeAsStringSync('''
+import 'package:ag_flow/ag_flow.dart';
+import 'package:sample_app/core/arguments/arguments.dart';
+import 'package:sample_app/product/repos/product_details_repo.dart';
+
+class ProductDetailsController
+    extends AgDetailController<dynamic, ProductDetailsPageArgument> {
+  ProductDetailsController(this._repo);
+
+  final ProductDetailsRepo _repo;
+
+  @override
+  Future<dynamic> fetch() async => 'stub';
+}
+''');
 
       final issues = await _analyze(appDir);
       final violations = issues

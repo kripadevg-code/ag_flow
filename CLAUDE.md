@@ -152,7 +152,16 @@ pages,repos,services}/`, no extra wrapper folder) is authoritative for what the 
   (wired into CI via `melos run check-bundles-fresh`) decodes every committed bundle's base64 file data
   and byte-compares it against the corresponding file under `bricks/<name>/__brick__/` — an edited brick
   source has no other build-time signal that it's stale, since the bundle is plain committed Dart, not
-  derived at build time.
+  derived at build time. Service/Repo/Controller each generate `add`/`update`/`delete` stubs by default
+  (matching the always-present read method's own `UnimplementedError`-placeholder shape exactly), gated
+  per-method by `{{#generate_add}}`/`{{#generate_update}}`/`{{#generate_delete}}` Mustache conditional
+  sections — verified empirically against Mason's real bundle→generate pipeline (boolean vars, section
+  rendering, and `DartFormatter` cleanly collapsing the sections' blank-line artifacts) before being
+  relied on, since every other var in these bricks had only ever been flat string substitution. `add` is
+  declared only in `collection_module/brick.yaml` — a detail module's `brick.yaml` has no `generate_add`
+  var at all, so `ModuleGenerator` passing that key unconditionally in its vars map (matching the
+  pre-existing pattern of passing every var to both bundles regardless of which brick uses it) is a
+  harmless no-op there, not a validation error.
 - **`ModuleGenerator.plan()`** never writes to disk directly — it renders via an in-memory
   `GeneratorTarget`, formats with `DartFormatter`, checks existence, and returns `FileOp`s (`create` /
   `update` / `skipExisting`) for an `Executor` to apply (or, under `--dry-run`, just report). This is what

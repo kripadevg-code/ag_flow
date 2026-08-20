@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+- **`ag g m` now generates `add`/`update`/`delete` stubs by default**
+  across Service/Repo/Controller, alongside the always-present read
+  method (`getPage`/`getByArgument`) — matching the read method's own
+  shape exactly (a plain `UnimplementedError` placeholder with a `TODO`
+  pointing at `core/endpoints.dart`). Not a mixin, not framework-owned:
+  a generator's whole point is to hand over more working boilerplate
+  than starting from scratch, and every stub is deleted exactly as
+  freely as any other generated code if a module doesn't need it. `add`
+  is only generated for collection modules — a detail module has no
+  "create a new one" concept. New `--methods=` flag controls which get
+  generated (`--methods=add,delete`, or `--methods=none` for read-only);
+  omitting it generates all applicable ones. Golden fixtures regenerated
+  from real tool output, not hand-transcribed, matching this repo's own
+  existing convention for avoiding formatter-output guessing errors.
 - **Fixed: `--plural=` was documented and fully implemented at the
   `ModuleGenerator`/`ModuleSpec` layer, but never wired into `ag g m`
   itself** — `ModuleCommand` never registered the option, so it was

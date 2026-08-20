@@ -9,4 +9,19 @@ class ProductsController extends AgListController<dynamic, int> {
   @override
   Future<AgListPage<dynamic, int>> fetchPage(int pageKey) =>
       _repo.getPage(pageKey);
+
+  Future<void> add(dynamic item) async {
+    await _repo.add(item);
+    await refresh();
+  }
+
+  Future<void> update(dynamic id, dynamic item) async {
+    await _repo.update(id, item);
+    await refresh();
+  }
+
+  Future<void> delete(dynamic id) async {
+    await _repo.delete(id);
+    await refresh();
+  }
 }
