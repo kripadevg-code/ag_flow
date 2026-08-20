@@ -24,7 +24,7 @@ Dart pub workspaces.
 | Package | Status | Purpose |
 |---|---|---|
 | [`packages/ag_flow`](packages/ag_flow) | Available | The runtime framework: `AgBasePage`, `AgBaseController`, `AgListBuilder`, `AgBaseRepo`, `AgBaseService`, `ApiProvider`, and the rest of the classes every generated module is built from. |
-| [`packages/ag_flow_cli`](packages/ag_flow_cli) | `ag init`/`ag g m` available end-to-end; `ag analyze` planned | The `ag` CLI. `ag init` bootstraps a bare project's `lib/core/` skeleton; `ag g m <module>` generates a module's page/controller/repo/service/binding/component files *and* idempotently wires its route/argument/nav-method into the shared aggregator files. Named `ag_flow_cli` (not `ag_cli`) to avoid colliding with the maintainer's unrelated, separately published `ag-cli` package. |
+| [`packages/ag_flow_cli`](packages/ag_flow_cli) | Available | The `ag` CLI. `ag init` bootstraps a bare project's `lib/core/` skeleton; `ag g m <module>` generates a module's page/controller/repo/service/binding/component files *and* idempotently wires its route/argument/nav-method into the shared aggregator files; `ag analyze` validates a project against AG's structural rules (v1 scope). Named `ag_flow_cli` (not `ag_cli`) to avoid colliding with the maintainer's unrelated, separately published `ag-cli` package. |
 
 ## Installing (enterprise-internal)
 
@@ -55,12 +55,12 @@ melos run analyze
 melos run test
 ```
 
-`ag init` and `ag g m` are available today, covering the full end-to-end flow
-(see [routes.md](requirments/routes.md) §29) short of the `ag analyze`
-validator, which is the target of a later phase:
+The full end-to-end flow (see [routes.md](requirments/routes.md) §29) is
+available today:
 
 ```bash
 ag init                     # bootstraps lib/core/ once per project
 ag g m product
 ag g m product/details
+ag analyze                  # validates the project's structural rules
 ```

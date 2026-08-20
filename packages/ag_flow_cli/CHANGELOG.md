@@ -31,4 +31,17 @@
   Verified end-to-end against a real `flutter create`d app: `ag init` →
   `ag g m product` → `ag g m product/details` → `flutter analyze
   --fatal-infos` reports zero issues.
-- Does not yet provide `ag analyze` — see the build plan's phased roadmap.
+- `ag analyze`: a v1, mechanical/structural-only validator. Re-parses
+  `app_routes.dart`'s route table and re-derives each route's expected
+  `ModuleSpec` from its path (not its constant name, which is what makes
+  this immune to whatever pluralizer produced the name), then checks:
+  missing architectural-layer files, missing `GetPage`/nav-method/argument-
+  class wiring, two route constants pointing at the identical path, nested
+  architectural/component folders, and hard-coded `Get.toNamed('/literal')`
+  calls outside `route_management.dart`. Exits `0` clean, non-zero with
+  every issue printed otherwise. Dependency-direction violations and
+  detail-route-without-argument-usage checks are deliberately deferred to
+  v2+ (need a resolved element model, not just syntax) — a regression test
+  confirms a Page hand-edited to call a Service directly produces zero
+  issues today, documenting that boundary explicitly rather than leaving
+  it implicit.

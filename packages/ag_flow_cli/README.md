@@ -18,6 +18,7 @@ ag init                    # once per project — bootstraps lib/core/
 ag g m product              # a collection (root) module
 ag g m product/details      # a detail (child) module — requires product to already exist
 ag g m product/details/reviews/comments   # nesting to any depth
+ag analyze                  # validate the project against AG's structural rules
 ```
 
 `ag init` creates the `lib/core/{arguments/arguments.dart, endpoints.dart,
@@ -66,10 +67,45 @@ exists" conflict error (requirments/routes.md §21) rather than silently
 overwriting or duplicating it — this is different from the safe idempotent
 case above, which only applies when re-deriving the *exact same* module.
 
+## `ag analyze`
+
+Validates the current project against AG's structural rules — no arguments,
+run it from the project root once `ag init` has been run:
+
+```bash
+ag analyze
+```
+
+v1 covers mechanical/structural checks only, all derived from re-parsing
+`app_routes.dart`'s route table and re-deriving each route's expected
+`ModuleSpec` from its path:
+
+- a module missing one of its five architectural-layer files
+  (page/controller/repo/service/binding)
+- a route with no `GetPage` entry in `app_pages.dart`
+- a route with no navigation method in `route_management.dart`
+- a detail route missing its argument class in `arguments.dart`
+- two different route constants pointing at the identical path
+- a nested subfolder under an architectural-layer or component-namespace
+  folder (both must stay flat)
+- a hard-coded route string (`Get.toNamed('/literal')`) anywhere outside
+  `route_management.dart`
+
+Exits `0` with "No issues found." if clean, or non-zero with every issue
+printed (one per line) otherwise.
+
+**Deliberately out of v1 scope** (needs a resolved element model via
+`analyzer`, not just syntax — deferred rather than rushed into v1 with
+false positives): dependency-direction violations (e.g. a Page calling a
+Service directly) and detail-route-without-argument-usage checks.
+
+**Known v1 limitation**: a module generated with a custom `--plural=`
+override isn't recorded anywhere `ag analyze` can read it back from, so
+re-deriving that module's expected file names with the default pluralizer
+can produce a false "missing layer file" positive.
+
 ## What this package does not do yet
 
-- `ag analyze` (validation) doesn't exist yet — see the build plan's
-  phased roadmap.
 - `endpoints.dart` is never touched by `ag g m` (by design — endpoint
   definitions are grouped by backend domain, not frontend module
   hierarchy, per requirments/ag_endpoint_rules.md §5). `ag init` scaffolds

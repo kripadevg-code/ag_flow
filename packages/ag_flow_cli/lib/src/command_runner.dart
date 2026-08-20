@@ -1,3 +1,4 @@
+import 'package:ag_flow_cli/src/commands/analyze_command.dart';
 import 'package:ag_flow_cli/src/commands/generate_command.dart';
 import 'package:ag_flow_cli/src/commands/init_command.dart';
 import 'package:args/command_runner.dart';
@@ -15,6 +16,7 @@ class AgCommandRunner extends CommandRunner<int> {
     );
     addCommand(InitCommand(logger: this.logger));
     addCommand(GenerateCommand(logger: this.logger));
+    addCommand(AnalyzeCommand(logger: this.logger));
   }
 
   final Logger logger;
