@@ -1,11 +1,45 @@
 # AG
 
-AG is Infraon's opinionated Flutter framework and CLI, built on top of
-[GetX](https://pub.dev/packages/get). It standardizes the shape of every
-feature module (page → controller → repo → service → binding), the routing/
-navigation-argument wiring, and page-state handling (loading/error/empty/
-refresh/retry), so teams spend their time on business logic and UI instead
-of re-building the same infrastructure for every screen.
+<!-- Replace <org> below with the real GitHub org/repo once this is pushed
+     to Infraon's private GitHub. Native GitHub Actions badges work for
+     private repos for anyone with access to the repo. -->
+
+[![CI](https://github.com/<org>/ag_flow/actions/workflows/ci.yaml/badge.svg)](https://github.com/<org>/ag_flow/actions/workflows/ci.yaml)
+[![Generator Integration](https://github.com/<org>/ag_flow/actions/workflows/generator-integration.yaml/badge.svg)](https://github.com/<org>/ag_flow/actions/workflows/generator-integration.yaml)
+[![License: Proprietary](https://img.shields.io/badge/license-proprietary-blue.svg)](LICENSE)
+[![Distribution: enterprise-internal](https://img.shields.io/badge/distribution-enterprise--internal-orange.svg)](#installing-enterprise-internal)
+
+**An opinionated Flutter framework and CLI, built on [GetX](https://pub.dev/packages/get), that turns "write a new feature module" into a single command.**
+
+AG standardizes the shape of every feature module (page → controller →
+repo → service → binding), the routing/navigation-argument wiring, and
+page-state handling (loading/error/empty/refresh/retry) — so teams spend
+their time on business logic and UI instead of re-building the same
+infrastructure for every screen.
+
+![ag init, ag g m, and ag analyze generating and validating a real module end-to-end](docs/demo.gif)
+
+## Why AG
+
+- **One command per module.** `ag g m product` generates a fully-wired
+  page/controller/repo/service/binding/component set — routing, DI, and
+  navigation arguments included — in one shot. `ag g m product/details`
+  nests to any depth from there.
+- **A structure you can enforce, not just suggest.** `ag analyze` checks a
+  real project against the architecture — missing layer files, routes
+  with no navigation wiring, a Page reaching straight past its Controller
+  into a Service, a detail route whose argument is generated but never
+  read — the same rules the generator itself follows, so drift gets
+  caught instead of accumulating.
+- **Independent overrides, not an all-or-nothing template.** Override only
+  the error state, or only the loading state — every other AG default
+  stays exactly as generated.
+- **One networking chokepoint.** Every generated Service goes through a
+  single, centrally-configured `ApiProvider` — no per-feature `Dio`
+  instances, no hand-rolled URLs, no scattered auth/retry/logging logic.
+- **Regeneration never clobbers your work.** Re-running `ag g m` on an
+  existing module is a no-op; a hand-customized navigation method survives
+  regeneration byte-for-byte, forever.
 
 The binding specification for AG lives in [requirments/](requirments/):
 
@@ -24,7 +58,7 @@ Dart pub workspaces.
 | Package | Status | Purpose |
 |---|---|---|
 | [`packages/ag_flow`](packages/ag_flow) | Available | The runtime framework: `AgBasePage`, `AgBaseController`, `AgListBuilder`, `AgBaseRepo`, `AgBaseService`, `ApiProvider`, and the rest of the classes every generated module is built from. |
-| [`packages/ag_flow_cli`](packages/ag_flow_cli) | Available | The `ag` CLI. `ag init` bootstraps a bare project's `lib/core/` skeleton; `ag g m <module>` generates a module's page/controller/repo/service/binding/component files *and* idempotently wires its route/argument/nav-method into the shared aggregator files; `ag analyze` validates a project against AG's structural rules (v1 scope). Named `ag_flow_cli` (not `ag_cli`) to avoid colliding with the maintainer's unrelated, separately published `ag-cli` package. |
+| [`packages/ag_flow_cli`](packages/ag_flow_cli) | Available | The `ag` CLI. `ag init` bootstraps a bare project's `lib/core/` skeleton; `ag g m <module>` generates a module's page/controller/repo/service/binding/component files *and* idempotently wires its route/argument/nav-method into the shared aggregator files; `ag analyze` validates a project against AG's structural rules, including resolved-model checks (dependency-direction violations, unused detail arguments) once dependencies are resolved. Named `ag_flow_cli` (not `ag_cli`) to avoid colliding with the maintainer's unrelated, separately published `ag-cli` package. |
 
 ## Installing (enterprise-internal)
 
@@ -52,6 +86,7 @@ dart pub global activate melos   # once per machine
 melos bootstrap                  # resolves the whole workspace
 melos run format-check
 melos run analyze
+melos run check-bundles-fresh
 melos run test
 ```
 
@@ -64,3 +99,6 @@ ag g m product
 ag g m product/details
 ag analyze                  # validates the project's structural rules
 ```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the full contributor workflow,
+including how to cut a release.
