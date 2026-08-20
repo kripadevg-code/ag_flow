@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:ag_flow/src/controller/ag_list_controller.dart';
 import 'package:ag_flow/src/controller/ag_pagination_state.dart';
@@ -68,42 +69,77 @@ class AgListBuilder<ItemType, PageKeyType extends Object>
 
   @override
   Widget build(BuildContext context) {
-    return Obx(() {
-      final pagination = controller.pagination;
-      final items = pagination.items;
-      final hasTrailing =
-          pagination.hasNextPage ||
-          pagination.isLoadingMore ||
-          pagination.loadMoreError != null;
-      final itemCount = items.length + (hasTrailing ? 1 : 0);
+    return GetBuilder<AgListController<ItemType, PageKeyType>>(
+      init: controller,
+      global: false,
+      // See AgPage's identical reasoning: a Binding, not this widget,
+      // owns the controller's lifecycle.
+      autoRemove: false,
+      id: AgPaginationMixin.paginationUpdateId,
+      builder: (controller) {
+        final pagination = controller.pagination;
+        final items = pagination.items;
+        // The list is exhausted (no error, not loading) only ever needs a
+        // trailing slot if the caller actually wants something shown
+        // there — otherwise reserving an empty slot just to render
+        // SizedBox.shrink() would be pointless.
+        final isExhaustedWithCustomEnding =
+            !pagination.hasNextPage &&
+            !pagination.isLoadingMore &&
+            pagination.loadMoreError == null &&
+            noMoreItemsBuilder != null;
+        final hasTrailing =
+            pagination.hasNextPage ||
+            pagination.isLoadingMore ||
+            pagination.loadMoreError != null ||
+            isExhaustedWithCustomEnding;
+        final itemCount = items.length + (hasTrailing ? 1 : 0);
 
-      Widget itemAt(BuildContext context, int index) {
-        if (index < items.length) {
-          return itemBuilder(context, items[index], index);
+        Widget itemAt(BuildContext context, int index) {
+          if (index < items.length) {
+            return itemBuilder(context, items[index], index);
+          }
+          return _buildTrailing(context, pagination);
         }
-        return _buildTrailing(context, pagination);
-      }
 
-      final list = separatorBuilder == null
-          ? ListView.builder(
-              padding: padding,
-              physics: physics,
-              itemCount: itemCount,
-              itemBuilder: itemAt,
-            )
-          : ListView.separated(
-              padding: padding,
-              physics: physics,
-              itemCount: itemCount,
-              itemBuilder: itemAt,
-              separatorBuilder: separatorBuilder!,
-            );
+        // Built on CustomScrollView + SliverList (rather than ListView)
+        // so this becomes composable inside a larger sliver-based scroll
+        // view later without changing this widget's own external API.
+        // Separator interleaving mirrors ListView.separated's own
+        // technique exactly: double the child count, even indices are
+        // items, odd indices are separators.
+        final Widget sliver;
+        final separator = separatorBuilder;
+        if (separator == null) {
+          sliver = SliverList(
+            delegate: SliverChildBuilderDelegate(itemAt, childCount: itemCount),
+          );
+        } else {
+          sliver = SliverList(
+            delegate: SliverChildBuilderDelegate((context, index) {
+              final itemIndex = index ~/ 2;
+              return index.isEven
+                  ? itemAt(context, itemIndex)
+                  : separator(context, itemIndex);
+            }, childCount: math.max(0, itemCount * 2 - 1)),
+          );
+        }
 
-      return NotificationListener<ScrollNotification>(
-        onNotification: _onScrollNotification,
-        child: list,
-      );
-    });
+        final padding = this.padding;
+        return NotificationListener<ScrollNotification>(
+          onNotification: _onScrollNotification,
+          child: CustomScrollView(
+            physics: physics,
+            slivers: [
+              if (padding == null)
+                sliver
+              else
+                SliverPadding(padding: padding, sliver: sliver),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   Widget _buildTrailing(

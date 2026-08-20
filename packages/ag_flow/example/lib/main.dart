@@ -15,7 +15,7 @@ class AgFlowExampleApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return GetMaterialApp(
       title: 'ag_flow example',
-      initialRoute: AppRoutes.products,
+      initialRoute: AppRoutes.product,
       initialBinding: InitialBinding(),
       getPages: AppPages.pages,
     );

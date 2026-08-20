@@ -12,7 +12,7 @@ abstract class AppPages {
 
   static final List<GetPage<dynamic>> pages = [
     GetPage(
-      name: AppRoutes.products,
+      name: AppRoutes.product,
       page: ProductsPage.new,
       binding: ProductsBinding(),
       transition: defaultTransition,

@@ -198,5 +198,110 @@ void main() {
 
       expect(logs.any((line) => line.contains('super-secret')), isFalse);
     });
+
+    test(
+      'includes query parameters in the log line (ag_endpoint_rules.md §23)',
+      () async {
+        final logs = <String>[];
+        final provider = _providerWith(
+          (options) => _jsonResponse([], 200),
+          logOptions: AgLogOptions(logger: logs.add),
+        );
+
+        await provider.send<dynamic>(
+          AgRequest(
+            endpoint: const AgEndpoint('/products'),
+            queryParams: const {'page': 2, 'pageSize': 20},
+          ),
+        );
+
+        expect(
+          logs.any(
+            (line) =>
+                line.startsWith('[API] GET /products?') &&
+                line.contains('page=2') &&
+                line.contains('pageSize=20'),
+          ),
+          isTrue,
+          reason: 'logs were: $logs',
+        );
+      },
+    );
+
+    test(
+      'masks configured body keys at every nesting depth, not just the '
+      'top level (ag_endpoint_rules.md §24)',
+      () async {
+        final logs = <String>[];
+        final provider = _providerWith(
+          (options) => _jsonResponse({'ok': true}, 200),
+          logOptions: AgLogOptions(
+            logger: logs.add,
+            logRequestBody: true,
+            maskedBodyKeys: const {'password'},
+          ),
+        );
+
+        await provider.send<dynamic>(
+          AgRequest(
+            endpoint: const AgEndpoint('/login', methods: {AgHttpMethod.post}),
+            body: {
+              'user': {'name': 'jane', 'password': 'super-secret'},
+              'accounts': [
+                {'password': 'also-secret'},
+              ],
+            },
+          ),
+        );
+
+        final requestLog = logs.firstWhere(
+          (line) => line.startsWith('[API] →'),
+        );
+        expect(requestLog, isNot(contains('super-secret')));
+        expect(requestLog, isNot(contains('also-secret')));
+        expect(requestLog, contains('jane'));
+      },
+    );
+
+    test(
+      'a request whose endpoint has baseUrlOverride bypasses the '
+      "provider's configured base URL entirely",
+      () async {
+        String? requestedUrl;
+        final provider = _providerWith((options) {
+          requestedUrl = options.uri.toString();
+          return _jsonResponse({'ok': true}, 200);
+        });
+
+        await provider.send<dynamic>(
+          AgRequest(
+            endpoint: const AgEndpoint(
+              '/legacy/products',
+              baseUrlOverride: 'https://legacy.example.com',
+            ),
+          ),
+        );
+
+        expect(requestedUrl, 'https://legacy.example.com/legacy/products');
+      },
+    );
+
+    test(
+      'a pre-cancelled AgCancelToken aborts the request without leaking a '
+      'raw dio type to the caller',
+      () async {
+        final provider = _providerWith((options) => _jsonResponse({}, 200));
+        final token = AgCancelToken()..cancel('user navigated away');
+
+        expect(token.isCancelled, isTrue);
+        await expectLater(
+          provider.send<dynamic>(
+            AgRequest(endpoint: const AgEndpoint('/products')),
+            cancelToken: token,
+          ),
+          throwsA(isA<AgApiException>()),
+        );
+      },
+    );
   });
 }

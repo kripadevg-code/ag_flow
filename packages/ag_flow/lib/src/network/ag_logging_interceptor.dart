@@ -30,7 +30,8 @@ class AgLoggingInterceptor extends Interceptor {
           ? ' body: ${_maskBody(requestOptions.data)}'
           : '';
       _log(
-        '[API] → ${requestOptions.method} ${requestOptions.path} headers: $headers$bodyPart',
+        '[API] → ${requestOptions.method} ${_pathWithQuery(requestOptions)} '
+        'headers: $headers$bodyPart',
       );
     }
     handler.next(requestOptions);
@@ -64,9 +65,18 @@ class AgLoggingInterceptor extends Interceptor {
         ? 'n/a'
         : '${duration.inMilliseconds}ms';
     _log(
-      '[API] ${requestOptions.method} ${requestOptions.path} '
+      '[API] ${requestOptions.method} ${_pathWithQuery(requestOptions)} '
       'Status: ${statusCode ?? '-'} Duration: $durationLabel',
     );
+  }
+
+  /// The request's path with its query string appended, e.g.
+  /// `/products?page=2` — plain `RequestOptions.path` never includes query
+  /// parameters (requirments/ag_endpoint_rules.md §23 requires them in the
+  /// log line).
+  String _pathWithQuery(RequestOptions requestOptions) {
+    final uri = requestOptions.uri;
+    return uri.hasQuery ? '${uri.path}?${uri.query}' : uri.path;
   }
 
   Map<String, dynamic> _maskHeaders(Map<String, dynamic> headers) {
@@ -76,14 +86,21 @@ class AgLoggingInterceptor extends Interceptor {
     });
   }
 
+  /// Masks configured body keys at every depth — a nested `{"user":
+  /// {"password": "..."}}` or a list of objects must not leak an unmasked
+  /// value just because it isn't at the top level
+  /// (requirments/ag_endpoint_rules.md §24).
   Object? _maskBody(Object? data) {
     if (data is Map) {
       return data.map((key, value) {
         final masked = options.maskedBodyKeys.contains(
           key.toString().toLowerCase(),
         );
-        return MapEntry(key, masked ? '***' : value);
+        return MapEntry(key, masked ? '***' : _maskBody(value));
       });
+    }
+    if (data is List) {
+      return data.map(_maskBody).toList();
     }
     return data;
   }

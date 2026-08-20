@@ -1,6 +1,5 @@
 import 'package:ag_flow/src/controller/ag_base_controller.dart';
 import 'package:ag_flow/src/controller/ag_pagination_state.dart';
-import 'package:get/get.dart';
 
 /// Adds pagination/load-more behavior to an [AgBaseController] whose data
 /// is a [List].
@@ -13,6 +12,11 @@ import 'package:get/get.dart';
 /// triggers duplicate fetches.
 mixin AgPaginationMixin<ItemType, PageKeyType extends Object>
     on AgBaseController<List<ItemType>> {
+  /// The `GetBuilder(id:)` every pagination-state rebuild is scoped to —
+  /// see [AgBaseController.pageStateUpdateId] for why this is a separate
+  /// id from the page-level state.
+  static const paginationUpdateId = 'ag_pagination_state';
+
   /// The page key used for the very first page.
   PageKeyType get initialPageKey;
 
@@ -20,21 +24,26 @@ mixin AgPaginationMixin<ItemType, PageKeyType extends Object>
   /// never a Service or `ApiProvider` directly.
   Future<AgListPage<ItemType, PageKeyType>> fetchPage(PageKeyType pageKey);
 
-  final Rx<AgPaginationState<ItemType, PageKeyType>> _pagination =
-      Rx<AgPaginationState<ItemType, PageKeyType>>(
-        AgPaginationState<ItemType, PageKeyType>(),
-      );
+  AgPaginationState<ItemType, PageKeyType> _pagination =
+      AgPaginationState<ItemType, PageKeyType>();
 
   /// The current pagination/load-more state.
-  AgPaginationState<ItemType, PageKeyType> get pagination => _pagination.value;
+  AgPaginationState<ItemType, PageKeyType> get pagination => _pagination;
+
+  void _setPagination(AgPaginationState<ItemType, PageKeyType> next) {
+    _pagination = next;
+    update([paginationUpdateId]);
+  }
 
   @override
   Future<List<ItemType>> fetch() async {
     final page = await fetchPage(initialPageKey);
-    _pagination.value = AgPaginationState<ItemType, PageKeyType>(
-      items: page.items,
-      nextPageKey: page.nextPageKey,
-      hasNextPage: page.hasMore,
+    _setPagination(
+      AgPaginationState<ItemType, PageKeyType>(
+        items: page.items,
+        nextPageKey: page.nextPageKey,
+        hasNextPage: page.hasMore,
+      ),
     );
     return page.items;
   }
@@ -47,30 +56,30 @@ mixin AgPaginationMixin<ItemType, PageKeyType extends Object>
 
     final pageKey = current.nextPageKey;
     if (pageKey == null) {
-      _pagination.value = current.copyWith(hasNextPage: false);
+      _setPagination(current.copyWith(hasNextPage: false));
       return;
     }
 
-    _pagination.value = current.copyWith(
-      isLoadingMore: true,
-      clearLoadMoreError: true,
+    _setPagination(
+      current.copyWith(isLoadingMore: true, clearLoadMoreError: true),
     );
     try {
       final page = await fetchPage(pageKey);
-      _pagination.value = pagination.copyWith(
-        items: [...pagination.items, ...page.items],
-        nextPageKey: page.nextPageKey,
-        clearNextPageKey: page.nextPageKey == null,
-        hasNextPage: page.hasMore,
-        isLoadingMore: false,
+      _setPagination(
+        pagination.copyWith(
+          items: [...pagination.items, ...page.items],
+          nextPageKey: page.nextPageKey,
+          clearNextPageKey: page.nextPageKey == null,
+          hasNextPage: page.hasMore,
+          isLoadingMore: false,
+        ),
       );
       // A developer's fetchPage() may throw anything, same as fetch() on
       // AgBaseController — captured as loadMoreError, never re-thrown.
       // ignore: avoid_catches_without_on_clauses
     } catch (error) {
-      _pagination.value = pagination.copyWith(
-        isLoadingMore: false,
-        loadMoreError: error,
+      _setPagination(
+        pagination.copyWith(isLoadingMore: false, loadMoreError: error),
       );
     }
   }
@@ -80,7 +89,7 @@ mixin AgPaginationMixin<ItemType, PageKeyType extends Object>
 
   @override
   Future<void> refresh() async {
-    _pagination.value = AgPaginationState<ItemType, PageKeyType>();
+    _setPagination(AgPaginationState<ItemType, PageKeyType>());
     await super.refresh();
   }
 }

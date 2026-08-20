@@ -51,26 +51,38 @@ class AgPage<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Obx(() {
-      final currentState = controller.state;
-      return switch (currentState) {
-        AgPageInitial<T>() || AgPageLoading<T>() =>
-          loadingBuilder?.call(context) ?? const AgLoading(),
-        AgPageError<T>(:final error, :final stackTrace) =>
-          errorBuilder?.call(context, error, stackTrace, controller.retry) ??
-              AgError(
-                error: error,
-                stackTrace: stackTrace,
-                onRetry: controller.retry,
-              ),
-        AgPageEmpty<T>() => emptyBuilder?.call(context) ?? const AgEmpty(),
-        AgPageSuccess<T>(:final data, :final isRefreshing) => _buildSuccess(
-          context,
-          data,
-          isRefreshing,
-        ),
-      };
-    });
+    return GetBuilder<AgBaseController<T>>(
+      init: controller,
+      global: false,
+      // A Binding owns this controller's lifecycle (created via
+      // Get.lazyPut, disposed when the route itself is popped) — this
+      // widget merely reads it. With global:false, GetBuilder otherwise
+      // defaults to deleting it from Get's DI container on its own
+      // dispose, which must never happen just because one of possibly
+      // several widgets reading the same controller unmounted first.
+      autoRemove: false,
+      id: AgBaseController.pageStateUpdateId,
+      builder: (controller) {
+        final currentState = controller.state;
+        return switch (currentState) {
+          AgPageInitial<T>() || AgPageLoading<T>() =>
+            loadingBuilder?.call(context) ?? const AgLoading(),
+          AgPageError<T>(:final error, :final stackTrace) =>
+            errorBuilder?.call(context, error, stackTrace, controller.retry) ??
+                AgError(
+                  error: error,
+                  stackTrace: stackTrace,
+                  onRetry: controller.retry,
+                ),
+          AgPageEmpty<T>() => emptyBuilder?.call(context) ?? const AgEmpty(),
+          AgPageSuccess<T>(:final data, :final isRefreshing) => _buildSuccess(
+            context,
+            data,
+            isRefreshing,
+          ),
+        };
+      },
+    );
   }
 
   Widget _buildSuccess(BuildContext context, T data, bool isRefreshing) {

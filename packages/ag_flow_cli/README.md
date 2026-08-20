@@ -50,7 +50,12 @@ lib/product/
 
 Root modules get their layer classes/files pluralized (`Products*`); child
 modules and every module's components never are (`ProductCard`, not
-`ProductsCard`) — matching requirments/ag_framework.md §5 exactly.
+`ProductsCard`) — matching requirments/ag_framework.md §5 exactly. If the
+default pluralizer gets a root module's name wrong, override it:
+
+```bash
+ag g m company --plural=companies   # ClassPrefix becomes "Companies", not the default guess
+```
 
 Running `ag g m` again for a module that already exists is always safe —
 every file, and every aggregator-file entry, is left untouched if it
@@ -127,6 +132,15 @@ printed (one per line) otherwise.
   `dart compile exe` build: the analyzer can't auto-detect the Dart SDK
   from a self-contained native binary the way it can from a process
   running through the real `dart` executable.
+- Several checks from `ag_framework.md` §70 / `routes.md` §24's own
+  validation checklists aren't implemented yet: duplicate argument class,
+  incorrect class naming (a layer file exists with the right *name* but
+  the class inside it doesn't match), duplicate dependency registration,
+  a module whose files exist but was never wired into `app_routes.dart`
+  at all ("orphaned module"), and route-hierarchy checks (e.g. a
+  `/product/details` route registered with no `/product` route). None of
+  these are silently swallowed — they're just not built yet; tracked as
+  v3 scope rather than left unstated.
 
 ## What this package does not do yet
 

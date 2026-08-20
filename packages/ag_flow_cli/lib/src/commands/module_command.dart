@@ -6,13 +6,25 @@ import 'package:ag_flow_cli/src/generators/module_generator.dart';
 import 'package:ag_flow_cli/src/io/executor.dart';
 import 'package:ag_flow_cli/src/io/file_op.dart';
 import 'package:ag_flow_cli/src/io/project.dart';
+import 'package:ag_flow_cli/src/naming/case_convert.dart';
 import 'package:ag_flow_cli/src/naming/module_path.dart';
+import 'package:ag_flow_cli/src/naming/pluralizer.dart';
 import 'package:args/command_runner.dart';
 import 'package:mason_logger/mason_logger.dart';
 
 /// `ag generate module <module_path>` (aliased `ag g m <module_path>`).
 class ModuleCommand extends Command<int> {
-  ModuleCommand({required this.logger});
+  ModuleCommand({required this.logger}) {
+    argParser.addOption(
+      'plural',
+      help:
+          'Override the pluralized class/file prefix for a root module '
+          '(e.g. "company" would default to "Companys" — pass '
+          '--plural=companies to fix it). Only meaningful for root '
+          'modules; ignored for detail/child modules, which are never '
+          'pluralized.',
+    );
+  }
 
   final Logger logger;
 
@@ -52,7 +64,13 @@ class ModuleCommand extends Command<int> {
 
     final dryRun = globalResults?['dry-run'] as bool? ?? false;
     final project = Project(Directory.current);
-    final generator = ModuleGenerator(project: project);
+    final pluralOverride = argResults!['plural'] as String?;
+    final generator = ModuleGenerator(
+      project: project,
+      pluralizer: pluralOverride == null
+          ? defaultPluralizer
+          : (_) => pascalCase(pluralOverride),
+    );
 
     final List<FileOp> ops;
     try {

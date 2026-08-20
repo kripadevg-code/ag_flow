@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+- **Fixed: `--plural=` was documented and fully implemented at the
+  `ModuleGenerator`/`ModuleSpec` layer, but never wired into `ag g m`
+  itself** — `ModuleCommand` never registered the option, so it was
+  unreachable from the actual CLI. Wired via `argParser.addOption
+  ('plural', ...)`; the supplied override is run through the same
+  `pascalCase` conversion the naming machinery already uses for every
+  other segment, since an early version of this fix passed the raw CLI
+  argument straight through and produced `companiesController` instead
+  of `CompaniesController`. Covered by a new
+  `test/src/commands/module_command_test.dart`, exercising the real
+  `args`-parsing/`CommandRunner` path rather than only the generator API
+  directly (which is exactly where the wiring gap — and the casing bug —
+  were both invisible before).
 - `ag analyze` v2 checks — dependency-direction violations and unused
   detail arguments, both previously deferred pending a resolved element
   model. Built on `package:analyzer`'s `AnalysisContextCollection`

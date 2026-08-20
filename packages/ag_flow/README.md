@@ -94,6 +94,11 @@ abstract class ProductEndpoints {
 class ProductService extends AgBaseService with AgCrudService<Product, String> {
   ProductService(super.apiProvider);
 
+  // Two distinct endpoints, not one shared between them: getAll/add have
+  // no id to supply, and getById/update/delete need one — a single
+  // {id}-shaped endpoint can't serve both correctly.
+  @override
+  AgEndpoint get collectionEndpoint => ProductEndpoints.products;
   @override
   AgEndpoint get resourceEndpoint => ProductEndpoints.productById;
   @override

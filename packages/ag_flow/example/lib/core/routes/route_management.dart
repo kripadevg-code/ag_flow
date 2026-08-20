@@ -10,7 +10,7 @@ import 'package:ag_flow_example/core/routes/app_routes.dart';
 /// directly.
 abstract class RouteManagement {
   static void goToProductsPage() {
-    unawaited(Get.toNamed<dynamic>(AppRoutes.products));
+    unawaited(Get.toNamed<dynamic>(AppRoutes.product));
   }
 
   static void goToProductDetailsPage(ProductDetailsPageArgument argument) {

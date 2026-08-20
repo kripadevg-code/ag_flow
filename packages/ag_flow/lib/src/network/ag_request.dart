@@ -35,15 +35,22 @@ class AgRequest {
     this.body,
     this.formFields,
     this.formFiles,
-  }) : method = method ?? endpoint.methods.first,
-       assert(
-         endpoint.supports(method ?? endpoint.methods.first),
-         'Endpoint $endpoint does not support ${method ?? endpoint.methods.first}',
-       ),
-       assert(
-         body == null || (formFields == null && formFiles == null),
-         'An AgRequest cannot have both a body and form-data.',
-       );
+  }) : method = method ?? endpoint.methods.first {
+    // Real, unconditional checks rather than `assert` — these are
+    // caller-contract violations that must still be caught in release
+    // builds, not just during development.
+    if (!endpoint.supports(this.method)) {
+      throw AgUnsupportedMethodException(
+        endpoint: endpoint,
+        method: this.method,
+      );
+    }
+    if (body != null && (formFields != null || formFiles != null)) {
+      throw ArgumentError(
+        'An AgRequest cannot have both a body and form-data.',
+      );
+    }
+  }
 
   /// The endpoint this request targets.
   final AgEndpoint endpoint;
@@ -75,4 +82,19 @@ class AgRequest {
 
   /// Resolves [endpoint]'s path template against [pathParams].
   String resolvePath() => AgPathResolver.resolve(endpoint.path, pathParams);
+}
+
+/// Thrown when an [AgRequest] is built with a [AgRequest.method] its
+/// [AgEndpoint] doesn't declare support for.
+class AgUnsupportedMethodException implements Exception {
+  const AgUnsupportedMethodException({
+    required this.endpoint,
+    required this.method,
+  });
+
+  final AgEndpoint endpoint;
+  final AgHttpMethod method;
+
+  @override
+  String toString() => 'Endpoint $endpoint does not support ${method.name}.';
 }

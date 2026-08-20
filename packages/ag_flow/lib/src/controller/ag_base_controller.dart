@@ -13,15 +13,22 @@ import 'package:meta/meta.dart';
 abstract class AgBaseController<T> extends GetxController {
   AgBaseController({this.autoLoadOnInit = true});
 
+  /// The `GetBuilder(id:)` every page-state rebuild is scoped to — kept
+  /// separate from [AgPaginationMixin.paginationUpdateId] so a pagination-
+  /// only change (e.g. a load-more page arriving) never also rebuilds
+  /// `AgPage`'s loading/error/empty/success switch, and vice versa.
+  /// `GetBuilder` was chosen over `Obx`/`Rx` for this framework's page-
+  /// and list-level granularity: no per-value `Stream` wrapper, just a
+  /// direct listener callback fired from [update].
+  static const pageStateUpdateId = 'ag_page_state';
+
   /// Whether [loadInitial] runs automatically from [onInit].
   final bool autoLoadOnInit;
 
-  final Rx<AgPageState<T>> _pageState = Rx<AgPageState<T>>(
-    const AgPageState.initial(),
-  );
+  AgPageState<T> _pageState = const AgPageState.initial();
 
   /// The current page state.
-  AgPageState<T> get state => _pageState.value;
+  AgPageState<T> get state => _pageState;
 
   @override
   void onInit() {
@@ -91,6 +98,8 @@ abstract class AgBaseController<T> extends GetxController {
   // Kept as a method rather than a `state` setter so a call site reads as
   // an explicit, deliberate override rather than a plain property
   // assignment.
-  // ignore: use_setters_to_change_properties
-  void emit(AgPageState<T> next) => _pageState.value = next;
+  void emit(AgPageState<T> next) {
+    _pageState = next;
+    update([pageStateUpdateId]);
+  }
 }

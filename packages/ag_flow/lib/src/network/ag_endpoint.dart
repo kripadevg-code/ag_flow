@@ -22,7 +22,8 @@ class AgEndpoint {
   final Set<AgHttpMethod> methods;
 
   /// Overrides `ApiProvider`'s configured base URL for this endpoint only
-  /// (e.g. a third-party or legacy host).
+  /// (e.g. a third-party or legacy host). Must not have a trailing slash —
+  /// it's concatenated directly with [path], which always starts with one.
   final String? baseUrlOverride;
 
   /// Whether this endpoint supports [method].

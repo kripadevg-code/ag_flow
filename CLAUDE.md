@@ -78,17 +78,49 @@ Page → Controller → Repo → Service → ApiProvider
   argument type for detail controllers, so nothing is lost).
 - **`AgBaseController<T>`** — page state via sealed `AgPageState<T>` (`initial/loading/success/empty/
   error`), not ad-hoc booleans. `AgPageSuccess`/`AgPageError` use deep equality (`package:collection`) so
-  `T` being a `List`/`Map` of value objects compares by content, not identity.
+  `T` being a `List`/`Map` of value objects compares by content, not identity. Rebuilds go through
+  `GetBuilder`, not `Obx`/`Rx` — no per-value `Stream` wrapper, just a direct listener callback fired from
+  `GetxController.update([id])`, which is lighter-weight for this framework's page-/list-level rebuild
+  granularity than Obx's fine-grained dependency tracking. `emit()` is the single write path, calling
+  `update([AgBaseController.pageStateUpdateId])`; `AgPage`'s own `GetBuilder` filters on that exact id so a
+  pagination-only change never also re-triggers the page-level loading/error/empty/success switch.
 - **`AgListController<ItemType, PageKeyType>`** (`AgPaginationMixin`) — pagination/load-more state,
-  tracked separately from page-level state (a load-more failure never corrupts `AgPageSuccess`). Implement
-  `fetchPage(key)` as a pure function; the mixin is the sole writer of pagination state.
+  tracked separately from page-level state (a load-more failure never corrupts `AgPageSuccess`) via its own
+  `AgPaginationMixin.paginationUpdateId` `GetBuilder` id, for the same reason. Implement `fetchPage(key)` as
+  a pure function; the mixin is the sole writer of pagination state.
+- **`AgListBuilder`** — internally `CustomScrollView` + `SliverList`, not `ListView`, behind the same
+  external API (constructor/parameters unchanged) — chosen so it composes inside a larger sliver-based
+  scroll view later without a breaking change. Separator interleaving (`separatorBuilder`) mirrors
+  `ListView.separated`'s own technique exactly: double the child count, even indices are items, odd
+  indices are separators (verified against the Flutter SDK's own `ListView.separated` source, not
+  reinvented). Both this and `AgPage` pass `GetBuilder(global: false, autoRemove: false, init: controller)`
+  — `global: false` + `init:` binds to the exact controller *instance* passed in (never a DI lookup by
+  type, which matters for testability: every widget test constructs a controller directly with no
+  `Get.put` at all), and `autoRemove: false` is load-bearing: `GetBuilder`'s default (`autoRemove: true`)
+  deletes the controller from Get's DI container on this *widget's* dispose, which must never happen since
+  a Binding — not `AgPage`/`AgListBuilder` — owns that controller's lifecycle, and both widgets may be
+  reading the same instance within one page.
 - **`AgDetailController<T, A>`** — adds `late final A arguments`, resolved via `AgArguments.resolve<A>()`
   (throws a named `AgArgumentError`, never a bare cast failure).
 - **`AgBaseRepo`** / **`AgBaseService`** (`AgCrudService<T, ID>` opt-in mixin) — no `Impl` classes.
+  `AgCrudService` needs *two* endpoints, not one: `collectionEndpoint` (no path parameter — `getAll`/`add`)
+  and `resourceEndpoint` (one `{id}` parameter — `getById`/`update`/`delete`). A single shared endpoint
+  can't serve both correctly: `AgPathResolver.resolve` only checks that every `{token}` *in the template*
+  has a supplied value, never that a supplied value corresponds to a token that exists in it — so an
+  `{id}`-shaped endpoint throws on every `getAll`/`add` call (missing `{id}`), while a collection-shaped
+  endpoint silently drops the id on every `getById`/`update`/`delete` call instead of ever reaching the
+  right URL.
 - **`ApiProvider`** — wraps `dio` directly; dio types never leak past it (`AgRequest` in,
-  `AgResponse`/`AgApiException` out). `AgEndpoint` is immutable/`const`-friendly (which is *why*
-  `AgHttpMethod` has no custom `==` — Dart forbids custom-equality types as `const` set elements, and
-  `AgEndpoint.methods` needs to be a `const` default).
+  `AgResponse`/`AgApiException` out, `AgCancelToken` — not dio's own `CancelToken` — for cancellation).
+  `AgEndpoint` is immutable/`const`-friendly (which is *why* `AgHttpMethod` has no custom `==` — Dart
+  forbids custom-equality types as `const` set elements, and `AgEndpoint.methods` needs to be a `const`
+  default). `AgEndpoint.baseUrlOverride` is wired by concatenating it directly onto the resolved path and
+  passing that as dio's `path` argument — dio treats a path starting with `http(s)` as absolute and
+  ignores its own configured `baseUrl` entirely, so no per-call dio reconfiguration is needed. The logging
+  interceptor includes the query string in every log line (`ag_endpoint_rules.md` §23) and masks
+  configured body keys at every nesting depth, not just the top level (§24). `AgRequest`'s contract checks
+  (unsupported method, body+form-data together) are real exceptions, not `assert` — those must still be
+  caught in release builds.
 
 See [packages/ag_flow/example](packages/ag_flow/example) for a complete hand-wired app (no CLI involved)
 — it's the CLI's acceptance target, so its structure (`lib/<root>/{bindings,components,controllers,

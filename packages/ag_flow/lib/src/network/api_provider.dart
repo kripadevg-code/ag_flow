@@ -1,4 +1,5 @@
 import 'package:ag_flow/src/network/ag_api_exception.dart';
+import 'package:ag_flow/src/network/ag_cancel_token.dart';
 import 'package:ag_flow/src/network/ag_log_options.dart';
 import 'package:ag_flow/src/network/ag_logging_interceptor.dart';
 import 'package:ag_flow/src/network/ag_request.dart';
@@ -12,7 +13,9 @@ import 'package:meta/meta.dart';
 /// Wraps `dio` directly — every capability the endpoint rules require
 /// (interceptors, base URL, auth, timeout, retry, multipart, tracing) is a
 /// first-class dio feature. dio types never leak past this class: Services
-/// only ever see [AgRequest] in, [AgResponse]/[AgApiException] out.
+/// only ever see [AgRequest] in, [AgResponse]/[AgApiException] out, and
+/// callers cancel in-flight requests via [AgCancelToken], never dio's own
+/// `CancelToken`.
 class ApiProvider {
   ApiProvider({
     required String baseUrl,
@@ -58,20 +61,27 @@ class ApiProvider {
   Future<AgResponse<D>> send<D>(
     AgRequest request, {
     D Function(Object? json)? decode,
-    CancelToken? cancelToken,
+    AgCancelToken? cancelToken,
     void Function(int, int)? onSendProgress,
     void Function(int, int)? onReceiveProgress,
   }) async {
     final started = DateTime.now();
     try {
+      final baseUrlOverride = request.endpoint.baseUrlOverride;
+      // dio treats a path starting with "http(s)" as absolute and ignores
+      // its own configured baseUrl entirely — exactly what an endpoint-
+      // level override needs, with no separate dio configuration per call.
+      final path = baseUrlOverride == null
+          ? request.resolvePath()
+          : '$baseUrlOverride${request.resolvePath()}';
       final response = await _dio.request<Object?>(
-        request.resolvePath(),
+        path,
         data: request.isMultipart
             ? await _buildFormData(request)
             : request.body,
         queryParameters: request.queryParams,
         options: Options(method: request.method.name, headers: request.headers),
-        cancelToken: cancelToken,
+        cancelToken: cancelToken?.dioToken,
         onSendProgress: onSendProgress,
         onReceiveProgress: onReceiveProgress,
       );

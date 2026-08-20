@@ -58,21 +58,30 @@ void main() {
     );
 
     test(
-      'an unsupported method for the endpoint fails fast via assert',
+      'an unsupported method for the endpoint fails fast with a real '
+      'exception, not an assert stripped from release builds',
       () {
         const endpoint = AgEndpoint('/products');
         expect(
           () => AgRequest(endpoint: endpoint, method: AgHttpMethod.delete),
-          throwsA(isA<AssertionError>()),
+          throwsA(isA<AgUnsupportedMethodException>()),
         );
       },
-      skip: !_assertsEnabled(),
+    );
+
+    test(
+      'a body and form-data together fail fast with a real exception',
+      () {
+        const endpoint = AgEndpoint('/products', methods: {AgHttpMethod.post});
+        expect(
+          () => AgRequest(
+            endpoint: endpoint,
+            body: {'a': 1},
+            formFields: {'b': '2'},
+          ),
+          throwsArgumentError,
+        );
+      },
     );
   });
-}
-
-bool _assertsEnabled() {
-  var enabled = false;
-  assert(enabled = true, 'used only to detect whether asserts are enabled');
-  return enabled;
 }
