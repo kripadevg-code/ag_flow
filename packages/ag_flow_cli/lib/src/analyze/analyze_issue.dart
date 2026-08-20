@@ -2,17 +2,19 @@ import 'package:meta/meta.dart';
 
 /// The kind of structural problem an [AnalyzeIssue] reports.
 ///
-/// This is the v1 (mechanical/structural) scope only — see
-/// `ag_flow_cli/README.md` for what's deliberately deferred to v2+
-/// (dependency-direction violations, detail-route-without-argument checks)
-/// and why: both need a resolved element model via `analyzer`, not just
-/// syntax, and are prone to false positives if rushed.
+/// The first five are v1 (mechanical/structural, syntax-only) checks. The
+/// last two — [dependencyDirection] and [unusedDetailArgument] — need a
+/// *resolved* element model (`AnalysisContextCollection`, not just
+/// `parseString`) and only run when the target project's dependencies
+/// have already been resolved; see `ag_flow_cli/README.md`.
 enum AnalyzeCategory {
   missingLayerFile,
   missingRouteWiring,
   duplicateRoute,
   nestedFolder,
   hardcodedRoute,
+  dependencyDirection,
+  unusedDetailArgument,
 }
 
 /// A single structural problem `ag analyze` found in a project.

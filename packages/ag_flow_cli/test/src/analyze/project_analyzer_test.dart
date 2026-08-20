@@ -47,7 +47,7 @@ Future<Directory> _buildCleanProject({bool includeDetail = false}) async {
   return dir;
 }
 
-List<AnalyzeIssue> _analyze(Directory dir) =>
+Future<List<AnalyzeIssue>> _analyze(Directory dir) =>
     ProjectAnalyzer(project: Project(dir)).analyze();
 
 void main() {
@@ -58,7 +58,7 @@ void main() {
     'a freshly generated root-only project has zero issues',
     () async {
       appDir = await _buildCleanProject();
-      expect(_analyze(appDir), isEmpty);
+      expect(await _analyze(appDir), isEmpty);
     },
   );
 
@@ -66,7 +66,7 @@ void main() {
     'a freshly generated project with a detail module has zero issues',
     () async {
       appDir = await _buildCleanProject(includeDetail: true);
-      expect(_analyze(appDir), isEmpty);
+      expect(await _analyze(appDir), isEmpty);
     },
   );
 
@@ -78,7 +78,7 @@ void main() {
         p.join(appDir.path, 'lib', 'product', 'repos', 'products_repo.dart'),
       ).deleteSync();
 
-      final issues = _analyze(appDir);
+      final issues = await _analyze(appDir);
       expect(issues, hasLength(1));
       expect(issues.single.category, AnalyzeCategory.missingLayerFile);
       expect(issues.single.message, contains('products_repo.dart'));
@@ -99,7 +99,7 @@ void main() {
         ),
       );
 
-      final issues = _analyze(appDir);
+      final issues = await _analyze(appDir);
       expect(issues, hasLength(1));
       expect(issues.single.category, AnalyzeCategory.missingRouteWiring);
       expect(issues.single.message, contains('GetPage'));
@@ -120,7 +120,7 @@ void main() {
         ),
       );
 
-      final issues = _analyze(appDir);
+      final issues = await _analyze(appDir);
       expect(issues, hasLength(1));
       expect(issues.single.category, AnalyzeCategory.missingRouteWiring);
       expect(issues.single.message, contains('goToProductsPage'));
@@ -144,7 +144,7 @@ void main() {
         ),
       );
 
-      final issues = _analyze(appDir);
+      final issues = await _analyze(appDir);
       expect(issues, hasLength(1));
       expect(issues.single.category, AnalyzeCategory.missingRouteWiring);
       expect(issues.single.message, contains('ProductDetailsPageArgument'));
@@ -193,7 +193,7 @@ void main() {
         ),
       );
 
-      final issues = _analyze(appDir);
+      final issues = await _analyze(appDir);
       expect(issues, hasLength(1));
       expect(issues.single.category, AnalyzeCategory.duplicateRoute);
       expect(issues.single.message, contains('product'));
@@ -216,7 +216,7 @@ void main() {
         ),
       ).createSync(recursive: true);
 
-      final issues = _analyze(appDir);
+      final issues = await _analyze(appDir);
       expect(issues, hasLength(1));
       expect(issues.single.category, AnalyzeCategory.nestedFolder);
       expect(issues.single.message, contains('controllers'));
@@ -239,7 +239,7 @@ void main() {
         ),
       ).createSync(recursive: true);
 
-      final issues = _analyze(appDir);
+      final issues = await _analyze(appDir);
       expect(issues, hasLength(1));
       expect(issues.single.category, AnalyzeCategory.nestedFolder);
       expect(issues.single.message, contains('components/product'));
@@ -260,7 +260,7 @@ class RogueNavigator {
 }
 ''');
 
-      final issues = _analyze(appDir);
+      final issues = await _analyze(appDir);
       expect(issues, hasLength(1));
       expect(issues.single.category, AnalyzeCategory.hardcodedRoute);
       expect(issues.single.message, contains('/product'));
@@ -272,18 +272,19 @@ class RogueNavigator {
     'raw string literal argument counts',
     () async {
       appDir = await _buildCleanProject();
+      final issues = await _analyze(appDir);
       expect(
-        _analyze(
-          appDir,
-        ).where((i) => i.category == AnalyzeCategory.hardcodedRoute),
+        issues.where((i) => i.category == AnalyzeCategory.hardcodedRoute),
         isEmpty,
       );
     },
   );
 
   test(
-    'does NOT flag a Page calling a Service directly — dependency '
-    'direction violations are deliberately out of v1 scope',
+    'does NOT flag a Page calling a Service directly when dependencies '
+    "haven't been resolved — the resolved-model checks need "
+    '.dart_tool/package_config.json and are skipped without it, on a '
+    'plain bare-pubspec fixture like every other test in this file',
     () async {
       appDir = await _buildCleanProject();
       final pageFile = File(
@@ -298,19 +299,26 @@ class RogueNavigator {
         '}\n',
       );
 
-      expect(_analyze(appDir), isEmpty);
+      expect(
+        ProjectAnalyzer(project: Project(appDir)).dependenciesResolved,
+        isFalse,
+      );
+      expect(await _analyze(appDir), isEmpty);
     },
   );
 
-  test('throws ProjectNotInitializedException on an un-init-ed project', () {
-    appDir = Directory.systemTemp.createTempSync('ag_analyze_test_');
-    File(
-      p.join(appDir.path, 'pubspec.yaml'),
-    ).writeAsStringSync('name: sample_app\n');
+  test(
+    'throws ProjectNotInitializedException on an un-init-ed project',
+    () async {
+      appDir = Directory.systemTemp.createTempSync('ag_analyze_test_');
+      File(
+        p.join(appDir.path, 'pubspec.yaml'),
+      ).writeAsStringSync('name: sample_app\n');
 
-    expect(
-      () => _analyze(appDir),
-      throwsA(isA<ProjectNotInitializedException>()),
-    );
-  });
+      await expectLater(
+        () => _analyze(appDir),
+        throwsA(isA<ProjectNotInitializedException>()),
+      );
+    },
+  );
 }

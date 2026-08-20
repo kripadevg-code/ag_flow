@@ -76,7 +76,7 @@ run it from the project root once `ag init` has been run:
 ag analyze
 ```
 
-v1 covers mechanical/structural checks only, all derived from re-parsing
+Mechanical/structural checks — always run, derived from re-parsing
 `app_routes.dart`'s route table and re-deriving each route's expected
 `ModuleSpec` from its path:
 
@@ -91,18 +91,42 @@ v1 covers mechanical/structural checks only, all derived from re-parsing
 - a hard-coded route string (`Get.toNamed('/literal')`) anywhere outside
   `route_management.dart`
 
+Resolved-model checks — need a *resolved* element model (`analyzer`'s
+`AnalysisContextCollection`, not just a syntactic parse) to check inherited
+types, so they only run once the project's dependencies have been
+resolved (`dart pub get` / `flutter pub get`):
+
+- **Dependency-direction violations**: a Page directly referencing a Repo
+  or Service (or `AgBaseRepo`/`AgBaseService`/`ApiProvider`/`Dio`), a
+  Controller directly referencing a Service/`ApiProvider`/`Dio`, or a Repo
+  directly referencing `ApiProvider`/`Dio` — checked against the
+  referenced type's full supertype chain, so a concrete `ProductsRepo`
+  is caught the same way a raw `AgBaseRepo` reference would be
+  (requirments/ag_framework.md §11/§70).
+- **Unused detail argument**: a detail module's controller (one extending
+  `AgDetailController`) that never reads its inherited `arguments`
+  anywhere in the class — the navigation argument that route exists to
+  carry is going unread.
+
+If dependencies haven't been resolved yet, these two are silently skipped
+(everything else still runs) and `ag analyze` prints a note telling you to
+run `pub get` first — it's a notice, not a failure.
+
 Exits `0` with "No issues found." if clean, or non-zero with every issue
 printed (one per line) otherwise.
 
-**Deliberately out of v1 scope** (needs a resolved element model via
-`analyzer`, not just syntax — deferred rather than rushed into v1 with
-false positives): dependency-direction violations (e.g. a Page calling a
-Service directly) and detail-route-without-argument-usage checks.
+**Known limitations**:
 
-**Known v1 limitation**: a module generated with a custom `--plural=`
-override isn't recorded anywhere `ag analyze` can read it back from, so
-re-deriving that module's expected file names with the default pluralizer
-can produce a false "missing layer file" positive.
+- A module generated with a custom `--plural=` override isn't recorded
+  anywhere `ag analyze` can read it back from, so re-deriving that
+  module's expected file names with the default pluralizer can produce a
+  false "missing layer file" positive.
+- The resolved-model checks work correctly via `dart run` and a real
+  `dart pub global activate`-installed `ag` (this package's only
+  documented install method — see above) but not via a standalone
+  `dart compile exe` build: the analyzer can't auto-detect the Dart SDK
+  from a self-contained native binary the way it can from a process
+  running through the real `dart` executable.
 
 ## What this package does not do yet
 

@@ -1,5 +1,39 @@
 # Changelog
 
+## Unreleased
+
+- `ag analyze` v2 checks — dependency-direction violations and unused
+  detail arguments, both previously deferred pending a resolved element
+  model. Built on `package:analyzer`'s `AnalysisContextCollection`
+  (resolved units, not just `parseString`) instead of the syntax-only
+  approach every other check uses:
+  - **Dependency-direction**: flags a Page directly referencing a Repo or
+    Service, a Controller directly referencing a Service/`ApiProvider`/
+    `Dio`, or a Repo directly referencing `ApiProvider`/`Dio` — matched
+    against the referenced type's full supertype chain (via
+    `InterfaceType.allSupertypes`), so a concrete `ProductsRepo` is caught
+    the same way a raw `AgBaseRepo` reference would be
+    (requirments/ag_framework.md §11/§70).
+  - **Unused detail argument**: flags a detail controller (one extending
+    `AgDetailController`) whose inherited `arguments` accessor is never
+    referenced anywhere in the class — resolved-model-based specifically
+    so a reference is confirmed to resolve to the real inherited getter,
+    not just a same-named local that would false-positive a syntax-only
+    search.
+  - Both checks are skipped (not a failure) if the project's dependencies
+    haven't been resolved yet (no `.dart_tool/package_config.json`) —
+    `ag analyze` prints a notice telling the user to run `pub get` first,
+    while every other (syntax-only) check still runs normally.
+  - Verified end-to-end via `dart run` and a real `dart pub global
+    activate`-installed `ag` against a genuine `flutter pub add`-wired
+    project. A standalone `dart compile exe` build does *not* work for
+    these two checks — the analyzer can't auto-detect the Dart SDK from a
+    self-contained native binary — documented as a known limitation since
+    that isn't this package's supported distribution method anyway.
+  - `ProjectAnalyzer.analyze()` is now `async` (`Future<List<AnalyzeIssue>>`)
+    to support this; every existing syntax-only check is unaffected and
+    every existing test still passes unchanged.
+
 ## 0.1.0
 
 - `ag generate module <path>` (aliased `ag g m <path>`): generates the

@@ -20,7 +20,8 @@ class AnalyzeCommand extends Command<int> {
   final description =
       "Check this project against AG's structural rules (missing module "
       'files, missing route wiring, duplicate routes, nested architectural '
-      'folders, hard-coded route strings).';
+      'folders, hard-coded route strings, dependency-direction violations, '
+      'unused detail arguments).';
 
   @override
   Future<int> run() async {
@@ -32,9 +33,10 @@ class AnalyzeCommand extends Command<int> {
       return ExitCode.usage.code;
     }
 
+    final analyzer = ProjectAnalyzer(project: Project(projectRoot));
     final List<AnalyzeIssue> issues;
     try {
-      issues = ProjectAnalyzer(project: Project(projectRoot)).analyze();
+      issues = await analyzer.analyze();
     } on ProjectNotInitializedException catch (e) {
       logger.err('$e');
       return ExitCode.config.code;
@@ -42,13 +44,21 @@ class AnalyzeCommand extends Command<int> {
 
     if (issues.isEmpty) {
       logger.success('No issues found.');
-      return ExitCode.success.code;
+    } else {
+      for (final issue in issues) {
+        logger.err('$issue');
+      }
+      logger.info('\n${issues.length} issue(s) found.');
     }
 
-    for (final issue in issues) {
-      logger.err('$issue');
+    if (!analyzer.dependenciesResolved) {
+      logger.info(
+        '\nNote: dependency-direction and unused-detail-argument checks '
+        'were skipped — run "dart pub get" (or "flutter pub get") first '
+        'to enable them.',
+      );
     }
-    logger.info('\n${issues.length} issue(s) found.');
-    return ExitCode.software.code;
+
+    return issues.isEmpty ? ExitCode.success.code : ExitCode.software.code;
   }
 }

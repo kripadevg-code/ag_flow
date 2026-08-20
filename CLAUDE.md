@@ -11,7 +11,8 @@ framework + CLI, built on GetX. Two packages:
 - [packages/ag_flow_cli](packages/ag_flow_cli) — the `ag` generator CLI. `ag init` bootstraps a bare
   project's `lib/core/` skeleton, `ag g m <module>` works end-to-end from there (fresh-file generation
   *and* idempotent updates to the shared aggregator files), and `ag analyze` validates a project against
-  AG's structural rules (v1, mechanical/structural scope — see below).
+  AG's structural rules — both syntax-only checks and, once the project's dependencies are resolved,
+  resolved-element-model checks (dependency-direction violations, unused detail arguments — see below).
 
 The binding specification is [requirments/](requirments/) (`ag_framework.md`, `routes.md`,
 `ag_endpoint_rules.md`) — precise, numbered rulesets. When extending either package, treat these as
@@ -159,35 +160,45 @@ pages,repos,services}/`, no extra wrapper folder) is authoritative for what the 
   create`d app (not just the bare-pubspec test fixtures): `ag init` → `ag g m product` → `ag g m
   product/details` → `flutter pub get` → `flutter analyze --fatal-infos` reports zero issues, and
   re-running all three `ag` commands a second time is a confirmed no-op.
-- **`ag analyze`** (`lib/src/analyze/`): a v1, mechanical/structural-only validator — no resolved element
-  model, syntax-only `parseString` throughout, same as the generators. Reads every route out of `_Routes`
-  in `app_routes.dart` (`route_table.dart`), then re-derives each route's expected `ModuleSpec` **from its
-  route path**, not from its constant name — the route path is always the raw, never-pluralized segment
-  join (`ModuleSpec.routePath`), so it round-trips through `ModulePath.parse` losslessly regardless of
-  which pluralizer (or `--plural=` override) produced the constant's *name*. This is what lets the checks
-  reuse the exact same naming machinery the generators use instead of inventing a second, possibly-
-  diverging derivation. Five rule categories (`AnalyzeCategory`): missing layer file, missing route wiring
+- **`ag analyze`** (`lib/src/analyze/`): a structural validator combining two tiers. The **syntax-only
+  tier** (no resolved element model, `parseString` throughout, same as the generators) reads every route
+  out of `_Routes` in `app_routes.dart` (`route_table.dart`), then re-derives each route's expected
+  `ModuleSpec` **from its route path**, not from its constant name — the route path is always the raw,
+  never-pluralized segment join (`ModuleSpec.routePath`), so it round-trips through `ModulePath.parse`
+  losslessly regardless of which pluralizer (or `--plural=` override) produced the constant's *name*. This
+  is what lets the checks reuse the exact same naming machinery the generators use instead of inventing a
+  second, possibly-diverging derivation. Five rule categories: missing layer file, missing route wiring
   (`GetPage`/nav method/argument class — matched via the identical AST predicates the updaters already use,
   see `app_pages_updater.dart`'s `alreadyRegistered` check), duplicate route (two different constants
   resolving to the same path — the mirror image of the generator's own same-name-different-path conflict
   check), nested architectural/component folders, and hard-coded route strings (`Get.toNamed('/literal')`
   outside `route_management.dart` — matched with a `RecursiveAstVisitor`, verified empirically to walk
-  arbitrarily nested call sites correctly before being relied on). Exit codes follow this repo's existing
-  convention (`ExitCode.software` for "the target project has a structural problem," reused from
-  `RouteConflictException` in `module_command.dart`): 0 with no issues, 70 with any.
-  - **Known v1 limitation**: a module generated with a custom `--plural=` override has no record of that
+  arbitrarily nested call sites correctly before being relied on).
+  - **Known limitation**: a module generated with a custom `--plural=` override has no record of that
     override anywhere `ag analyze` can read back, so its re-derivation (which always uses the *default*
     pluralizer) can produce a false "missing layer file" positive. Documented, not silently swallowed.
+  - The **resolved-model tier** (`dependency_direction_check.dart`, `detail_argument_usage_check.dart`)
+    uses `package:analyzer`'s `AnalysisContextCollection` — a real resolved element model, verified via a
+    small spike script before being relied on (`InterfaceType.element.allSupertypes`,
+    `SimpleIdentifier.element.enclosingElement`, both against the pinned analyzer version's actual classic
+    — not `element2`/`element3` — element API). Dependency-direction violations are matched against a
+    referenced type's *full supertype chain*, not just its own name, so a concrete `ProductsRepo extends
+    AgBaseRepo` is caught the same way a raw `AgBaseRepo` reference would be. This tier only runs when
+    `ProjectAnalyzer.dependenciesResolved` is true (`.dart_tool/package_config.json` exists) — skipped, not
+    failed, otherwise, with `AnalyzeCommand` printing a notice; every syntax-only check still runs
+    regardless. Verified via `dart run` and a real `dart pub global activate`-installed `ag`; a standalone
+    `dart compile exe` build does *not* work for this tier — `AnalysisContextCollection`'s default SDK
+    detection derives the SDK root from `Platform.resolvedExecutable`, which for a compiled native binary
+    is the binary itself, not a path inside a real SDK tree — not fixed, since `dart compile exe` isn't a
+    documented distribution method for this CLI. `ProjectAnalyzer.analyze()` is `async` for this reason.
+  - Exit codes follow this repo's existing convention (`ExitCode.software` for "the target project has a
+    structural problem," reused from `RouteConflictException` in `module_command.dart`): 0 with no issues,
+    70 with any.
 
 ## Known deferred work (not bugs — see the build plan for phase boundaries)
 
 - `endpoints.dart` is deliberately never auto-updated by `ag g m` (endpoints are grouped by backend
   domain, not frontend module hierarchy — ag_endpoint_rules.md §5).
-- `ag analyze` v2+ scope — dependency-direction violations (e.g. a Page calling a Service directly) and
-  detail-route-without-argument-usage checks — needs a resolved element model via `analyzer`, not just
-  syntax, and is deliberately deferred rather than rushed into v1 with false positives. A regression test
-  (`project_analyzer_test.dart`) proves this boundary explicitly: a Page hand-edited to call a Service
-  directly is confirmed to produce zero issues today.
 - The example app's `InitialBinding` points at a real public API (`jsonplaceholder.typicode.com`) — fine
   for manual `flutter run` demos, deliberately never exercised by an automated widget test (an early
   attempt at that hit a real pending-timer failure from live network I/O inside `flutter_test`'s strict
