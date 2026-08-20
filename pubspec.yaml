@@ -58,3 +58,10 @@ melos:
     test:
       description: Run every package's tests.
       run: melos run test:flow && melos run test:cli
+
+    check-bundles-fresh:
+      description: >-
+        CI guard: fails if a Mason brick under ag_flow_cli/bricks/**/
+        __brick__/ was edited without re-bundling into
+        lib/src/templates/generated/*.dart (see CONTRIBUTING.md).
+      run: dart run packages/ag_flow_cli/tool/check_bundles_fresh.dart

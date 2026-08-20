@@ -6,7 +6,7 @@ on:
   pull_request:
 
 jobs:
-  init-and-analyze:
+  init-generate-and-analyze:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -35,6 +35,58 @@ jobs:
         working-directory: /tmp/generator_smoke_app
         run: ag init
 
-      - name: flutter analyze
+      - name: ag g m product
+        working-directory: /tmp/generator_smoke_app
+        run: ag g m product
+
+      - name: ag g m product/details
+        working-directory: /tmp/generator_smoke_app
+        run: ag g m product/details
+
+      - name: ag analyze (freshly generated — expect zero issues)
+        working-directory: /tmp/generator_smoke_app
+        run: ag analyze
+
+      - name: flutter analyze (freshly generated)
         working-directory: /tmp/generator_smoke_app
         run: flutter analyze --fatal-infos
+
+      - name: Snapshot the aggregator files before re-running
+        working-directory: /tmp/generator_smoke_app
+        run: |
+          mkdir -p /tmp/aggregator_snapshot
+          cp lib/core/routes/app_routes.dart /tmp/aggregator_snapshot/
+          cp lib/core/routes/app_pages.dart /tmp/aggregator_snapshot/
+          cp lib/core/routes/route_management.dart /tmp/aggregator_snapshot/
+          cp lib/core/arguments/arguments.dart /tmp/aggregator_snapshot/
+
+      - name: Re-run ag init + ag g m for idempotency
+        working-directory: /tmp/generator_smoke_app
+        run: |
+          ag init
+          ag g m product
+          ag g m product/details
+
+      - name: Byte-diff the aggregator files — re-running must be a pure no-op
+        working-directory: /tmp/generator_smoke_app
+        run: |
+          diff /tmp/aggregator_snapshot/app_routes.dart lib/core/routes/app_routes.dart
+          diff /tmp/aggregator_snapshot/app_pages.dart lib/core/routes/app_pages.dart
+          diff /tmp/aggregator_snapshot/route_management.dart lib/core/routes/route_management.dart
+          diff /tmp/aggregator_snapshot/arguments.dart lib/core/arguments/arguments.dart
+
+      - name: ag analyze (after re-running — expect zero issues)
+        working-directory: /tmp/generator_smoke_app
+        run: ag analyze
+
+      - name: flutter analyze (after re-running)
+        working-directory: /tmp/generator_smoke_app
+        run: flutter analyze --fatal-infos
+
+      - name: Upload the smoke app on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: generator-smoke-app
+          path: /tmp/generator_smoke_app
+          retention-days: 5

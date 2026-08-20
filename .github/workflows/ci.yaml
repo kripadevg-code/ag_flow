@@ -28,5 +28,8 @@ jobs:
       - name: Analyze
         run: melos run analyze
 
+      - name: Check Mason bundles are fresh
+        run: melos run check-bundles-fresh
+
       - name: Test
         run: melos run test

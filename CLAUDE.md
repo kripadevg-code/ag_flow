@@ -108,7 +108,11 @@ pages,repos,services}/`, no extra wrapper folder) is authoritative for what the 
   `mason make`-equivalent call — not one brick per layer, since every layer's content differs between
   collection and detail anyway (conditionals-per-file would've been more, not less, complexity than two
   full brick sets). Generated code uses `package:<app_package_name>/...` imports throughout — never
-  relative — resolved from the *target* project's own `pubspec.yaml`.
+  relative — resolved from the *target* project's own `pubspec.yaml`. `tool/check_bundles_fresh.dart`
+  (wired into CI via `melos run check-bundles-fresh`) decodes every committed bundle's base64 file data
+  and byte-compares it against the corresponding file under `bricks/<name>/__brick__/` — an edited brick
+  source has no other build-time signal that it's stale, since the bundle is plain committed Dart, not
+  derived at build time.
 - **`ModuleGenerator.plan()`** never writes to disk directly — it renders via an in-memory
   `GeneratorTarget`, formats with `DartFormatter`, checks existence, and returns `FileOp`s (`create` /
   `update` / `skipExisting`) for an `Executor` to apply (or, under `--dry-run`, just report). This is what
@@ -184,12 +188,6 @@ pages,repos,services}/`, no extra wrapper folder) is authoritative for what the 
   syntax, and is deliberately deferred rather than rushed into v1 with false positives. A regression test
   (`project_analyzer_test.dart`) proves this boundary explicitly: a Page hand-edited to call a Service
   directly is confirmed to produce zero issues today.
-- `tool/check_bundles_fresh.dart` (a CI guard against editing a brick without re-bundling) is deferred to
-  the polish phase.
-- `.github/workflows/generator-integration.yaml` is intentionally the *reduced* init-only job (scaffold →
-  `ag init` → `flutter analyze`) per the build plan's phase boundary — it does not yet run `ag g m` or
-  byte-diff the aggregator files for idempotency. That fuller job (matching what's been manually verified
-  above) is deferred to the polish phase, alongside `tool/check_bundles_fresh.dart`.
 - The example app's `InitialBinding` points at a real public API (`jsonplaceholder.typicode.com`) — fine
   for manual `flutter run` demos, deliberately never exercised by an automated widget test (an early
   attempt at that hit a real pending-timer failure from live network I/O inside `flutter_test`'s strict
