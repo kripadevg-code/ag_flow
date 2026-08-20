@@ -21,4 +21,31 @@ class ProductsService extends AgBaseService {
         .map(Product.fromJson)
         .toList();
   }
+
+  /// `AgCrudService`'s `add`/`getAll`/`getById`/`update`/`delete` shape
+  /// doesn't fit every module — this one needs a *paginated* getPage, so
+  /// it's entirely hand-written instead of mixing in `AgCrudService`. AG
+  /// never requires a fixed CRUD method set; define exactly what a
+  /// feature needs, named however reads best for it.
+  Future<Product> create(Product product) async {
+    final response = await send<Map<String, dynamic>>(
+      AgRequest(
+        endpoint: ProductEndpoints.products,
+        method: AgHttpMethod.post,
+        body: product.toJson(),
+      ),
+      decode: (json) => json! as Map<String, dynamic>,
+    );
+    return Product.fromJson(response.data);
+  }
+
+  Future<void> delete(String id) async {
+    await send<dynamic>(
+      AgRequest(
+        endpoint: ProductEndpoints.productById,
+        method: AgHttpMethod.delete,
+        pathParams: {'id': id},
+      ),
+    );
+  }
 }

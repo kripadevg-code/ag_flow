@@ -15,4 +15,17 @@ class ProductDetailsService extends AgBaseService {
     );
     return Product.fromJson(response.data);
   }
+
+  Future<Product> update(String id, Product product) async {
+    final response = await send<Map<String, dynamic>>(
+      AgRequest(
+        endpoint: ProductEndpoints.productById,
+        method: AgHttpMethod.put,
+        pathParams: {'id': id},
+        body: product.toJson(),
+      ),
+      decode: (json) => json! as Map<String, dynamic>,
+    );
+    return Product.fromJson(response.data);
+  }
 }

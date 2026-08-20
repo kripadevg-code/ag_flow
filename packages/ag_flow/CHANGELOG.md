@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+- **Added `AgPaginationMixin.updateItems`** — an `emit()`-style escape
+  hatch for reflecting a mutation (add/update/delete against the Repo) in
+  the currently-displayed list directly, for when a full `refresh()`
+  wouldn't show it (e.g. a demo/mock backend that doesn't actually persist
+  writes) or to avoid the round-trip for an optimistic update. Added while
+  wiring a full create/read/update/delete cycle into `example/` — the
+  example previously only demonstrated read (list + detail); it now
+  demonstrates all four, entirely hand-written (no `AgCrudService`,
+  since the collection needs a paginated `getPage` that mixin doesn't
+  provide) — reinforcing that AG never requires a fixed CRUD method set.
+  Verified end-to-end against the real jsonplaceholder API, not mocked.
 - **Reactivity: `GetBuilder` instead of `Obx`/`Rx`**, throughout — no
   per-value `Stream` wrapper, just a direct listener callback fired from
   `GetxController.update([id])`; lighter-weight for this framework's page-

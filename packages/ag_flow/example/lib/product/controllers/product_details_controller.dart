@@ -11,4 +11,15 @@ class ProductDetailsController
 
   @override
   Future<Product> fetch() => _repo.getById(arguments.productId);
+
+  /// Updates the product and reflects the result immediately — an
+  /// optimistic-style update via [emit], the detail-page equivalent of
+  /// [ProductsController.addProduct]'s [AgPaginationMixin.updateItems].
+  Future<void> updateProduct(String name, String description) async {
+    final updated = await _repo.update(
+      arguments.productId,
+      state.dataOrNull!.copyWith(name: name, description: description),
+    );
+    emit(AgPageState.success(updated));
+  }
 }

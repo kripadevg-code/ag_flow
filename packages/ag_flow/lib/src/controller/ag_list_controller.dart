@@ -1,5 +1,6 @@
 import 'package:ag_flow/src/controller/ag_base_controller.dart';
 import 'package:ag_flow/src/controller/ag_pagination_state.dart';
+import 'package:meta/meta.dart';
 
 /// Adds pagination/load-more behavior to an [AgBaseController] whose data
 /// is a [List].
@@ -86,6 +87,19 @@ mixin AgPaginationMixin<ItemType, PageKeyType extends Object>
 
   /// Retries the most recent failed [loadMore] call.
   Future<void> retryLoadMore() => loadMore();
+
+  /// Escape hatch for feature-specific pagination-state transitions — the
+  /// [AgPaginationMixin] equivalent of [AgBaseController.emit]. Use this
+  /// to reflect a mutation (an add/update/delete against the Repo) in the
+  /// currently-displayed list directly, when a full [refresh] wouldn't
+  /// show it (e.g. a demo/mock backend that doesn't actually persist
+  /// writes, or simply to avoid the round-trip for an optimistic update).
+  @protected
+  void updateItems(
+    List<ItemType> Function(List<ItemType> items) transform,
+  ) {
+    _setPagination(pagination.copyWith(items: transform(pagination.items)));
+  }
 
   @override
   Future<void> refresh() async {

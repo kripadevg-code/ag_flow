@@ -8,4 +8,7 @@ class ProductDetailsRepo extends AgBaseRepo {
   final ProductDetailsService _service;
 
   Future<Product> getById(String id) => _service.getById(id);
+
+  Future<Product> update(String id, Product product) =>
+      _service.update(id, product);
 }

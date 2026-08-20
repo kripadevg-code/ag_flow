@@ -87,7 +87,14 @@ Page → Controller → Repo → Service → ApiProvider
 - **`AgListController<ItemType, PageKeyType>`** (`AgPaginationMixin`) — pagination/load-more state,
   tracked separately from page-level state (a load-more failure never corrupts `AgPageSuccess`) via its own
   `AgPaginationMixin.paginationUpdateId` `GetBuilder` id, for the same reason. Implement `fetchPage(key)` as
-  a pure function; the mixin is the sole writer of pagination state.
+  a pure function; the mixin is the sole writer of pagination state — except via `updateItems`, an
+  `emit()`-style `@protected` escape hatch for reflecting a mutation (add/update/delete against the Repo)
+  in the currently-displayed list without a full `refresh()`. Needed because `example/`'s `ProductsController`
+  demonstrates a full create/read/update/delete cycle against a real API (jsonplaceholder) that doesn't
+  actually persist writes — `refresh()` re-fetching page 1 would never show an item that was just "created".
+  `AgCrudService` is deliberately never used there either: pagination needs a `getPage` that mixin doesn't
+  provide, so the whole Service/Repo/Controller stack is hand-written instead — proof AG never mandates a
+  fixed CRUD method set, not just a doc-comment claim.
 - **`AgListBuilder`** — internally `CustomScrollView` + `SliverList`, not `ListView`, behind the same
   external API (constructor/parameters unchanged) — chosen so it composes inside a larger sliver-based
   scroll view later without a breaking change. Separator interleaving (`separatorBuilder`) mirrors

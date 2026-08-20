@@ -19,6 +19,58 @@ class ProductsPage extends AgBasePage<ProductsController> {
   }
 
   @override
+  Widget? floatingActionButton(BuildContext context) {
+    return FloatingActionButton(
+      onPressed: () => _showAddProductDialog(context),
+      tooltip: 'Add product',
+      child: const Icon(Icons.add),
+    );
+  }
+
+  Future<void> _showAddProductDialog(BuildContext context) async {
+    final nameController = TextEditingController();
+    final descriptionController = TextEditingController();
+
+    final shouldCreate = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Add product'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameController,
+              decoration: const InputDecoration(labelText: 'Name'),
+              autofocus: true,
+            ),
+            TextField(
+              controller: descriptionController,
+              decoration: const InputDecoration(labelText: 'Description'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Add'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldCreate ?? false) {
+      await controller.addProduct(
+        nameController.text,
+        descriptionController.text,
+      );
+    }
+  }
+
+  @override
   Widget Function(BuildContext, Object, StackTrace?, VoidCallback)?
   get errorBuilder =>
       (context, error, stackTrace, retry) => Center(
@@ -47,6 +99,7 @@ class ProductsPage extends AgBasePage<ProductsController> {
         onTap: () => RouteManagement.goToProductDetailsPage(
           ProductDetailsPageArgument(productId: product.id),
         ),
+        onDelete: () => controller.deleteProduct(product.id),
       ),
     );
   }

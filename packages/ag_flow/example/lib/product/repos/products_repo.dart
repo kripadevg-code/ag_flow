@@ -15,4 +15,8 @@ class ProductsRepo extends AgBaseRepo {
       nextPageKey: items.isEmpty ? null : page + 1,
     );
   }
+
+  Future<Product> create(Product product) => _service.create(product);
+
+  Future<void> delete(String id) => _service.delete(id);
 }

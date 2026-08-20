@@ -13,6 +13,9 @@ class _TestListController extends AgListController<int, int> {
     fetchPageCallCount++;
     return _fetchPage(pageKey);
   }
+
+  void applyUpdateItems(List<int> Function(List<int> items) transform) =>
+      updateItems(transform);
 }
 
 void main() {
@@ -162,6 +165,27 @@ void main() {
         await controller.refresh();
         expect(controller.pagination.items, [1]);
         expect(controller.pagination.hasNextPage, isTrue);
+      },
+    );
+
+    test(
+      'updateItems lets a subclass reflect a mutation locally without a '
+      'full re-fetch',
+      () async {
+        final controller = _TestListController(
+          (pageKey) async => const AgListPage(items: [1, 2, 3], hasMore: false),
+        );
+        await controller.loadInitial();
+
+        controller.applyUpdateItems((items) => [99, ...items]);
+        expect(controller.pagination.items, [99, 1, 2, 3]);
+
+        controller.applyUpdateItems(
+          (items) => items.where((i) => i != 2).toList(),
+        );
+        expect(controller.pagination.items, [99, 1, 3]);
+        // Untouched by an items-only transform.
+        expect(controller.pagination.hasNextPage, isFalse);
       },
     );
   });
