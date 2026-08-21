@@ -102,7 +102,7 @@ dependencies:
     () async {
       appDir = await _freshResolvedProject();
       expect(
-        ProjectAnalyzer(project: Project(appDir)).dependenciesResolved,
+        await ProjectAnalyzer(project: Project(appDir)).dependenciesResolved,
         isTrue,
       );
       expect(await _analyze(appDir), isEmpty);

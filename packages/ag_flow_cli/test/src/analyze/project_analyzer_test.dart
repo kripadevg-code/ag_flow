@@ -323,7 +323,7 @@ class RogueNavigator {
       );
 
       expect(
-        ProjectAnalyzer(project: Project(appDir)).dependenciesResolved,
+        await ProjectAnalyzer(project: Project(appDir)).dependenciesResolved,
         isFalse,
       );
       expect(await _analyze(appDir), isEmpty);

@@ -31,11 +31,12 @@ file is only ever created if missing, never overwritten.
 Each `ag g m <path>` generates a full set of files under
 `lib/modules/<root_segment>/` (flat by architectural layer, per
 requirments/ag_framework.md §6) — every module shares one `lib/modules/`
-parent, sitting alongside (never inside) `lib/core`. The page itself is
-never more than wiring — every independently-overridable slot (`appBar`,
-`loadingBuilder`, `errorBuilder`, `emptyBuilder`, and the success content)
+parent, sitting alongside (never inside) `lib/core`. Every page-level
+chrome slot — `appBar`, `loadingBuilder`, `errorBuilder`, `emptyBuilder` —
 is its own component file under `components/`, generated and linked into
-the page automatically:
+the page automatically. `buildSuccess` (the actual content) stays inline
+in the page itself — it's the page's own body, not a separately reusable
+widget:
 
 ```
 lib/modules/product/
@@ -45,21 +46,19 @@ lib/modules/product/
 │   ├── product_loading.dart   # loadingBuilder
 │   ├── product_error.dart     # errorBuilder
 │   ├── product_empty.dart     # emptyBuilder
-│   ├── product_list.dart      # buildSuccess — wraps AgListBuilder
-│   └── product_item.dart      # one row within product_list.dart
+│   └── product_item.dart      # one row, referenced from buildSuccess
 ├── controllers/products_controller.dart
-├── pages/products_page.dart   # just imports + wires the six files above
+├── pages/products_page.dart   # wires the four slots above; buildSuccess inline
 ├── repos/products_repo.dart
 └── services/products_service.dart
 ```
 
-(A detail module gets the same `_appbar`/`_loading`/`_error`/`_empty` set,
-plus a single `_view.dart` in place of `_list.dart`/`_item.dart` — there's
-no pagination, so the success content is just one view of the fetched
-data.) Every component is a plain, fully-owned starting point — customize
-it freely, or delete it and its one-line reference in the page to fall
-back to `AgBasePage`'s own default for that slot (nothing falls back for
-the success content, since `buildSuccess` is required).
+(A detail module gets the same `_appbar`/`_loading`/`_error`/`_empty` set
+and no `_item.dart` — there's no per-row widget to extract, since a detail
+page renders one thing, not a list.) Every chrome component is a plain,
+fully-owned starting point — customize it freely, or delete it and its
+one-line reference in the page to fall back to `AgBasePage`'s own default
+for that slot.
 
 ...and idempotently wires it into the shared aggregator files:
 
@@ -157,7 +156,11 @@ resolved (`dart pub get` / `flutter pub get`):
 
 If dependencies haven't been resolved yet, these two are silently skipped
 (everything else still runs) and `ag analyze` prints a note telling you to
-run `pub get` first — it's a notice, not a failure.
+run `pub get` first — it's a notice, not a failure. Resolution is detected
+by walking up from the project root looking for `.dart_tool/package_config
+.json` (not just checking the root itself), so this also works correctly
+for a project that's a *member* of a native pub workspace — its own
+resolved config only ever lives at the workspace root.
 
 Exits `0` with "No issues found." if clean, or non-zero with every issue
 printed (one per line) otherwise.

@@ -238,7 +238,10 @@ void main() {
           p.join('routes', 'route_management.dart'),
         );
         expect(routeManagement, contains('static void goToProductsPage()'));
-        expect(routeManagement, contains('Get.toNamed(AppRoutes.product);'));
+        expect(
+          routeManagement,
+          contains('Get.toNamed<dynamic>(AppRoutes.product);'),
+        );
 
         expect(
           _coreFile(appDir, p.join('arguments', 'arguments.dart')),
@@ -309,7 +312,7 @@ void main() {
         expect(
           routeManagement,
           contains(
-            'Get.toNamed(AppRoutes.productDetails, arguments: argument);',
+            'Get.toNamed<dynamic>(AppRoutes.productDetails, arguments: argument);',
           ),
         );
         expect(

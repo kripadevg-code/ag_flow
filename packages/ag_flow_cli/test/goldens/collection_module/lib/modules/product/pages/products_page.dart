@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:sample_app/modules/product/components/product/product_appbar.dart';
 import 'package:sample_app/modules/product/components/product/product_empty.dart';
 import 'package:sample_app/modules/product/components/product/product_error.dart';
-import 'package:sample_app/modules/product/components/product/product_list.dart';
+import 'package:sample_app/modules/product/components/product/product_item.dart';
 import 'package:sample_app/modules/product/components/product/product_loading.dart';
 import 'package:sample_app/modules/product/controllers/products_controller.dart';
 
@@ -29,6 +29,9 @@ class ProductsPage extends AgBasePage<ProductsController> {
 
   @override
   Widget buildSuccess(BuildContext context) {
-    return ProductList(controller: controller);
+    return AgListBuilder<dynamic, int>(
+      controller: controller,
+      itemBuilder: (context, item, index) => ProductItem(item: item),
+    );
   }
 }

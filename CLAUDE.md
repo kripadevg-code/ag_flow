@@ -128,9 +128,29 @@ Page → Controller → Repo → Service → ApiProvider
   (unsupported method, body+form-data together) are real exceptions, not `assert` — those must still be
   caught in release builds.
 
-There is no hand-wired example app in this repo — `ag_flow_cli`'s golden fixtures
-(`packages/ag_flow_cli/test/goldens/`), regenerated from real tool output (never hand-transcribed — see
-below), are the authoritative reference for what the generator produces.
+**`packages/ag_flow/example/`** is entirely `ag_flow_cli`-generated, not hand-wired — `ag init` +
+`ag g m product` + `ag g m product/details`, with only `lib/main.dart` written by hand (the
+`GetMaterialApp` wiring `ag init`'s own printed next-steps describe). It's a real Melos workspace member
+(`resolution: workspace` in its `pubspec.yaml`, listed in the root `pubspec.yaml`'s `workspace:` array),
+which is exactly what caught two real bugs no isolated test fixture would have:
+- **`ProjectAnalyzer.dependenciesResolved` only ever checked `<project root>/.dart_tool/package_config
+  .json`.** For a *workspace member* — this example included — that file only ever exists at the
+  workspace *root*, never duplicated into each member, so `ag analyze` run from inside
+  `packages/ag_flow/example` always silently skipped the resolved-model checks, even with dependencies
+  fully resolved. Fixed with `package:package_config`'s `findPackageConfig` (walks up parent directories
+  the same way real Dart tooling resolves package configs for workspace members), added as a direct
+  dependency for exactly this.
+- **`very_good_analysis` (this example's own dev dependency, matching the root's) flags generated code
+  that a bare-pubspec test fixture never exercises against any lint config at all**: required named
+  constructor params declared after optional ones (`always_put_required_named_parameters_first` — bricks
+  fixed to put `required` params first), and `Get.toNamed(...)`'s untyped generic call
+  (`inference_failure_on_function_invocation` — `route_management_updater.dart` fixed to emit
+  `Get.toNamed<dynamic>(...)`). Three more lints don't fit generated/aggregator-file conventions at all —
+  `flutter_style_todos` (generated TODOs have no real author to attribute), `always_use_package_imports`
+  and `discarded_futures` (both inherent to `core/routes/*.dart`'s deliberate relative-sibling-import and
+  fire-and-forget-navigation conventions, not violations) — disabled with a rationale comment in the
+  example's own `analysis_options.yaml`, not papered over by weakening the shared root config every other
+  package also uses.
 
 ## `ag_flow_cli` architecture (generator)
 
@@ -181,21 +201,21 @@ below), are the authoritative reference for what the generator produces.
   `GetxController`, which already declares `update([List<Object>? ids, bool condition])`, so a same-named
   override with a different signature is a real `invalid_override` compile error, not a style nit. Service
   and Repo keep `update()` — they don't extend `GetxController`, so there's no clash there.
-  - **Page is pure wiring; every overridable slot is its own component file.** `appBar`, `loadingBuilder`,
-    `errorBuilder`, `emptyBuilder`, and the success content each get a dedicated file under
-    `components/<namespace>/` (`_appbar.dart`, `_loading.dart`, `_error.dart`, `_empty.dart`, and
-    `_list.dart`/`_item.dart` for a collection module or `_view.dart` for a detail module), generated and
-    linked into the page automatically — the generated page file itself is never more than imports plus a
-    one-line reference per slot. This is also the fix for a real dangling-file bug: `_item.dart`/`_view.dart`
-    were already generated before this, but the page never actually referenced them — they sat unused,
-    with the page instead inlining its own placeholder (`ListTile`/`Center(Text(...))`). `_list.dart` wraps
-    `AgListBuilder<dynamic, int>` and takes an `AgListController<dynamic, int>` (the framework base type,
-    not the concrete generated Controller) so the components folder never has to import the controllers
-    folder. `AppBar` is subclassed directly, not wrapped by composition, since `AgBasePage.appBar()` already
-    returns `PreferredSizeWidget?` and `AppBar` already *is* one — note its constructor isn't `const` in the
-    pinned Flutter version, so neither is the generated subclass's. Every component is a plain, fully-owned
-    starting point: delete one and its one-line reference in the page to fall back to `AgBasePage`'s own
-    default for that slot (there's no fallback for the success content — `buildSuccess` is required).
+  - **Page-level chrome slots each get their own component file; the success content stays in the page.**
+    `appBar`, `loadingBuilder`, `errorBuilder`, and `emptyBuilder` each get a dedicated file under
+    `components/<namespace>/` (`_appbar.dart`, `_loading.dart`, `_error.dart`, `_empty.dart`), generated
+    and linked into the page automatically. `buildSuccess` is deliberately *not* one of these — an earlier
+    version of this also split the success content into its own `_list.dart`/`_view.dart` component, but
+    that file was never a reusable widget the way a card or an app bar is: it was just *this page's own
+    body*, wrapped in an extra class for no reason. `buildSuccess` stays inline in the page — for a
+    collection module, directly constructing `AgListBuilder<dynamic, int>` with an `itemBuilder` that
+    references the one genuinely reusable piece, `{{component_class_prefix}}Item` (a real per-row
+    component); for a detail module, the same inline placeholder (`Center(child: Text(data.toString()))`)
+    it always was. `AppBar` is subclassed directly, not wrapped by composition, since
+    `AgBasePage.appBar()` already returns `PreferredSizeWidget?` and `AppBar` already *is* one — note its
+    constructor isn't `const` in the pinned Flutter version, so neither is the generated subclass's. Every
+    chrome component is a plain, fully-owned starting point: delete one and its one-line reference in the
+    page to fall back to `AgBasePage`'s own default for that slot.
 - **`ModuleGenerator.plan()`** never writes to disk directly — it renders via an in-memory
   `GeneratorTarget`, formats with `DartFormatter`, checks existence, and returns `FileOp`s (`create` /
   `update` / `skipExisting`) for an `Executor` to apply (or, under `--dry-run`, just report). This is what

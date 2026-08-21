@@ -3,7 +3,6 @@ import 'package:{{app_package_name}}/{{{module_import_path}}}/components/{{compo
 import 'package:{{app_package_name}}/{{{module_import_path}}}/components/{{component_namespace}}/{{component_file_base}}_empty.dart';
 import 'package:{{app_package_name}}/{{{module_import_path}}}/components/{{component_namespace}}/{{component_file_base}}_error.dart';
 import 'package:{{app_package_name}}/{{{module_import_path}}}/components/{{component_namespace}}/{{component_file_base}}_loading.dart';
-import 'package:{{app_package_name}}/{{{module_import_path}}}/components/{{component_namespace}}/{{component_file_base}}_view.dart';
 import 'package:{{app_package_name}}/{{{module_import_path}}}/controllers/{{module_file_base}}_controller.dart';
 import 'package:flutter/material.dart';
 
@@ -30,6 +29,8 @@ class {{module_class_prefix}}Page extends AgBasePage<{{module_class_prefix}}Cont
 
   @override
   Widget buildSuccess(BuildContext context) {
-    return {{component_class_prefix}}View(data: controller.state.dataOrNull);
+    final data = controller.state.dataOrNull;
+    // TODO: replace with the real detail UI.
+    return Center(child: Text(data.toString()));
   }
 }

@@ -123,3 +123,7 @@ hatch for reflecting a mutation in the currently-displayed list without a
 full `refresh()` — useful when the mutation itself already returned the
 data, or against a backend that doesn't actually persist writes, where a
 `refresh()` would never show what was just created.
+
+See [example/](example) for a runnable app — entirely produced by
+`ag_flow_cli` (`ag init` + `ag g m`), not hand-wired — demonstrating a
+collection and a detail module wired end-to-end.

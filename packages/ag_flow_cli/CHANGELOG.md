@@ -2,6 +2,36 @@
 
 ## Unreleased
 
+- **Reverted the success-content split from the "pure wiring" page change
+  below**: `_list.dart` (collection) and `_view.dart` (detail) are gone.
+  Neither was a genuinely reusable widget — each was just the one page's
+  own body, wrapped in an extra class for no reason, unlike the app bar/
+  loading/error/empty slots (real, independently-overridable AG framework
+  concepts) or the per-row `_item.dart` (a real reusable component).
+  `buildSuccess` is inline in the page again: a collection page directly
+  constructs `AgListBuilder` referencing `_item.dart`; a detail page keeps
+  its original inline placeholder.
+- **Fixed: `ProjectAnalyzer.dependenciesResolved` never detected
+  resolution for a native-pub-workspace *member* project** — it only
+  checked `<project root>/.dart_tool/package_config.json`, but a
+  workspace member's resolved config lives only at the workspace *root*,
+  never duplicated per member. `ag analyze` run from inside such a
+  project always silently skipped the resolved-model checks, even fully
+  resolved. Fixed with `package:package_config`'s `findPackageConfig`
+  (walks up parent directories, mirroring how Dart's own tooling resolves
+  package configs for workspace members), added as a direct dependency.
+  Found by generating `packages/ag_flow/example` — a real workspace
+  member — and running `ag analyze` from inside it directly.
+- **Fixed two `very_good_analysis` findings against generated code**,
+  found the same way: a required named constructor parameter declared
+  after an optional one (`super.key`) in every chrome component with a
+  required field — reordered required-first; and `Get.toNamed(...)`'s
+  untyped generic call in every generated navigation method — now emits
+  `Get.toNamed<dynamic>(...)`. Three more lints (`flutter_style_todos`,
+  `always_use_package_imports`, `discarded_futures`) don't fit generated/
+  aggregator-file conventions at all and are disabled, with a rationale
+  comment, in `packages/ag_flow/example`'s own `analysis_options.yaml`
+  rather than papered over in the shared root config every package uses.
 - **Every generated module now lives under a shared `lib/modules/`
   parent** — `lib/modules/product/...`, `lib/modules/auth/...` — instead
   of directly under `lib/`, sitting alongside (never inside) `lib/core`.

@@ -4,7 +4,6 @@ import 'package:sample_app/modules/product/components/details/product_details_ap
 import 'package:sample_app/modules/product/components/details/product_details_empty.dart';
 import 'package:sample_app/modules/product/components/details/product_details_error.dart';
 import 'package:sample_app/modules/product/components/details/product_details_loading.dart';
-import 'package:sample_app/modules/product/components/details/product_details_view.dart';
 import 'package:sample_app/modules/product/controllers/product_details_controller.dart';
 
 class ProductDetailsPage extends AgBasePage<ProductDetailsController> {
@@ -29,6 +28,8 @@ class ProductDetailsPage extends AgBasePage<ProductDetailsController> {
 
   @override
   Widget buildSuccess(BuildContext context) {
-    return ProductDetailsView(data: controller.state.dataOrNull);
+    final data = controller.state.dataOrNull;
+    // TODO: replace with the real detail UI.
+    return Center(child: Text(data.toString()));
   }
 }

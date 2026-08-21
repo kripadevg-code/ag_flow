@@ -1,0 +1,17 @@
+include: ../../../analysis_options.yaml
+
+# Rules that don't fit ag_flow_cli's generated/aggregator-file conventions,
+# rather than real issues in this app's own code:
+analyzer:
+  errors:
+    # Generated TODOs (`// TODO: replace with the real item UI.`) have no
+    # real author to attribute — `flutter_style_todos` wants `TODO(user):`.
+    flutter_style_todos: ignore
+    # core/routes/*.dart's sibling imports (`import 'app_routes.dart';`)
+    # are deliberately relative — see CLAUDE.md's "Import sorting must be
+    # group-aware" note.
+    always_use_package_imports: ignore
+    # RouteManagement's generated nav methods are intentionally
+    # fire-and-forget: `Get.toNamed(...)`'s return value (what the pushed
+    # route eventually pops with) is never the caller's concern.
+    discarded_futures: ignore

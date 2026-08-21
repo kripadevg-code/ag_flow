@@ -2,11 +2,19 @@
 
 ## Unreleased
 
-- **Removed `example/`.** The generator's own golden fixtures
+- **`example/` is back, this time generated rather than hand-wired**:
+  `ag init` + `ag g m product` + `ag g m product/details` against a real
+  Melos workspace member, with only `main.dart` written by hand. Building
+  it for real (rather than in an isolated test fixture) surfaced two real
+  `ag_flow_cli` bugs — a `dependenciesResolved` check that never worked
+  for a workspace member, and a couple of `very_good_analysis` findings
+  against generated code — both fixed there; see `ag_flow_cli`'s own
+  CHANGELOG.
+- **Removed `example/`** (superseded by the above — kept for changelog
+  continuity). The generator's own golden fixtures
   (`packages/ag_flow_cli/test/goldens/`, regenerated from real tool output)
-  now serve as the reference for generated module structure; a
-  hand-wired example app duplicated that role without adding independent
-  coverage once the CLI itself generated a full CRUD-capable module.
+  had briefly served as the sole reference for generated module structure
+  in between.
 - **Added `AgPaginationMixin.updateItems`** — an `emit()`-style escape
   hatch for reflecting a mutation (add/update/delete against the Repo) in
   the currently-displayed list directly, for when a full `refresh()`

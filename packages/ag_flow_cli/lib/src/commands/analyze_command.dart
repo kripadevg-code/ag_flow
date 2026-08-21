@@ -51,7 +51,7 @@ class AnalyzeCommand extends Command<int> {
       logger.info('\n${issues.length} issue(s) found.');
     }
 
-    if (!analyzer.dependenciesResolved) {
+    if (!await analyzer.dependenciesResolved) {
       logger.info(
         '\nNote: dependency-direction and unused-detail-argument checks '
         'were skipped — run "dart pub get" (or "flutter pub get") first '

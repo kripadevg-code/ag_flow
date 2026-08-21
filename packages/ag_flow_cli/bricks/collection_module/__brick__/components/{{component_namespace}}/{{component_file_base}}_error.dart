@@ -5,9 +5,9 @@ import 'package:flutter/material.dart';
 /// and its use in the page to fall back to AG's default error widget.
 class {{component_class_prefix}}Error extends StatelessWidget {
   const {{component_class_prefix}}Error({
-    super.key,
     required this.error,
     required this.onRetry,
+    super.key,
   });
 
   final Object error;
