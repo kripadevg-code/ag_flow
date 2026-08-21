@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+- **Every generated module now lives under a shared `lib/modules/`
+  parent** — `lib/modules/product/...`, `lib/modules/auth/...` — instead
+  of directly under `lib/`, sitting alongside (never inside) `lib/core`.
+  Filesystem organization only: route paths, class names, and every other
+  naming derivation are unchanged. `ag analyze`'s structural and
+  resolved-model checks look under `lib/modules/` accordingly. Found and
+  fixed along the way: Mason's default `{{var}}` interpolation
+  HTML-escapes its value, so the new `module_import_path` var (the first
+  brick var whose value contains a `/`) rendered as `modules&#x2F;product`
+  in every brick-templated import until switched to unescaped
+  triple-mustache (`{{{module_import_path}}}`).
 - **`ag g m`'s generated page is now pure wiring — every overridable slot
   is its own component file, generated and linked in automatically.**
   `appBar`, `loadingBuilder`, `errorBuilder`, and `emptyBuilder` each get a

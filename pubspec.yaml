@@ -6,7 +6,6 @@ environment:
 
 workspace:
   - packages/ag_flow
-  - packages/ag_flow/example
   - packages/ag_flow_cli
 
 dev_dependencies:
@@ -30,7 +29,6 @@ melos:
       run: >-
         dart format --output=none --set-exit-if-changed
         packages/ag_flow/lib packages/ag_flow/test
-        packages/ag_flow/example/lib
         packages/ag_flow_cli/bin packages/ag_flow_cli/lib
         packages/ag_flow_cli/test packages/ag_flow_cli/tool
 

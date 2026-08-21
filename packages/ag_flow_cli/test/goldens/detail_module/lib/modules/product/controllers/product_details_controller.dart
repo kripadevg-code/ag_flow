@@ -1,15 +1,15 @@
 import 'package:ag_flow/ag_flow.dart';
-import 'package:{{app_package_name}}/core/arguments/arguments.dart';
-import 'package:{{app_package_name}}/{{{module_import_path}}}/repos/{{module_file_base}}_repo.dart';
+import 'package:sample_app/core/arguments/arguments.dart';
+import 'package:sample_app/modules/product/repos/product_details_repo.dart';
 
-class {{module_class_prefix}}Controller extends AgDetailController<dynamic, {{module_class_prefix}}PageArgument> {
-  {{module_class_prefix}}Controller(this._repo);
+class ProductDetailsController
+    extends AgDetailController<dynamic, ProductDetailsPageArgument> {
+  ProductDetailsController(this._repo);
 
-  final {{module_class_prefix}}Repo _repo;
+  final ProductDetailsRepo _repo;
 
   @override
   Future<dynamic> fetch() => _repo.getByArgument(arguments);
-{{#generate_update}}
 
   // Named updateItem — GetxController already declares update(), and a
   // same-named override with a different signature is a compile error.
@@ -17,9 +17,6 @@ class {{module_class_prefix}}Controller extends AgDetailController<dynamic, {{mo
     final updated = await _repo.update(arguments, item);
     emit(AgPageState.success(updated));
   }
-{{/generate_update}}
-{{#generate_delete}}
 
   Future<void> delete() => _repo.delete(arguments);
-{{/generate_delete}}
 }

@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- **Removed `example/`.** The generator's own golden fixtures
+  (`packages/ag_flow_cli/test/goldens/`, regenerated from real tool output)
+  now serve as the reference for generated module structure; a
+  hand-wired example app duplicated that role without adding independent
+  coverage once the CLI itself generated a full CRUD-capable module.
 - **Added `AgPaginationMixin.updateItems`** — an `emit()`-style escape
   hatch for reflecting a mutation (add/update/delete against the Repo) in
   the currently-displayed list directly, for when a full `refresh()`

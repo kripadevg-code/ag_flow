@@ -11,7 +11,7 @@ AggregatorUpdateResult updateAppPages(
   String source,
   ModuleSpec spec, {
   required String appPackageName,
-  required String rootSegment,
+  required String moduleImportPath,
 }) {
   final unit = parseString(content: source, throwIfDiagnostics: false).unit;
 
@@ -63,11 +63,11 @@ AggregatorUpdateResult updateAppPages(
     ...[
       insertImportPatch(
         unit,
-        'package:$appPackageName/$rootSegment/pages/${spec.pageFile}',
+        'package:$appPackageName/$moduleImportPath/pages/${spec.pageFile}',
       ),
       insertImportPatch(
         unit,
-        'package:$appPackageName/$rootSegment/bindings/${spec.bindingFile}',
+        'package:$appPackageName/$moduleImportPath/bindings/${spec.bindingFile}',
       ),
     ].whereType<Patch>(),
     Patch.insertion(

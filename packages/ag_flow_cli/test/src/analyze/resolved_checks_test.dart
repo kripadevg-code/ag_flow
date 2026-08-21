@@ -114,10 +114,17 @@ dependencies:
     () async {
       appDir = await _freshResolvedProject();
       final pageFile = File(
-        p.join(appDir.path, 'lib', 'product', 'pages', 'products_page.dart'),
+        p.join(
+          appDir.path,
+          'lib',
+          'modules',
+          'product',
+          'pages',
+          'products_page.dart',
+        ),
       );
       pageFile.writeAsStringSync(
-        "import 'package:sample_app/product/services/products_service.dart';\n"
+        "import 'package:sample_app/modules/product/services/products_service.dart';\n"
         '${pageFile.readAsStringSync()}\n'
         'class _Rogue {\n'
         '  void run() {\n'
@@ -141,10 +148,17 @@ dependencies:
     () async {
       appDir = await _freshResolvedProject();
       final pageFile = File(
-        p.join(appDir.path, 'lib', 'product', 'pages', 'products_page.dart'),
+        p.join(
+          appDir.path,
+          'lib',
+          'modules',
+          'product',
+          'pages',
+          'products_page.dart',
+        ),
       );
       pageFile.writeAsStringSync(
-        "import 'package:sample_app/product/repos/products_repo.dart';\n"
+        "import 'package:sample_app/modules/product/repos/products_repo.dart';\n"
         '${pageFile.readAsStringSync()}\n'
         'class _Rogue {\n'
         '  ProductsRepo? repo;\n'
@@ -168,6 +182,7 @@ dependencies:
         p.join(
           appDir.path,
           'lib',
+          'modules',
           'product',
           'controllers',
           'products_controller.dart',
@@ -195,7 +210,14 @@ dependencies:
     () async {
       appDir = await _freshResolvedProject();
       final repoFile = File(
-        p.join(appDir.path, 'lib', 'product', 'repos', 'products_repo.dart'),
+        p.join(
+          appDir.path,
+          'lib',
+          'modules',
+          'product',
+          'repos',
+          'products_repo.dart',
+        ),
       );
       repoFile.writeAsStringSync(
         '${repoFile.readAsStringSync()}\n'
@@ -240,6 +262,7 @@ dependencies:
         p.join(
           appDir.path,
           'lib',
+          'modules',
           'product',
           'controllers',
           'product_details_controller.dart',
@@ -247,7 +270,7 @@ dependencies:
       ).writeAsStringSync('''
 import 'package:ag_flow/ag_flow.dart';
 import 'package:sample_app/core/arguments/arguments.dart';
-import 'package:sample_app/product/repos/product_details_repo.dart';
+import 'package:sample_app/modules/product/repos/product_details_repo.dart';
 
 class ProductDetailsController
     extends AgDetailController<dynamic, ProductDetailsPageArgument> {

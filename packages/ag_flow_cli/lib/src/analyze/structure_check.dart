@@ -12,19 +12,17 @@ const _architecturalLayers = {
   'services',
 };
 
-/// Every root-level module folder under `lib/` (excluding `core/`) must be
-/// flat by architectural layer: `<layer>/<file>.dart` for the five layers
-/// (no subfolders), and `components/<namespace>/<file>.dart` for
-/// components (exactly one namespace level, no further nesting) —
+/// Every root-level module folder under `lib/modules/` must be flat by
+/// architectural layer: `<layer>/<file>.dart` for the five layers (no
+/// subfolders), and `components/<namespace>/<file>.dart` for components
+/// (exactly one namespace level, no further nesting) —
 /// requirments/ag_framework.md §6/§7/§37.
 List<AnalyzeIssue> checkStructure(Project project) {
   final issues = <AnalyzeIssue>[];
-  if (!project.libDir.existsSync()) return issues;
+  if (!project.modulesDir.existsSync()) return issues;
 
-  for (final entity in project.libDir.listSync()) {
+  for (final entity in project.modulesDir.listSync()) {
     if (entity is! Directory) continue;
-    final rootSegment = p.basename(entity.path);
-    if (rootSegment == 'core') continue;
 
     for (final child in entity.listSync(recursive: true)) {
       if (child is Directory) continue;

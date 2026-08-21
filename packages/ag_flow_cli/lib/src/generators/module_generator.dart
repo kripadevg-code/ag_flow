@@ -92,7 +92,7 @@ class ModuleGenerator {
 
     final vars = <String, dynamic>{
       'app_package_name': project.packageName,
-      'root_segment': modulePath.rootSegment,
+      'module_import_path': 'modules/${modulePath.rootSegment}',
       'module_class_prefix': spec.classPrefix,
       'module_file_base': spec.layerFileBase,
       'component_class_prefix': spec.componentClassPrefix,

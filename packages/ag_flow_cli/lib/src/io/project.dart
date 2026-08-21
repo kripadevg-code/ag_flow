@@ -31,9 +31,14 @@ class Project {
   /// The project's `lib/` directory.
   Directory get libDir => Directory(p.join(root.path, 'lib'));
 
+  /// The shared parent folder every generated feature module lives under
+  /// — `<root>/lib/modules` — sitting alongside (never inside) `lib/core`.
+  Directory get modulesDir => Directory(p.join(libDir.path, 'modules'));
+
   /// The absolute path to a root module segment's directory, e.g.
-  /// `<root>/lib/product`. Every module sharing this root segment — no
-  /// matter how deeply nested — places its files here, flat by layer (see
-  /// requirments/ag_framework.md §6/§72).
-  String moduleRootDir(String rootSegment) => p.join(libDir.path, rootSegment);
+  /// `<root>/lib/modules/product`. Every module sharing this root
+  /// segment — no matter how deeply nested — places its files here, flat
+  /// by layer (see requirments/ag_framework.md §6/§72).
+  String moduleRootDir(String rootSegment) =>
+      p.join(modulesDir.path, rootSegment);
 }

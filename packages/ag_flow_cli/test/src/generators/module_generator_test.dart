@@ -170,9 +170,15 @@ void main() {
       await Executor(dryRun: false, logger: quietLogger).execute(ops);
 
       _expectMatchesGolden(
-        Directory(p.join(appDir.path, 'lib', 'product')),
+        Directory(p.join(appDir.path, 'lib', 'modules', 'product')),
         Directory(
-          p.join(goldensDir.path, 'collection_module', 'lib', 'product'),
+          p.join(
+            goldensDir.path,
+            'collection_module',
+            'lib',
+            'modules',
+            'product',
+          ),
         ),
       );
     });
@@ -280,13 +286,13 @@ void main() {
         expect(
           appPages,
           contains(
-            "import 'package:sample_app/product/pages/product_details_page.dart';",
+            "import 'package:sample_app/modules/product/pages/product_details_page.dart';",
           ),
         );
         expect(
           appPages,
           contains(
-            "import 'package:sample_app/product/bindings/product_details_binding.dart';",
+            "import 'package:sample_app/modules/product/bindings/product_details_binding.dart';",
           ),
         );
 
@@ -425,7 +431,9 @@ abstract class _Routes {
         );
 
         expect(
-          Directory(p.join(appDir.path, 'lib', 'product')).existsSync(),
+          Directory(
+            p.join(appDir.path, 'lib', 'modules', 'product'),
+          ).existsSync(),
           isFalse,
         );
         expect(
@@ -465,7 +473,9 @@ abstract class _Routes {
 
         final firstOps = await generator.plan(modulePath);
         await Executor(dryRun: false, logger: quietLogger).execute(firstOps);
-        final productDir = Directory(p.join(appDir.path, 'lib', 'product'));
+        final productDir = Directory(
+          p.join(appDir.path, 'lib', 'modules', 'product'),
+        );
         final afterFirstRun = {
           for (final f in _listFiles(productDir))
             f: File(p.join(productDir.path, f)).readAsStringSync(),
@@ -517,11 +527,15 @@ abstract class _Routes {
         );
 
         expect(
-          Directory(p.join(appDir.path, 'lib', 'ticket')).existsSync(),
+          Directory(
+            p.join(appDir.path, 'lib', 'modules', 'ticket'),
+          ).existsSync(),
           isFalse,
         );
         expect(
-          Directory(p.join(appDir.path, 'lib', 'product')).existsSync(),
+          Directory(
+            p.join(appDir.path, 'lib', 'modules', 'product'),
+          ).existsSync(),
           isFalse,
         );
       },
@@ -541,7 +555,9 @@ abstract class _Routes {
         expect(written, 0);
         expect(ops, isNotEmpty);
         expect(
-          Directory(p.join(appDir.path, 'lib', 'product')).existsSync(),
+          Directory(
+            p.join(appDir.path, 'lib', 'modules', 'product'),
+          ).existsSync(),
           isFalse,
         );
         expect(
@@ -569,7 +585,9 @@ abstract class _Routes {
         ).plan(ModulePath.parse('product/details/reviews/comments'));
         await Executor(dryRun: false, logger: quietLogger).execute(ops);
 
-        final productRoot = Directory(p.join(appDir.path, 'lib', 'product'));
+        final productRoot = Directory(
+          p.join(appDir.path, 'lib', 'modules', 'product'),
+        );
         for (final layer in [
           'controllers',
           'services',
@@ -681,7 +699,7 @@ abstract class _Routes {
         );
 
         final controllersDir = Directory(
-          p.join(appDir.path, 'lib', 'product', 'controllers'),
+          p.join(appDir.path, 'lib', 'modules', 'product', 'controllers'),
         );
         final fileNames = controllersDir
             .listSync()

@@ -26,12 +26,11 @@ Future<List<AnalyzeIssue>> checkDetailArgumentUsage(
   Project project,
   AnalysisContextCollection collection,
 ) async {
-  if (!project.libDir.existsSync()) return const [];
+  if (!project.modulesDir.existsSync()) return const [];
 
   final issues = <AnalyzeIssue>[];
-  for (final rootEntity in project.libDir.listSync()) {
+  for (final rootEntity in project.modulesDir.listSync()) {
     if (rootEntity is! Directory) continue;
-    if (p.basename(rootEntity.path) == 'core') continue;
 
     final controllersDir = Directory(p.join(rootEntity.path, 'controllers'));
     if (!controllersDir.existsSync()) continue;

@@ -1,10 +1,10 @@
 import 'package:ag_flow/ag_flow.dart';
-import 'package:{{app_package_name}}/{{root_segment}}/components/{{component_namespace}}/{{component_file_base}}_appbar.dart';
-import 'package:{{app_package_name}}/{{root_segment}}/components/{{component_namespace}}/{{component_file_base}}_empty.dart';
-import 'package:{{app_package_name}}/{{root_segment}}/components/{{component_namespace}}/{{component_file_base}}_error.dart';
-import 'package:{{app_package_name}}/{{root_segment}}/components/{{component_namespace}}/{{component_file_base}}_loading.dart';
-import 'package:{{app_package_name}}/{{root_segment}}/components/{{component_namespace}}/{{component_file_base}}_view.dart';
-import 'package:{{app_package_name}}/{{root_segment}}/controllers/{{module_file_base}}_controller.dart';
+import 'package:{{app_package_name}}/{{{module_import_path}}}/components/{{component_namespace}}/{{component_file_base}}_appbar.dart';
+import 'package:{{app_package_name}}/{{{module_import_path}}}/components/{{component_namespace}}/{{component_file_base}}_empty.dart';
+import 'package:{{app_package_name}}/{{{module_import_path}}}/components/{{component_namespace}}/{{component_file_base}}_error.dart';
+import 'package:{{app_package_name}}/{{{module_import_path}}}/components/{{component_namespace}}/{{component_file_base}}_loading.dart';
+import 'package:{{app_package_name}}/{{{module_import_path}}}/components/{{component_namespace}}/{{component_file_base}}_view.dart';
+import 'package:{{app_package_name}}/{{{module_import_path}}}/controllers/{{module_file_base}}_controller.dart';
 import 'package:flutter/material.dart';
 
 class {{module_class_prefix}}Page extends AgBasePage<{{module_class_prefix}}Controller> {

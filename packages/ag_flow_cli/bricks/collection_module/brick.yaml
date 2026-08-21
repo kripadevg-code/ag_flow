@@ -9,9 +9,9 @@ vars:
   app_package_name:
     type: string
     description: The consuming app's own package name (from its pubspec.yaml).
-  root_segment:
+  module_import_path:
     type: string
-    description: The module's root path segment, e.g. product.
+    description: "The modules/ + root path segment used for package imports, e.g. modules/product."
   module_class_prefix:
     type: string
     description: Cumulative PascalCase class prefix, e.g. Products.

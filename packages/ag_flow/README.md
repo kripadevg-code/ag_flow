@@ -115,18 +115,11 @@ class ProductService extends AgBaseService with AgCrudService<Product, String> {
 CRUD method set — a Service that doesn't fit `add`/`getAll`/`getById`/
 `update`/`delete` (e.g. a paginated collection, which needs a `getPage`
 that mixin doesn't provide) just skips the mixin and writes exactly the
-methods the feature needs, named however reads best. [example/](example)'s
-`ProductsService` does exactly this: hand-written `getPage`/`create`/
-`delete`, no `AgCrudService` in sight, because pagination doesn't fit that
-shape. Repo/Controller follow the same rule — see
-`ProductsController.addProduct`/`.deleteProduct` and
-`AgPaginationMixin.updateItems` (an `emit()`-style escape hatch for
-reflecting a mutation in the currently-displayed list without a full
-`refresh()`, useful when the mutation itself already returned the data —
-or, as in the example, against a demo backend that doesn't actually
-persist writes, where a `refresh()` would never show what was just
-created).
-
-See [example/](example) for a complete hand-wired app (no CLI involved),
-demonstrating both module templates end-to-end and a full create/read/
-update/delete cycle against a real API (jsonplaceholder).
+methods the feature needs, named however reads best. Repo/Controller
+follow the same rule — a Controller is free to expose `addProduct`/
+`deleteProduct`-style methods instead of a fixed shape, and
+`AgPaginationMixin.updateItems` is available as an `emit()`-style escape
+hatch for reflecting a mutation in the currently-displayed list without a
+full `refresh()` — useful when the mutation itself already returned the
+data, or against a backend that doesn't actually persist writes, where a
+`refresh()` would never show what was just created.

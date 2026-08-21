@@ -41,7 +41,7 @@ class AggregatorUpdater {
 
   List<FileOp> plan(ModuleSpec spec) {
     final appPackageName = project.packageName;
-    final rootSegment = spec.modulePath.rootSegment;
+    final moduleImportPath = 'modules/${spec.modulePath.rootSegment}';
 
     final ops = <FileOp>[
       if (spec.isDetail)
@@ -59,7 +59,7 @@ class AggregatorUpdater {
           source,
           spec,
           appPackageName: appPackageName,
-          rootSegment: rootSegment,
+          moduleImportPath: moduleImportPath,
         ),
       ),
       _planOne(

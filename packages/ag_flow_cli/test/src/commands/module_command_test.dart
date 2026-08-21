@@ -56,6 +56,7 @@ void main() {
         p.join(
           appDir.path,
           'lib',
+          'modules',
           'company',
           'controllers',
           'companies_controller.dart',
@@ -77,6 +78,7 @@ void main() {
       p.join(
         appDir.path,
         'lib',
+        'modules',
         'product',
         'controllers',
         'products_controller.dart',
@@ -101,6 +103,7 @@ void main() {
         p.join(
           appDir.path,
           'lib',
+          'modules',
           'product',
           'controllers',
           'products_controller.dart',
@@ -122,6 +125,7 @@ void main() {
         p.join(
           appDir.path,
           'lib',
+          'modules',
           'product',
           'controllers',
           'products_controller.dart',
@@ -143,6 +147,7 @@ void main() {
         p.join(
           appDir.path,
           'lib',
+          'modules',
           'product',
           'controllers',
           'products_controller.dart',
@@ -182,6 +187,7 @@ void main() {
         p.join(
           appDir.path,
           'lib',
+          'modules',
           'product',
           'controllers',
           'product_details_controller.dart',

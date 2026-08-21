@@ -29,15 +29,16 @@ one where you've since hand-edited a file under `lib/core/`) since every
 file is only ever created if missing, never overwritten.
 
 Each `ag g m <path>` generates a full set of files under
-`lib/<root_segment>/` (flat by architectural layer, per
-requirments/ag_framework.md §6). The page itself is never more than
-wiring — every independently-overridable slot (`appBar`, `loadingBuilder`,
-`errorBuilder`, `emptyBuilder`, and the success content) is its own
-component file under `components/`, generated and linked into the page
-automatically:
+`lib/modules/<root_segment>/` (flat by architectural layer, per
+requirments/ag_framework.md §6) — every module shares one `lib/modules/`
+parent, sitting alongside (never inside) `lib/core`. The page itself is
+never more than wiring — every independently-overridable slot (`appBar`,
+`loadingBuilder`, `errorBuilder`, `emptyBuilder`, and the success content)
+is its own component file under `components/`, generated and linked into
+the page automatically:
 
 ```
-lib/product/
+lib/modules/product/
 ├── bindings/products_binding.dart
 ├── components/product/
 │   ├── product_appbar.dart    # appBar

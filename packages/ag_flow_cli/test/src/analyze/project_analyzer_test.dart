@@ -75,7 +75,14 @@ void main() {
     () async {
       appDir = await _buildCleanProject();
       File(
-        p.join(appDir.path, 'lib', 'product', 'repos', 'products_repo.dart'),
+        p.join(
+          appDir.path,
+          'lib',
+          'modules',
+          'product',
+          'repos',
+          'products_repo.dart',
+        ),
       ).deleteSync();
 
       final issues = await _analyze(appDir);
@@ -209,6 +216,7 @@ void main() {
         p.join(
           appDir.path,
           'lib',
+          'modules',
           'product',
           'controllers',
           'nested',
@@ -231,6 +239,7 @@ void main() {
         p.join(
           appDir.path,
           'lib',
+          'modules',
           'product',
           'components',
           'product',
@@ -251,7 +260,14 @@ void main() {
     () async {
       appDir = await _buildCleanProject();
       File(
-        p.join(appDir.path, 'lib', 'product', 'pages', 'rogue_page.dart'),
+        p.join(
+          appDir.path,
+          'lib',
+          'modules',
+          'product',
+          'pages',
+          'rogue_page.dart',
+        ),
       ).writeAsStringSync('''
 class RogueNavigator {
   void go() {
@@ -288,7 +304,14 @@ class RogueNavigator {
     () async {
       appDir = await _buildCleanProject();
       final pageFile = File(
-        p.join(appDir.path, 'lib', 'product', 'pages', 'products_page.dart'),
+        p.join(
+          appDir.path,
+          'lib',
+          'modules',
+          'product',
+          'pages',
+          'products_page.dart',
+        ),
       );
       pageFile.writeAsStringSync(
         '${pageFile.readAsStringSync()}\n'

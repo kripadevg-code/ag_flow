@@ -89,12 +89,11 @@ Page → Controller → Repo → Service → ApiProvider
   `AgPaginationMixin.paginationUpdateId` `GetBuilder` id, for the same reason. Implement `fetchPage(key)` as
   a pure function; the mixin is the sole writer of pagination state — except via `updateItems`, an
   `emit()`-style `@protected` escape hatch for reflecting a mutation (add/update/delete against the Repo)
-  in the currently-displayed list without a full `refresh()`. Needed because `example/`'s `ProductsController`
-  demonstrates a full create/read/update/delete cycle against a real API (jsonplaceholder) that doesn't
-  actually persist writes — `refresh()` re-fetching page 1 would never show an item that was just "created".
-  `AgCrudService` is deliberately never used there either: pagination needs a `getPage` that mixin doesn't
-  provide, so the whole Service/Repo/Controller stack is hand-written instead — proof AG never mandates a
-  fixed CRUD method set, not just a doc-comment claim.
+  in the currently-displayed list without a full `refresh()`. Needed for any backend that doesn't actually
+  persist writes (a demo/mock API, or one with eventual-consistency lag) — `refresh()` re-fetching page 1
+  would never show an item that was just "created". `AgCrudService` is a mixin, never mandatory: a list
+  controller needing a `getPage` the mixin doesn't provide is free to hand-write its whole Service/Repo/
+  Controller stack instead — AG never forces a fixed CRUD method set, not just as a doc-comment claim.
 - **`AgListBuilder`** — internally `CustomScrollView` + `SliverList`, not `ListView`, behind the same
   external API (constructor/parameters unchanged) — chosen so it composes inside a larger sliver-based
   scroll view later without a breaking change. Separator interleaving (`separatorBuilder`) mirrors
@@ -129,9 +128,9 @@ Page → Controller → Repo → Service → ApiProvider
   (unsupported method, body+form-data together) are real exceptions, not `assert` — those must still be
   caught in release builds.
 
-See [packages/ag_flow/example](packages/ag_flow/example) for a complete hand-wired app (no CLI involved)
-— it's the CLI's acceptance target, so its structure (`lib/<root>/{bindings,components,controllers,
-pages,repos,services}/`, no extra wrapper folder) is authoritative for what the generator must produce.
+There is no hand-wired example app in this repo — `ag_flow_cli`'s golden fixtures
+(`packages/ag_flow_cli/test/goldens/`), regenerated from real tool output (never hand-transcribed — see
+below), are the authoritative reference for what the generator produces.
 
 ## `ag_flow_cli` architecture (generator)
 
@@ -143,6 +142,20 @@ pages,repos,services}/`, no extra wrapper folder) is authoritative for what the 
   and the module's raw file base never do (`components/product/product_card.dart`, not `products_card
   .dart`) — this is why `ModuleSpec` exposes both `classPrefix`/`layerFileBase` (pluralized) and
   `componentClassPrefix`/`fileBase` (never pluralized), not one pair.
+- **Every generated module lives under a shared `lib/modules/` parent** — `lib/modules/product/...`,
+  `lib/modules/auth/...` — sitting alongside (never inside) `lib/core`. This is filesystem organization
+  only: route paths, class names, and every naming derivation above are unaffected — `ModulePath
+  .rootSegment` is still the bare segment (`product`), never `modules/product`. The one place that
+  distinction matters is package-import construction: `Project.moduleRootDir` is the single source of
+  truth for the on-disk path, and `module_import_path` (`ModuleGenerator`'s vars map, and
+  `AggregatorUpdater`'s call into `updateAppPages`) is the single source of truth for the
+  `modules/<root>` segment every generated `package:<app>/...` import is built from. **Mason's default
+  `{{var}}` interpolation HTML-escapes its value** — a real, empirically-found bug: `{{module_import_path}}`
+  rendered `modules/product` as `modules&#x2F;product` in every brick-templated import line, since Mason's
+  Mustache engine escapes `/` the same way it escapes `<`/`>`/`&`. Every other brick var was a bare
+  PascalCase/snake_case identifier with no special characters, so this never surfaced before
+  `module_import_path` introduced the first var whose value contains a `/`. Fixed by switching to
+  unescaped triple-mustache (`{{{module_import_path}}}`) at every one of its use sites in the bricks.
 - **Templates** (`bricks/`, bundled to `lib/src/templates/generated/`): two Mason bricks,
   `collection_module` and `detail_module`, each generating a full file set for their module type in one
   `mason make`-equivalent call — not one brick per layer, since every layer's content differs between
@@ -268,7 +281,3 @@ pages,repos,services}/`, no extra wrapper folder) is authoritative for what the 
 
 - `endpoints.dart` is deliberately never auto-updated by `ag g m` (endpoints are grouped by backend
   domain, not frontend module hierarchy — ag_endpoint_rules.md §5).
-- The example app's `InitialBinding` points at a real public API (`jsonplaceholder.typicode.com`) — fine
-  for manual `flutter run` demos, deliberately never exercised by an automated widget test (an early
-  attempt at that hit a real pending-timer failure from live network I/O inside `flutter_test`'s strict
-  binding; don't reintroduce that pattern).

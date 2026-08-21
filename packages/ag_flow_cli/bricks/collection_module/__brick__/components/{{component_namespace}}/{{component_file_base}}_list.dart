@@ -1,5 +1,5 @@
 import 'package:ag_flow/ag_flow.dart';
-import 'package:{{app_package_name}}/{{root_segment}}/components/{{component_namespace}}/{{component_file_base}}_item.dart';
+import 'package:{{app_package_name}}/{{{module_import_path}}}/components/{{component_namespace}}/{{component_file_base}}_item.dart';
 import 'package:flutter/material.dart';
 
 /// Renders the {{component_class_prefix}} collection's success content.

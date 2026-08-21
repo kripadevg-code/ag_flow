@@ -32,7 +32,7 @@ class AnalyzeIssue {
   final String message;
 
   /// The file this issue is anchored to, relative to the project root
-  /// (e.g. `lib/product/controllers/products_controller.dart`).
+  /// (e.g. `lib/modules/product/controllers/products_controller.dart`).
   final String file;
 
   @override

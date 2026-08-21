@@ -178,7 +178,13 @@ AG automatically handles common detail-page infrastructure.
 
 # 5. Module Structure
 
-A complete root module must use the following structure:
+Every module lives under a shared `lib/modules/` parent — `lib/modules/product/`,
+`lib/modules/auth/` — sitting alongside (never inside) `lib/core`. This is
+filesystem organization only: it has no bearing on route paths, class
+names, or any other naming rule in this document.
+
+A complete root module must use the following structure (shown relative
+to its own folder, i.e. `lib/modules/product/`):
 
 ```text
 product/

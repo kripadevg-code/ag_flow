@@ -47,12 +47,11 @@ Future<List<AnalyzeIssue>> checkDependencyDirection(
   Project project,
   AnalysisContextCollection collection,
 ) async {
-  if (!project.libDir.existsSync()) return const [];
+  if (!project.modulesDir.existsSync()) return const [];
 
   final issues = <AnalyzeIssue>[];
-  for (final rootEntity in project.libDir.listSync()) {
+  for (final rootEntity in project.modulesDir.listSync()) {
     if (rootEntity is! Directory) continue;
-    if (p.basename(rootEntity.path) == 'core') continue;
 
     issues
       ..addAll(
