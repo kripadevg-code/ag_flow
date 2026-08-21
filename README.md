@@ -47,6 +47,11 @@ The binding specification for AG lives in [requirments/](requirments/):
 - [routes.md](requirments/routes.md) — routing/navigation/arguments generation rules
 - [ag_endpoint_rules.md](requirments/ag_endpoint_rules.md) — centralized API endpoint/request rules
 
+**New to AG?** See [GETTING_STARTED.md](GETTING_STARTED.md) — a
+hands-on walkthrough of every feature, from `ag init` through a fully
+wired detail module, written for a developer who's never touched this
+framework before.
+
 See [CLAUDE.md](CLAUDE.md) for a condensed architecture summary aimed at
 engineers (and AI assistants) working in this repo.
 
