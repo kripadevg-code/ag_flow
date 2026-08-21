@@ -2,6 +2,27 @@
 
 ## Unreleased
 
+- **`ag g m`'s generated page is now pure wiring — every overridable slot
+  is its own component file, generated and linked in automatically.**
+  `appBar`, `loadingBuilder`, `errorBuilder`, and `emptyBuilder` each get a
+  dedicated file under `components/<namespace>/` (`_appbar.dart`,
+  `_loading.dart`, `_error.dart`, `_empty.dart`), and the success content
+  does too: a collection module's `_list.dart` (wraps `AgListBuilder`,
+  referencing the existing `_item.dart` per-row widget — previously
+  generated but never actually wired into the page) and a detail module's
+  `_view.dart` (previously generated but likewise dangling). All are plain
+  starting-point widgets — customize freely, or delete one and its
+  one-line reference in the page to fall back to `AgBasePage`'s own
+  default for that slot.
+  - Found and fixed along the way, via a real `dart analyze` against a
+    freshly generated, `pub get`-resolved project (this repo's own
+    verification convention, but not previously re-run after the
+    add/update/delete stub feature below shipped): the generated
+    Controller's `update()` stub silently collided with `GetxController
+    .update()` — an override with an incompatible signature, a genuine
+    `invalid_override` compile error in every project that generated one.
+    Renamed to `updateItem` on the Controller only (Service/Repo keep
+    `update()` — they don't extend `GetxController`, so there's no clash).
 - **`ag g m` now generates `add`/`update`/`delete` stubs by default**
   across Service/Repo/Controller, alongside the always-present read
   method (`getPage`/`getByArgument`) — matching the read method's own

@@ -28,18 +28,37 @@ It's idempotent — safe to run again on an already-initialized project (or
 one where you've since hand-edited a file under `lib/core/`) since every
 file is only ever created if missing, never overwritten.
 
-Each `ag g m <path>` generates six files under `lib/<root_segment>/`
-(flat by architectural layer, per requirments/ag_framework.md §6):
+Each `ag g m <path>` generates a full set of files under
+`lib/<root_segment>/` (flat by architectural layer, per
+requirments/ag_framework.md §6). The page itself is never more than
+wiring — every independently-overridable slot (`appBar`, `loadingBuilder`,
+`errorBuilder`, `emptyBuilder`, and the success content) is its own
+component file under `components/`, generated and linked into the page
+automatically:
 
 ```
 lib/product/
 ├── bindings/products_binding.dart
-├── components/product/product_item.dart
+├── components/product/
+│   ├── product_appbar.dart    # appBar
+│   ├── product_loading.dart   # loadingBuilder
+│   ├── product_error.dart     # errorBuilder
+│   ├── product_empty.dart     # emptyBuilder
+│   ├── product_list.dart      # buildSuccess — wraps AgListBuilder
+│   └── product_item.dart      # one row within product_list.dart
 ├── controllers/products_controller.dart
-├── pages/products_page.dart
+├── pages/products_page.dart   # just imports + wires the six files above
 ├── repos/products_repo.dart
 └── services/products_service.dart
 ```
+
+(A detail module gets the same `_appbar`/`_loading`/`_error`/`_empty` set,
+plus a single `_view.dart` in place of `_list.dart`/`_item.dart` — there's
+no pagination, so the success content is just one view of the fetched
+data.) Every component is a plain, fully-owned starting point — customize
+it freely, or delete it and its one-line reference in the page to fall
+back to `AgBasePage`'s own default for that slot (nothing falls back for
+the success content, since `buildSuccess` is required).
 
 ...and idempotently wires it into the shared aggregator files:
 
@@ -66,7 +85,12 @@ on a page that's about one existing entity.) Every stub is a plain
 `core/endpoints.dart`, exactly like the always-present read method
 (`getPage`/`getByArgument`) already is — not a mixin, not framework-owned:
 delete whichever ones a module doesn't need, exactly as freely as any
-other generated code. Control which get generated with `--methods=`:
+other generated code. On the Controller specifically, the update stub is
+named `updateItem`, not `update` — `AgBaseController` extends GetX's
+`GetxController`, which already declares its own `update()` for triggering
+rebuilds, so a same-named override with a different signature would be a
+compile error, not just a style clash. Control which get generated with
+`--methods=`:
 
 ```bash
 ag g m product                          # add, update, delete — all three

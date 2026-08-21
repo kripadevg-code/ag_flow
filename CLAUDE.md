@@ -144,7 +144,7 @@ pages,repos,services}/`, no extra wrapper folder) is authoritative for what the 
   .dart`) — this is why `ModuleSpec` exposes both `classPrefix`/`layerFileBase` (pluralized) and
   `componentClassPrefix`/`fileBase` (never pluralized), not one pair.
 - **Templates** (`bricks/`, bundled to `lib/src/templates/generated/`): two Mason bricks,
-  `collection_module` and `detail_module`, each generating all 6 files for their module type in one
+  `collection_module` and `detail_module`, each generating a full file set for their module type in one
   `mason make`-equivalent call — not one brick per layer, since every layer's content differs between
   collection and detail anyway (conditionals-per-file would've been more, not less, complexity than two
   full brick sets). Generated code uses `package:<app_package_name>/...` imports throughout — never
@@ -161,7 +161,28 @@ pages,repos,services}/`, no extra wrapper folder) is authoritative for what the 
   declared only in `collection_module/brick.yaml` — a detail module's `brick.yaml` has no `generate_add`
   var at all, so `ModuleGenerator` passing that key unconditionally in its vars map (matching the
   pre-existing pattern of passing every var to both bundles regardless of which brick uses it) is a
-  harmless no-op there, not a validation error.
+  harmless no-op there, not a validation error. On the Controller specifically, the generated update stub
+  is named `updateItem`, not `update` — found via a real `dart analyze` against a freshly generated,
+  `pub get`-resolved project (not just this repo's own golden-file/resolved-check tests, which never asked
+  the analyzer for *every* diagnostic on the generated unit): `AgBaseController` extends GetX's
+  `GetxController`, which already declares `update([List<Object>? ids, bool condition])`, so a same-named
+  override with a different signature is a real `invalid_override` compile error, not a style nit. Service
+  and Repo keep `update()` — they don't extend `GetxController`, so there's no clash there.
+  - **Page is pure wiring; every overridable slot is its own component file.** `appBar`, `loadingBuilder`,
+    `errorBuilder`, `emptyBuilder`, and the success content each get a dedicated file under
+    `components/<namespace>/` (`_appbar.dart`, `_loading.dart`, `_error.dart`, `_empty.dart`, and
+    `_list.dart`/`_item.dart` for a collection module or `_view.dart` for a detail module), generated and
+    linked into the page automatically — the generated page file itself is never more than imports plus a
+    one-line reference per slot. This is also the fix for a real dangling-file bug: `_item.dart`/`_view.dart`
+    were already generated before this, but the page never actually referenced them — they sat unused,
+    with the page instead inlining its own placeholder (`ListTile`/`Center(Text(...))`). `_list.dart` wraps
+    `AgListBuilder<dynamic, int>` and takes an `AgListController<dynamic, int>` (the framework base type,
+    not the concrete generated Controller) so the components folder never has to import the controllers
+    folder. `AppBar` is subclassed directly, not wrapped by composition, since `AgBasePage.appBar()` already
+    returns `PreferredSizeWidget?` and `AppBar` already *is* one — note its constructor isn't `const` in the
+    pinned Flutter version, so neither is the generated subclass's. Every component is a plain, fully-owned
+    starting point: delete one and its one-line reference in the page to fall back to `AgBasePage`'s own
+    default for that slot (there's no fallback for the success content — `buildSuccess` is required).
 - **`ModuleGenerator.plan()`** never writes to disk directly — it renders via an in-memory
   `GeneratorTarget`, formats with `DartFormatter`, checks existence, and returns `FileOp`s (`create` /
   `update` / `skipExisting`) for an `Executor` to apply (or, under `--dry-run`, just report). This is what
