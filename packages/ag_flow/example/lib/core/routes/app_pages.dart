@@ -7,17 +7,17 @@ import 'package:ag_flow_example/modules/product/pages/products_page.dart';
 import 'app_routes.dart';
 
 abstract class AppPages {
-  static const Transition defaultTransition = Transition.rightToLeft;
+  static const AgTransition defaultTransition = AgTransition.rightToLeft;
 
-  static final List<GetPage<dynamic>> pages = [
-    GetPage(
+  static final List<AgRoute> pages = [
+    AgRoute(
       name: AppRoutes.product,
       page: ProductsPage.new,
       binding: ProductsBinding(),
       transition: AppPages.defaultTransition,
     ),
 
-    GetPage(
+    AgRoute(
       name: AppRoutes.productDetails,
       page: ProductDetailsPage.new,
       binding: ProductDetailsBinding(),

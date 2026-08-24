@@ -1,18 +1,18 @@
-import 'package:get/get.dart';
+import 'package:ag_flow/src/navigation/ag_navigator.dart';
 
-/// Resolves typed GetX navigation arguments safely.
+/// Resolves typed navigation arguments safely.
 ///
-/// Replaces the unsafe `Get.arguments as XArguments` cast with a named,
-/// clearly-erroring lookup.
+/// Replaces the unsafe `AgNavigator.arguments as XArguments` cast with a
+/// named, clearly-erroring lookup.
 class AgArguments {
   AgArguments._();
 
-  /// Returns [Get.arguments] cast to [A]. [override] is primarily for
-  /// tests that need to supply an argument without going through GetX
-  /// navigation. Throws [AgArgumentError] if the value is missing or of
-  /// the wrong type.
+  /// Returns [AgNavigator.arguments] cast to [A]. [override] is primarily
+  /// for tests that need to supply an argument without going through a
+  /// real navigation. Throws [AgArgumentError] if the value is missing or
+  /// of the wrong type.
   static A resolve<A>({Object? override}) {
-    final raw = override ?? Get.arguments;
+    final raw = override ?? AgNavigator.arguments;
     if (raw is A) return raw;
     throw AgArgumentError(expectedType: A, actualValue: raw);
   }

@@ -11,7 +11,7 @@ import 'package:path/path.dart' as p;
 
 /// For every route in [routes] (as parsed from `app_routes.dart`, minus
 /// `initial`), checks that the module it names has all five architectural
-/// layer files (Rule: missing layer file), a `GetPage` entry in
+/// layer files (Rule: missing layer file), an `AgRoute` entry in
 /// `app_pages.dart`, a navigation method in `route_management.dart`, and —
 /// for detail modules — an argument class in `arguments.dart` (Rule:
 /// missing route wiring).
@@ -100,12 +100,12 @@ List<AnalyzeIssue> checkRouteWiring(Project project, List<RouteEntry> routes) {
       spec.bindingFile,
     );
 
-    if (appPagesUnit != null && !_hasGetPageEntry(appPagesUnit, route.name)) {
+    if (appPagesUnit != null && !_hasAgRouteEntry(appPagesUnit, route.name)) {
       issues.add(
         AnalyzeIssue(
           category: AnalyzeCategory.missingRouteWiring,
           message:
-              'Route "AppRoutes.${route.name}" has no GetPage entry in '
+              'Route "AppRoutes.${route.name}" has no AgRoute entry in '
               'app_pages.dart.',
           file: p.join('lib', 'core', 'routes', 'app_pages.dart'),
         ),
@@ -161,7 +161,7 @@ void _checkLayerFile(
   );
 }
 
-bool _hasGetPageEntry(CompilationUnit appPagesUnit, String routeConstant) {
+bool _hasAgRouteEntry(CompilationUnit appPagesUnit, String routeConstant) {
   ClassDeclaration? appPages;
   for (final declaration in appPagesUnit.declarations) {
     if (declaration is ClassDeclaration &&
@@ -187,7 +187,7 @@ bool _hasGetPageEntry(CompilationUnit appPagesUnit, String routeConstant) {
   final routeConstantExpr = 'AppRoutes.$routeConstant';
   return pagesList.elements.whereType<MethodInvocation>().any(
     (invocation) =>
-        invocation.methodName.name == 'GetPage' &&
+        invocation.methodName.name == 'AgRoute' &&
         invocation.argumentList.arguments.whereType<NamedExpression>().any(
           (arg) =>
               arg.name.label.name == 'name' &&

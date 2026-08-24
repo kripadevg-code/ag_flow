@@ -3,12 +3,11 @@ import 'package:sample_app/modules/product/controllers/product_details_controlle
 import 'package:sample_app/modules/product/repos/product_details_repo.dart';
 import 'package:sample_app/modules/product/services/product_details_service.dart';
 
-class ProductDetailsBinding extends Bindings {
+class ProductDetailsBinding extends AgBinding {
   @override
   void dependencies() {
-    Get
-      ..lazyPut(() => ProductDetailsService(Get.find()))
-      ..lazyPut(() => ProductDetailsRepo(Get.find()))
-      ..lazyPut(() => ProductDetailsController(Get.find()));
+    lazyPut(() => ProductDetailsService(AgLocator.find()));
+    lazyPut(() => ProductDetailsRepo(AgLocator.find()));
+    lazyPut(() => ProductDetailsController(AgLocator.find()));
   }
 }

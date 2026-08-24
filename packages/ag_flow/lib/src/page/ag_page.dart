@@ -1,10 +1,10 @@
 import 'package:ag_flow/src/controller/ag_base_controller.dart';
 import 'package:ag_flow/src/page/ag_page_state.dart';
+import 'package:ag_flow/src/state/ag_builder.dart';
 import 'package:ag_flow/src/widgets/ag_empty.dart';
 import 'package:ag_flow/src/widgets/ag_error.dart';
 import 'package:ag_flow/src/widgets/ag_loading.dart';
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
 
 /// Composes a page (or a section of one) from an [AgBaseController]'s
 /// [AgPageState].
@@ -51,18 +51,9 @@ class AgPage<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GetBuilder<AgBaseController<T>>(
-      init: controller,
-      global: false,
-      // A Binding owns this controller's lifecycle (created via
-      // Get.lazyPut, disposed when the route itself is popped) — this
-      // widget merely reads it. With global:false, GetBuilder otherwise
-      // defaults to deleting it from Get's DI container on its own
-      // dispose, which must never happen just because one of possibly
-      // several widgets reading the same controller unmounted first.
-      autoRemove: false,
-      id: AgBaseController.pageStateUpdateId,
-      builder: (controller) {
+    return AgBuilder(
+      listenable: controller,
+      builder: (context) {
         final currentState = controller.state;
         return switch (currentState) {
           AgPageInitial<T>() || AgPageLoading<T>() =>

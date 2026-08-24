@@ -63,7 +63,7 @@ for that slot.
 ...and idempotently wires it into the shared aggregator files:
 
 - `lib/core/routes/app_routes.dart` — a new `AppRoutes`/`_Routes` constant pair.
-- `lib/core/routes/app_pages.dart` — a new `GetPage(...)` entry (plus the imports it needs).
+- `lib/core/routes/app_pages.dart` — a new `AgRoute(...)` entry (plus the imports it needs).
 - `lib/core/routes/route_management.dart` — a new `goToXPage(...)` navigation method.
 - `lib/core/arguments/arguments.dart` — (detail modules only) a new `<ClassPrefix>PageArgument` class, generated empty — add fields yourself; the generated controller/repo/service pass the whole argument object through rather than guessing field names.
 
@@ -85,12 +85,9 @@ on a page that's about one existing entity.) Every stub is a plain
 `core/endpoints.dart`, exactly like the always-present read method
 (`getPage`/`getByArgument`) already is — not a mixin, not framework-owned:
 delete whichever ones a module doesn't need, exactly as freely as any
-other generated code. On the Controller specifically, the update stub is
-named `updateItem`, not `update` — `AgBaseController` extends GetX's
-`GetxController`, which already declares its own `update()` for triggering
-rebuilds, so a same-named override with a different signature would be a
-compile error, not just a style clash. Control which get generated with
-`--methods=`:
+other generated code. All three keep the same name across Service, Repo,
+and Controller, so a change reads the same at every layer. Control which
+get generated with `--methods=`:
 
 ```bash
 ag g m product                          # add, update, delete — all three
@@ -128,13 +125,13 @@ Mechanical/structural checks — always run, derived from re-parsing
 
 - a module missing one of its five architectural-layer files
   (page/controller/repo/service/binding)
-- a route with no `GetPage` entry in `app_pages.dart`
+- a route with no `AgRoute` entry in `app_pages.dart`
 - a route with no navigation method in `route_management.dart`
 - a detail route missing its argument class in `arguments.dart`
 - two different route constants pointing at the identical path
 - a nested subfolder under an architectural-layer or component-namespace
   folder (both must stay flat)
-- a hard-coded route string (`Get.toNamed('/literal')`) anywhere outside
+- a hard-coded route string (`AgNavigator.toNamed('/literal')`) anywhere outside
   `route_management.dart`
 
 Resolved-model checks — need a *resolved* element model (`analyzer`'s

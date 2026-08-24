@@ -14,13 +14,13 @@ const _navigationMethods = {
   'offAndToNamed',
 };
 
-/// Flags `Get.toNamed('/some/literal/path')`-style calls anywhere in the
-/// project's `lib/` tree — routes must always be referenced via their
-/// `AppRoutes.*` constant so `route_management.dart` stays the single
-/// source of truth for navigation (requirments/routes.md §1). Deliberately
-/// only matches a raw string-literal first argument: `Get.toNamed
-/// (AppRoutes.product)` is exactly what generated code does and is never
-/// flagged.
+/// Flags `AgNavigator.toNamed('/some/literal/path')`-style calls anywhere
+/// in the project's `lib/` tree — routes must always be referenced via
+/// their `AppRoutes.*` constant so `route_management.dart` stays the
+/// single source of truth for navigation (requirments/routes.md §1).
+/// Deliberately only matches a raw string-literal first argument:
+/// `AgNavigator.toNamed(AppRoutes.product)` is exactly what generated
+/// code does and is never flagged.
 ///
 /// `route_management.dart` itself is exempt — it's the one place a literal
 /// route string is ever appropriate.
@@ -71,7 +71,7 @@ class _HardcodedRouteVisitor extends RecursiveAstVisitor<void> {
     final arguments = node.argumentList.arguments;
     final firstArg = arguments.isEmpty ? null : arguments.first;
     if (_navigationMethods.contains(node.methodName.name) &&
-        node.target?.toSource() == 'Get' &&
+        node.target?.toSource() == 'AgNavigator' &&
         firstArg is SimpleStringLiteral) {
       found.add(firstArg.value);
     }

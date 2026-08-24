@@ -1,20 +1,23 @@
-/// AG — Infraon's opinionated Flutter framework built on GetX.
+/// AG — Infraon's opinionated Flutter framework.
 ///
 /// See `ag_framework.md`, `routes.md`, and `ag_endpoint_rules.md` in the
 /// repository's `requirments/` directory for the binding specification
 /// this library implements.
 library;
 
-// Re-exported for convenience: every generated/hand-written AG module
-// needs both AG's classes and GetX's (Get, Bindings, GetxController, ...).
-export 'package:get/get.dart';
-
 export 'src/arguments/ag_arguments.dart';
 export 'src/controller/ag_base_controller.dart';
 export 'src/controller/ag_detail_controller.dart';
 export 'src/controller/ag_list_controller.dart';
 export 'src/controller/ag_pagination_state.dart';
+export 'src/di/ag_initializable.dart';
+export 'src/di/ag_locator.dart';
 export 'src/list/ag_list_builder.dart';
+export 'src/navigation/ag_app.dart';
+export 'src/navigation/ag_binding.dart';
+export 'src/navigation/ag_navigator.dart';
+export 'src/navigation/ag_route.dart';
+export 'src/navigation/ag_transition.dart';
 export 'src/network/ag_api_exception.dart';
 export 'src/network/ag_cancel_token.dart';
 export 'src/network/ag_endpoint.dart';
@@ -33,6 +36,8 @@ export 'src/repo/ag_base_repo.dart';
 export 'src/repo/ag_repo_exception.dart';
 export 'src/service/ag_base_service.dart';
 export 'src/service/ag_crud_service.dart';
+export 'src/state/ag_builder.dart';
+export 'src/state/ag_notifier.dart';
 export 'src/widgets/ag_empty.dart';
 export 'src/widgets/ag_error.dart';
 export 'src/widgets/ag_loading.dart';

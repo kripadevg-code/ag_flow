@@ -49,10 +49,10 @@ AggregatorUpdateResult updateRouteManagement(
       : body.members.last.end;
   final snippet = spec.isDetail
       ? '\n\n  static void ${spec.navMethod}(${spec.argumentClass} argument) {\n'
-            '    Get.toNamed<dynamic>(AppRoutes.${spec.routeConstant}, arguments: argument);\n'
+            '    AgNavigator.toNamed<dynamic>(AppRoutes.${spec.routeConstant}, arguments: argument);\n'
             '  }'
       : '\n\n  static void ${spec.navMethod}() {\n'
-            '    Get.toNamed<dynamic>(AppRoutes.${spec.routeConstant});\n'
+            '    AgNavigator.toNamed<dynamic>(AppRoutes.${spec.routeConstant});\n'
             '  }';
   patches.add(Patch.insertion(insertOffset, snippet));
 

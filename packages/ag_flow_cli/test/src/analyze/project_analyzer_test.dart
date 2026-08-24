@@ -93,7 +93,7 @@ void main() {
   );
 
   test(
-    'flags a route with no GetPage entry',
+    'flags a route with no AgRoute entry',
     () async {
       appDir = await _buildCleanProject();
       final appPagesFile = File(
@@ -101,7 +101,7 @@ void main() {
       );
       appPagesFile.writeAsStringSync(
         appPagesFile.readAsStringSync().replaceFirst(
-          RegExp(r'GetPage\(.*?\),', dotAll: true),
+          RegExp(r'AgRoute\(.*?\),', dotAll: true),
           '',
         ),
       );
@@ -109,7 +109,7 @@ void main() {
       final issues = await _analyze(appDir);
       expect(issues, hasLength(1));
       expect(issues.single.category, AnalyzeCategory.missingRouteWiring);
-      expect(issues.single.message, contains('GetPage'));
+      expect(issues.single.message, contains('AgRoute'));
     },
   );
 
@@ -179,10 +179,10 @@ void main() {
                   "  static const String productAlias = '/product';",
             ),
       );
-      // Give the alias its own GetPage entry too, so the *only* remaining
+      // Give the alias its own AgRoute entry too, so the *only* remaining
       // issue is the duplicate-path one this test targets — otherwise the
-      // route-wiring check (correctly) also flags the alias as missing a
-      // GetPage of its own, since that check keys off the route's own
+      // route-wiring check (correctly) also flags the alias as missing an
+      // AgRoute of its own, since that check keys off the route's own
       // name, not the module path it happens to share with "product".
       final appPagesFile = File(
         p.join(appDir.path, 'lib', 'core', 'routes', 'app_pages.dart'),
@@ -191,7 +191,7 @@ void main() {
         appPagesFile.readAsStringSync().replaceFirst(
           'pages = [',
           'pages = [\n'
-              '    GetPage(\n'
+              '    AgRoute(\n'
               '      name: AppRoutes.productAlias,\n'
               '      page: ProductsPage.new,\n'
               '      binding: ProductsBinding(),\n'
@@ -271,7 +271,7 @@ void main() {
       ).writeAsStringSync('''
 class RogueNavigator {
   void go() {
-    Get.toNamed('/product');
+    AgNavigator.toNamed('/product');
   }
 }
 ''');

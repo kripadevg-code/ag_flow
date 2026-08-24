@@ -1,6 +1,7 @@
 import 'package:ag_flow/src/controller/ag_base_controller.dart';
 import 'package:ag_flow/src/controller/ag_pagination_state.dart';
-import 'package:meta/meta.dart';
+import 'package:ag_flow/src/state/ag_notifier.dart';
+import 'package:flutter/foundation.dart';
 
 /// Adds pagination/load-more behavior to an [AgBaseController] whose data
 /// is a [List].
@@ -13,10 +14,14 @@ import 'package:meta/meta.dart';
 /// triggers duplicate fetches.
 mixin AgPaginationMixin<ItemType, PageKeyType extends Object>
     on AgBaseController<List<ItemType>> {
-  /// The `GetBuilder(id:)` every pagination-state rebuild is scoped to —
-  /// see [AgBaseController.pageStateUpdateId] for why this is a separate
-  /// id from the page-level state.
-  static const paginationUpdateId = 'ag_pagination_state';
+  /// Notifies pagination-state rebuilds — kept as a separate [AgNotifier]
+  /// from the controller's own page-state notifications (see
+  /// [AgBaseController]'s class doc for why).
+  final AgNotifier _paginationNotifier = AgNotifier();
+
+  /// The [Listenable] pagination-state rebuilds (`AgListBuilder`) should
+  /// listen to.
+  Listenable get paginationListenable => _paginationNotifier;
 
   /// The page key used for the very first page.
   PageKeyType get initialPageKey;
@@ -32,8 +37,11 @@ mixin AgPaginationMixin<ItemType, PageKeyType extends Object>
   AgPaginationState<ItemType, PageKeyType> get pagination => _pagination;
 
   void _setPagination(AgPaginationState<ItemType, PageKeyType> next) {
+    // Mirrors AgBaseController.emit's own guard: an in-flight fetchPage
+    // may well outlive the route that started it.
+    if (isDisposed) return;
     _pagination = next;
-    update([paginationUpdateId]);
+    _paginationNotifier.notify();
   }
 
   @override
@@ -105,6 +113,12 @@ mixin AgPaginationMixin<ItemType, PageKeyType extends Object>
   Future<void> refresh() async {
     _setPagination(AgPaginationState<ItemType, PageKeyType>());
     await super.refresh();
+  }
+
+  @override
+  void dispose() {
+    _paginationNotifier.dispose();
+    super.dispose();
   }
 }
 

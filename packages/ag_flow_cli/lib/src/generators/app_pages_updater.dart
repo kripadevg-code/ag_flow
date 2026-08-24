@@ -4,7 +4,7 @@ import 'package:ag_flow_cli/src/naming/module_spec.dart';
 import 'package:analyzer/dart/analysis/utilities.dart';
 import 'package:analyzer/dart/ast/ast.dart';
 
-/// Idempotently ensures [spec]'s `GetPage` entry (and the imports it
+/// Idempotently ensures [spec]'s `AgRoute` entry (and the imports it
 /// needs) exist in [source] (the contents of `core/routes/app_pages
 /// .dart`).
 AggregatorUpdateResult updateAppPages(
@@ -38,7 +38,7 @@ AggregatorUpdateResult updateAppPages(
     );
   }
 
-  // A bare `GetPage(...)` call — no `const`/`new` — parses syntactically
+  // A bare `AgRoute(...)` call — no `const`/`new` — parses syntactically
   // as a MethodInvocation, not an InstanceCreationExpression:
   // `parseString` only parses syntax, and disambiguating "constructor
   // call" from "function call" for an unprefixed `Identifier(...)`
@@ -50,7 +50,7 @@ AggregatorUpdateResult updateAppPages(
       .whereType<MethodInvocation>()
       .any(
         (invocation) =>
-            invocation.methodName.name == 'GetPage' &&
+            invocation.methodName.name == 'AgRoute' &&
             invocation.argumentList.arguments.whereType<NamedExpression>().any(
               (arg) =>
                   arg.name.label.name == 'name' &&
@@ -72,7 +72,7 @@ AggregatorUpdateResult updateAppPages(
     ].whereType<Patch>(),
     Patch.insertion(
       pagesList.rightBracket.offset,
-      '\n    GetPage(\n'
+      '\n    AgRoute(\n'
       '      name: AppRoutes.${spec.routeConstant},\n'
       '      page: ${spec.pageClass}.new,\n'
       '      binding: ${spec.bindingClass}(),\n'

@@ -9,7 +9,7 @@
 [![License: Proprietary](https://img.shields.io/badge/license-proprietary-blue.svg)](LICENSE)
 [![Distribution: enterprise-internal](https://img.shields.io/badge/distribution-enterprise--internal-orange.svg)](#installing-enterprise-internal)
 
-**An opinionated Flutter framework and CLI, built on [GetX](https://pub.dev/packages/get), that turns "write a new feature module" into a single command.**
+**An opinionated Flutter framework and CLI — zero third-party state-management dependency — that turns "write a new feature module" into a single command.**
 
 AG standardizes the shape of every feature module (page → controller →
 repo → service → binding), the routing/navigation-argument wiring, and

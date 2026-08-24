@@ -1,8 +1,9 @@
 name: ag_flow
 description: >-
-  Infraon's opinionated Flutter framework built on GetX: standardized
-  page/controller/repo/service layers, page-state handling, pagination, and
-  a centralized networking layer.
+  Infraon's opinionated Flutter framework: standardized page/controller/
+  repo/service layers, page-state handling, pagination, DI/routing owned
+  in-house (no third-party state-management dependency), and a
+  centralized networking layer.
 version: 0.1.0
 publish_to: none
 resolution: workspace
@@ -16,7 +17,6 @@ dependencies:
   dio: ^5.11.0
   flutter:
     sdk: flutter
-  get: ^4.7.3
   meta: ^1.16.0
 
 dev_dependencies:

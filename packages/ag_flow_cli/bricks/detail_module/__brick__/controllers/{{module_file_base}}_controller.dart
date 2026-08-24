@@ -11,9 +11,7 @@ class {{module_class_prefix}}Controller extends AgDetailController<dynamic, {{mo
   Future<dynamic> fetch() => _repo.getByArgument(arguments);
 {{#generate_update}}
 
-  // Named updateItem — GetxController already declares update(), and a
-  // same-named override with a different signature is a compile error.
-  Future<void> updateItem(dynamic item) async {
+  Future<void> update(dynamic item) async {
     final updated = await _repo.update(arguments, item);
     emit(AgPageState.success(updated));
   }

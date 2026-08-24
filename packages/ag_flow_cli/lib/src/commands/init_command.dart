@@ -49,11 +49,11 @@ class InitCommand extends Command<int> {
         ..info(
           '  2. Set a real API base URL in lib/core/bindings/initial_binding.dart.',
         )
-        ..info('  3. Wire GetMaterialApp in your main.dart:')
-        ..info('       GetMaterialApp(')
+        ..info('  3. Wire AgApp in your main.dart:')
+        ..info('       AgApp(')
         ..info('         initialRoute: AppRoutes.initial,')
         ..info('         initialBinding: InitialBinding(),')
-        ..info('         getPages: AppPages.pages,')
+        ..info('         routes: AppPages.pages,')
         ..info('       )')
         ..info('  4. Run "ag g m <module>" to generate your first module.');
     }

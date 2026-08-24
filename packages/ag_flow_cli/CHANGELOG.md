@@ -2,6 +2,24 @@
 
 ## Unreleased
 
+- **Generated code no longer references GetX.** Following `ag_flow`'s
+  removal of the `get` dependency, every template and aggregator updater
+  now emits AG's own primitives: `AgBinding` + `AgLocator.find` in
+  bindings, `AgRoute`/`AgTransition` in `app_pages.dart`,
+  `AgNavigator.toNamed` in `route_management.dart`, and `AgApp` in the
+  `main.dart` wiring `ag init` prints. `ag analyze`'s hard-coded-route
+  check matches `AgNavigator.toNamed('/literal')`, and its route-wiring
+  check matches `AgRoute` entries. Golden fixtures regenerated from real
+  tool output, as always.
+- **The Controller's generated update stub is named `update` again**, not
+  `updateItem`. That workaround existed solely because `GetxController`
+  declared its own `update([List&lt;Object&gt;? ids, bool condition])` and a
+  same-named override was a real `invalid_override` error;
+  `AgBaseController` extends `ChangeNotifier` now, which declares no
+  `update`. Removing it also resolves a naming hazard it had introduced —
+  `updateItem` sat one character from `AgPaginationMixin.updateItems` —
+  and restores symmetry, since Service and Repo always used `update`.
+
 - **Reverted the success-content split from the "pure wiring" page change
   below**: `_list.dart` (collection) and `_view.dart` (detail) are gone.
   Neither was a genuinely reusable widget — each was just the one page's

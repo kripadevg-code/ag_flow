@@ -3,8 +3,8 @@ import 'dart:math' as math;
 
 import 'package:ag_flow/src/controller/ag_list_controller.dart';
 import 'package:ag_flow/src/controller/ag_pagination_state.dart';
+import 'package:ag_flow/src/state/ag_builder.dart';
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
 
 /// Renders a collection driven by an [AgListController]: item rendering,
 /// scrolling, and load-more.
@@ -69,14 +69,9 @@ class AgListBuilder<ItemType, PageKeyType extends Object>
 
   @override
   Widget build(BuildContext context) {
-    return GetBuilder<AgListController<ItemType, PageKeyType>>(
-      init: controller,
-      global: false,
-      // See AgPage's identical reasoning: a Binding, not this widget,
-      // owns the controller's lifecycle.
-      autoRemove: false,
-      id: AgPaginationMixin.paginationUpdateId,
-      builder: (controller) {
+    return AgBuilder(
+      listenable: controller.paginationListenable,
+      builder: (context) {
         final pagination = controller.pagination;
         final items = pagination.items;
         // The list is exhausted (no error, not loading) only ever needs a

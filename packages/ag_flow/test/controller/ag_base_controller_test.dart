@@ -26,7 +26,7 @@ void main() {
     });
 
     test('onInit triggers loadInitial automatically by default', () async {
-      final controller = _FakeController(() async => [1, 2, 3])..onInit();
+      final controller = _FakeController(() async => [1, 2, 3])..onAgInit();
       await Future<void>.delayed(Duration.zero);
       expect(controller.fetchCallCount, 1);
       expect(controller.state, isA<AgPageSuccess<List<int>>>());

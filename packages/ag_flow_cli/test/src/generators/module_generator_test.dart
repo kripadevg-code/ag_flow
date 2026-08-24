@@ -29,9 +29,9 @@ import 'package:ag_flow/ag_flow.dart';
 import 'app_routes.dart';
 
 abstract class AppPages {
-  static const Transition defaultTransition = Transition.rightToLeft;
+  static const AgTransition defaultTransition = AgTransition.rightToLeft;
 
-  static final List<GetPage<dynamic>> pages = [];
+  static final List<AgRoute> pages = [];
 }
 ''';
 
@@ -48,11 +48,11 @@ abstract class RouteManagement {
     LoginPageArgument? model,
     bool canPopCurrentRoute = false,
   }) {
-    Get.delete<LoginController>();
+    AgLocator.delete<LoginController>();
     if (canPopCurrentRoute) {
-      Get.offNamed(AppRoutes.login, arguments: model);
+      AgNavigator.offNamed(AppRoutes.login, arguments: model);
     } else {
-      Get.toNamed(AppRoutes.login, arguments: model);
+      AgNavigator.toNamed(AppRoutes.login, arguments: model);
     }
   }
 }
@@ -240,7 +240,7 @@ void main() {
         expect(routeManagement, contains('static void goToProductsPage()'));
         expect(
           routeManagement,
-          contains('Get.toNamed<dynamic>(AppRoutes.product);'),
+          contains('AgNavigator.toNamed<dynamic>(AppRoutes.product);'),
         );
 
         expect(
@@ -312,7 +312,7 @@ void main() {
         expect(
           routeManagement,
           contains(
-            'Get.toNamed<dynamic>(AppRoutes.productDetails, arguments: argument);',
+            'AgNavigator.toNamed<dynamic>(AppRoutes.productDetails, arguments: argument);',
           ),
         );
         expect(
@@ -343,11 +343,11 @@ void main() {
             '    LoginPageArgument? model,\n'
             '    bool canPopCurrentRoute = false,\n'
             '  }) {\n'
-            '    Get.delete<LoginController>();\n'
+            '    AgLocator.delete<LoginController>();\n'
             '    if (canPopCurrentRoute) {\n'
-            '      Get.offNamed(AppRoutes.login, arguments: model);\n'
+            '      AgNavigator.offNamed(AppRoutes.login, arguments: model);\n'
             '    } else {\n'
-            '      Get.toNamed(AppRoutes.login, arguments: model);\n'
+            '      AgNavigator.toNamed(AppRoutes.login, arguments: model);\n'
             '    }\n'
             '  }',
           ),

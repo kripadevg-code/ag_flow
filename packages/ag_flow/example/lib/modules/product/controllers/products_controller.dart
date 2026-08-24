@@ -15,9 +15,7 @@ class ProductsController extends AgListController<dynamic, int> {
     await refresh();
   }
 
-  // Named updateItem — GetxController already declares update(), and a
-  // same-named override with a different signature is a compile error.
-  Future<void> updateItem(dynamic id, dynamic item) async {
+  Future<void> update(dynamic id, dynamic item) async {
     await _repo.update(id, item);
     await refresh();
   }

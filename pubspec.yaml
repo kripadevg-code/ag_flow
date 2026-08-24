@@ -8,6 +8,8 @@ workspace:
   - packages/ag_flow
   - packages/ag_flow/example
   - packages/ag_flow_cli
+  - showcase/blog
+  - showcase/store
 
 dev_dependencies:
   melos: ^8.2.2
@@ -33,6 +35,7 @@ melos:
         packages/ag_flow/example/lib
         packages/ag_flow_cli/bin packages/ag_flow_cli/lib
         packages/ag_flow_cli/test packages/ag_flow_cli/tool
+        showcase/blog/lib showcase/store/lib
 
     analyze:
       description: >-

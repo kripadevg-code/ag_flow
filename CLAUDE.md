@@ -5,7 +5,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## What this repo is
 
 A Melos monorepo (native Dart pub workspaces) implementing **AG** — Infraon's opinionated Flutter
-framework + CLI, built on GetX. Two packages:
+framework + CLI. DI, rebuilds, and routing are all owned in-house — no third-party
+state-management dependency. Two packages:
 
 - [packages/ag_flow](packages/ag_flow) — the runtime framework (`AgBasePage`, `AgBaseController`, etc.). Complete for the classes listed below.
 - [packages/ag_flow_cli](packages/ag_flow_cli) — the `ag` generator CLI. `ag init` bootstraps a bare
@@ -72,21 +73,27 @@ mason bundle bricks/detail_module -t dart -o lib/src/templates/generated/
 Page → Controller → Repo → Service → ApiProvider
 ```
 
+**No third-party state-management dependency.** AG owns its DI, rebuild, and routing primitives outright
+— `get` was removed entirely (see "Owned primitives" below). Everything else here is unchanged by that.
+
 - **`AgBasePage<C extends AgBaseController>`** — one type parameter for *both* collection and detail
   pages (a deliberate deviation from the spec's literal 2-type-arg diagram for detail pages — Dart can't
   have one class name support two different generic arities. `C`'s own generics already carry the
-  argument type for detail controllers, so nothing is lost).
+  argument type for detail controllers, so nothing is lost). `controller` resolves from `AgLocator`,
+  registered by the module's `AgBinding` when its route was pushed.
 - **`AgBaseController<T>`** — page state via sealed `AgPageState<T>` (`initial/loading/success/empty/
   error`), not ad-hoc booleans. `AgPageSuccess`/`AgPageError` use deep equality (`package:collection`) so
-  `T` being a `List`/`Map` of value objects compares by content, not identity. Rebuilds go through
-  `GetBuilder`, not `Obx`/`Rx` — no per-value `Stream` wrapper, just a direct listener callback fired from
-  `GetxController.update([id])`, which is lighter-weight for this framework's page-/list-level rebuild
-  granularity than Obx's fine-grained dependency tracking. `emit()` is the single write path, calling
-  `update([AgBaseController.pageStateUpdateId])`; `AgPage`'s own `GetBuilder` filters on that exact id so a
-  pagination-only change never also re-triggers the page-level loading/error/empty/success switch.
+  `T` being a `List`/`Map` of value objects compares by content, not identity. Extends Flutter's own
+  `ChangeNotifier`; `emit()` is the single write path and the only caller of `notifyListeners()`.
+  **`emit()` no-ops once `isDisposed`** — an in-flight `fetch()` routinely outlives its route (a user
+  backing out mid-load is ordinary, not an edge case), and notifying a disposed `ChangeNotifier` throws.
+  Covered by `test/controller/ag_controller_disposal_test.dart`; don't remove that guard.
 - **`AgListController<ItemType, PageKeyType>`** (`AgPaginationMixin`) — pagination/load-more state,
-  tracked separately from page-level state (a load-more failure never corrupts `AgPageSuccess`) via its own
-  `AgPaginationMixin.paginationUpdateId` `GetBuilder` id, for the same reason. Implement `fetchPage(key)` as
+  tracked separately from page-level state (a load-more failure never corrupts `AgPageSuccess`) via its
+  own `AgNotifier` (`paginationListenable`), so a pagination-only change never re-triggers `AgPage`'s
+  loading/error/empty/success switch. Two distinct notifiers rather than one controller multiplexing
+  rebuild groups by string id (what `GetBuilder(id:)` did) — two objects can't collide the way a typo'd
+  id string silently could. Implement `fetchPage(key)` as
   a pure function; the mixin is the sole writer of pagination state — except via `updateItems`, an
   `emit()`-style `@protected` escape hatch for reflecting a mutation (add/update/delete against the Repo)
   in the currently-displayed list without a full `refresh()`. Needed for any backend that doesn't actually
@@ -99,12 +106,10 @@ Page → Controller → Repo → Service → ApiProvider
   scroll view later without a breaking change. Separator interleaving (`separatorBuilder`) mirrors
   `ListView.separated`'s own technique exactly: double the child count, even indices are items, odd
   indices are separators (verified against the Flutter SDK's own `ListView.separated` source, not
-  reinvented). Both this and `AgPage` pass `GetBuilder(global: false, autoRemove: false, init: controller)`
-  — `global: false` + `init:` binds to the exact controller *instance* passed in (never a DI lookup by
-  type, which matters for testability: every widget test constructs a controller directly with no
-  `Get.put` at all), and `autoRemove: false` is load-bearing: `GetBuilder`'s default (`autoRemove: true`)
-  deletes the controller from Get's DI container on this *widget's* dispose, which must never happen since
-  a Binding — not `AgPage`/`AgListBuilder` — owns that controller's lifecycle, and both widgets may be
+  reinvented). Both this and `AgPage` take the controller *instance* directly and listen to it via
+  `AgBuilder` — never a DI lookup by type, which matters for testability: every widget test constructs a
+  controller directly, with nothing registered in `AgLocator` at all. Neither widget owns the
+  controller's lifecycle (an `AgBinding` does), so neither disposes it on its own unmount — both may be
   reading the same instance within one page.
 - **`AgDetailController<T, A>`** — adds `late final A arguments`, resolved via `AgArguments.resolve<A>()`
   (throws a named `AgArgumentError`, never a bare cast failure).
@@ -128,9 +133,40 @@ Page → Controller → Repo → Service → ApiProvider
   (unsupported method, body+form-data together) are real exceptions, not `assert` — those must still be
   caught in release builds.
 
+### Owned primitives (`src/di/`, `src/state/`, `src/navigation/`)
+
+GetX supplied exactly three things here — DI, rebuild plumbing, routing — and each is now AG's own. They
+are deliberately three separate primitives, not one `Get`-style god object; that split is the point.
+
+- **`AgLocator`** (DI) — `put`/`lazyPut`/`find`/`delete` over a `Map<Type, Object>` plus a
+  `Map<Type, Object Function()>` of pending factories. No tags, no scoping, no `fenix` — AG never used
+  them. **`delete` disposes a realized `ChangeNotifier` before dropping it**; without that, every popped
+  route leaks its controller's listeners (GetX did the equivalent via `onClose`, and losing it silently
+  was the single biggest risk in replacing it). `find` on an unregistered type throws a named `StateError`
+  naming the type, never a null-deref. An instance implementing `AgInitializable` gets `onAgInit()` called
+  the moment it's realized — that's how a controller auto-starts `loadInitial()` without `AgLocator`
+  knowing anything about controllers.
+- **`AgBuilder` / `AgNotifier`** (rebuilds) — `AgBuilder` is a thin, consistently-named wrapper over
+  Flutter's own `ListenableBuilder`. `AgNotifier` exists only because `ChangeNotifier.notifyListeners` is
+  `@protected`: `AgPaginationMixin` holds a *separate* notifier instance and must fire it from outside.
+- **`AgApp` / `AgRoute` / `AgBinding` / `AgNavigator` / `AgTransition`** (routing) — `MaterialApp` +
+  `onGenerateRoute` + `PageRouteBuilder`, with a `GlobalKey<NavigatorState>` for context-less navigation
+  (the same technique GetX used internally) and an `AgNavigatorObserver` recording `route.settings
+  .arguments` into `AgNavigator.arguments` for `AgArguments.resolve`. Three non-obvious invariants, each
+  a real bug that was found and fixed by probing rather than assumed away — all three have regression
+  tests in `test/navigation/ag_app_test.dart`:
+  - **Binding teardown is reference-counted.** `AgLocator` is type-keyed, so one type has at most one
+    live instance, so two stacked pushes of the same route legitimately *share* one controller. Tearing
+    down on the first pop would leave the instance still on the stack holding a disposed controller.
+  - **`_bindingForRoute` is keyed by the `Route` object, not its name** — two stacked instances of one
+    route are distinct keys where names would collide.
+  - **All three removal callbacks are handled** (`didPop`, `didRemove`, `didReplace`), not just `didPop`.
+    `Navigator` reports removal three different ways, and `offNamed`/`offAllNamed` never pop — handling
+    only `didPop` silently leaked every route left that way.
+
 **`packages/ag_flow/example/`** is entirely `ag_flow_cli`-generated, not hand-wired — `ag init` +
 `ag g m product` + `ag g m product/details`, with only `lib/main.dart` written by hand (the
-`GetMaterialApp` wiring `ag init`'s own printed next-steps describe). It's a real Melos workspace member
+`AgApp` wiring `ag init`'s own printed next-steps describe). It's a real Melos workspace member
 (`resolution: workspace` in its `pubspec.yaml`, listed in the root `pubspec.yaml`'s `workspace:` array),
 which is exactly what caught two real bugs no isolated test fixture would have:
 - **`ProjectAnalyzer.dependenciesResolved` only ever checked `<project root>/.dart_tool/package_config
@@ -194,13 +230,12 @@ which is exactly what caught two real bugs no isolated test fixture would have:
   declared only in `collection_module/brick.yaml` — a detail module's `brick.yaml` has no `generate_add`
   var at all, so `ModuleGenerator` passing that key unconditionally in its vars map (matching the
   pre-existing pattern of passing every var to both bundles regardless of which brick uses it) is a
-  harmless no-op there, not a validation error. On the Controller specifically, the generated update stub
-  is named `updateItem`, not `update` — found via a real `dart analyze` against a freshly generated,
-  `pub get`-resolved project (not just this repo's own golden-file/resolved-check tests, which never asked
-  the analyzer for *every* diagnostic on the generated unit): `AgBaseController` extends GetX's
-  `GetxController`, which already declares `update([List<Object>? ids, bool condition])`, so a same-named
-  override with a different signature is a real `invalid_override` compile error, not a style nit. Service
-  and Repo keep `update()` — they don't extend `GetxController`, so there's no clash there.
+  harmless no-op there, not a validation error. All three stubs keep the same name across Service, Repo,
+  and Controller. (Historical note: the Controller's was briefly `updateItem`, because `GetxController`
+  declared its own `update([List<Object>? ids, bool condition])` and a same-named override was a real
+  `invalid_override` error. `AgBaseController` extends `ChangeNotifier` now, which declares no `update`,
+  so the workaround was removed rather than left as cargo cult — it also read almost identically to
+  `AgPaginationMixin.updateItems`, one character apart, which was its own hazard.)
   - **Page-level chrome slots each get their own component file; the success content stays in the page.**
     `appBar`, `loadingBuilder`, `errorBuilder`, and `emptyBuilder` each get a dedicated file under
     `components/<namespace>/` (`_appbar.dart`, `_loading.dart`, `_error.dart`, `_empty.dart`), generated

@@ -1,10 +1,10 @@
 import 'package:ag_flow/src/controller/ag_base_controller.dart';
+import 'package:ag_flow/src/di/ag_locator.dart';
 import 'package:ag_flow/src/page/ag_page.dart';
 import 'package:ag_flow/src/widgets/ag_empty.dart';
 import 'package:ag_flow/src/widgets/ag_error.dart';
 import 'package:ag_flow/src/widgets/ag_loading.dart';
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
 
 /// Base class for a full-screen AG page.
 ///
@@ -18,8 +18,12 @@ import 'package:get/get.dart';
 /// [loadingBuilder], [errorBuilder], and [emptyBuilder]; anything left
 /// null falls back to the AG default.
 abstract class AgBasePage<C extends AgBaseController<dynamic>>
-    extends GetView<C> {
+    extends StatelessWidget {
   const AgBasePage({super.key});
+
+  /// This page's controller, resolved from [AgLocator] — registered by
+  /// the module's `AgBinding` when its route was pushed.
+  C get controller => AgLocator.find<C>();
 
   /// Whether this page wraps its content in a [Scaffold]. Set to false to
   /// embed this page's content inside another Scaffold (e.g. as tab
@@ -56,7 +60,8 @@ abstract class AgBasePage<C extends AgBaseController<dynamic>>
 
   /// Builds this page's content for the success state. Read `controller
   /// .state`/`controller.pagination` directly rather than receiving data
-  /// as a parameter — `controller` is already available via [GetView].
+  /// as a parameter — `controller` is already available directly on this
+  /// page.
   Widget buildSuccess(BuildContext context);
 
   @override

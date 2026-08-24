@@ -67,7 +67,7 @@ void main() {
         expect(appPages, contains('abstract class AppPages'));
         expect(
           appPages,
-          contains('static final List<GetPage<dynamic>> pages = [];'),
+          contains('static final List<AgRoute> pages = [];'),
         );
 
         final routeManagement = File(
@@ -86,9 +86,9 @@ void main() {
         ).readAsStringSync();
         expect(
           initialBinding,
-          contains('class InitialBinding extends Bindings'),
+          contains('class InitialBinding extends AgBinding'),
         );
-        expect(initialBinding, contains('Get.put<ApiProvider>('));
+        expect(initialBinding, contains('put<ApiProvider>('));
       },
     );
 

@@ -58,7 +58,7 @@ lib/core/
 ├── endpoints.dart                  # your API endpoints (you write these by hand)
 ├── routes/
 │   ├── app_routes.dart             # route path constants
-│   ├── app_pages.dart              # GetPage registrations
+│   ├── app_pages.dart              # AgRoute registrations
 │   └── route_management.dart       # goToXPage() navigation methods
 └── bindings/initial_binding.dart   # registers the one shared ApiProvider
 ```
@@ -84,7 +84,7 @@ Two things worth knowing immediately:
 
 Before running your app, set a real base URL in
 `lib/core/bindings/initial_binding.dart` (it defaults to a placeholder),
-and wire `GetMaterialApp` in your `main.dart`:
+and wire `AgApp` in your `main.dart`:
 
 ```dart
 import 'package:ag_flow/ag_flow.dart';
@@ -100,10 +100,10 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GetMaterialApp(
+    return AgApp(
       initialRoute: AppRoutes.initial,   // or your first real module's route
       initialBinding: InitialBinding(),
-      getPages: AppPages.pages,
+      routes: AppPages.pages,
     );
   }
 }
@@ -162,7 +162,7 @@ machine, and the routing are already live.
 | `controllers/products_controller.dart` | `AgListController<dynamic, int>` | Page state, pagination, calls the Repo |
 | `repos/products_repo.dart` | `AgBaseRepo` | Thin pass-through to the Service |
 | `services/products_service.dart` | `AgBaseService` | The only layer allowed to touch the network |
-| `bindings/products_binding.dart` | `Bindings` | Registers Service → Repo → Controller with GetX DI |
+| `bindings/products_binding.dart` | `AgBinding` | Registers Service → Repo → Controller with `AgLocator` |
 
 The chain is strict: **Page → Controller → Repo → Service → ApiProvider**.
 Nothing skips a layer — `ag analyze` (§8 below) enforces this for real,
@@ -254,10 +254,9 @@ ag g m product --methods=none           # read-only
 ```
 
 Delete whichever stubs a module doesn't need — they're not a mixin, not
-framework-owned, just ordinary generated code. On the Controller
-specifically, the update stub is named `updateItem`, not `update`
-(`AgBaseController` already inherits GetX's own `update()` for
-triggering rebuilds; a same-named override would be a compile error).
+framework-owned, just ordinary generated code. All three are named the
+same across Service, Repo, and Controller, so a change reads the same at
+every layer.
 
 `AgCrudService` (in `ag_flow`) is a ready-made mixin implementing this
 exact shape (`add`/`getAll`/`getById`/`update`/`delete`) against two
@@ -351,7 +350,7 @@ class ProductDetailsPageArgument {
 
 ```dart
 static void goToProductDetailsPage(ProductDetailsPageArgument argument) {
-  Get.toNamed<dynamic>(AppRoutes.productDetails, arguments: argument);
+  AgNavigator.toNamed<dynamic>(AppRoutes.productDetails, arguments: argument);
 }
 ```
 
@@ -425,11 +424,11 @@ Checks your actual project against AG's rules and either prints
 `No issues found.` or a list of concrete problems:
 
 - a module missing one of its five layer files
-- a route with no `GetPage` entry, no nav method, or (for a detail route)
+- a route with no `AgRoute` entry, no nav method, or (for a detail route)
   no argument class
 - two different route constants pointing at the same path
 - a nested folder where one of the architectural folders must stay flat
-- a hard-coded `Get.toNamed('/some/literal')` outside
+- a hard-coded `AgNavigator.toNamed('/some/literal')` outside
   `route_management.dart` (always go through a generated `goToXPage(...)`
   instead)
 

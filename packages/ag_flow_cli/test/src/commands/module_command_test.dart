@@ -110,7 +110,7 @@ void main() {
         ),
       ).readAsStringSync();
       expect(controller, contains('Future<void> add('));
-      expect(controller, contains('Future<void> updateItem('));
+      expect(controller, contains('Future<void> update('));
       expect(controller, contains('Future<void> delete('));
     },
   );
@@ -132,7 +132,7 @@ void main() {
         ),
       ).readAsStringSync();
       expect(controller, contains('Future<void> add('));
-      expect(controller, isNot(contains('Future<void> updateItem(')));
+      expect(controller, isNot(contains('Future<void> update(')));
       expect(controller, contains('Future<void> delete('));
     },
   );
@@ -154,7 +154,7 @@ void main() {
         ),
       ).readAsStringSync();
       expect(controller, isNot(contains('Future<void> add(')));
-      expect(controller, isNot(contains('Future<void> updateItem(')));
+      expect(controller, isNot(contains('Future<void> update(')));
       expect(controller, isNot(contains('Future<void> delete(')));
       expect(controller, contains('fetchPage'));
     },

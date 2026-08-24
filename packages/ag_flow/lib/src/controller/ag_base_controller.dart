@@ -1,8 +1,8 @@
 import 'dart:async';
 
+import 'package:ag_flow/src/di/ag_initializable.dart';
 import 'package:ag_flow/src/page/ag_page_state.dart';
-import 'package:get/get.dart';
-import 'package:meta/meta.dart';
+import 'package:flutter/foundation.dart';
 
 /// Base class for every AG controller.
 ///
@@ -10,32 +10,47 @@ import 'package:meta/meta.dart';
 /// current [state] as an [AgPageState]. Subclasses implement [fetch] to
 /// load their data by calling their Repo; a controller must never call a
 /// Service or `ApiProvider` directly.
-abstract class AgBaseController<T> extends GetxController {
+///
+/// Extends [ChangeNotifier] directly: [emit] calls [notifyListeners], and
+/// `AgPage` listens to the controller itself for page-state rebuilds. A
+/// pagination-only change (see [AgPaginationMixin]) notifies through a
+/// *separate* notifier instead, so it never also re-triggers `AgPage`'s
+/// loading/error/empty/success switch, and vice versa.
+abstract class AgBaseController<T> extends ChangeNotifier
+    implements AgInitializable {
   AgBaseController({this.autoLoadOnInit = true});
 
-  /// The `GetBuilder(id:)` every page-state rebuild is scoped to — kept
-  /// separate from [AgPaginationMixin.paginationUpdateId] so a pagination-
-  /// only change (e.g. a load-more page arriving) never also rebuilds
-  /// `AgPage`'s loading/error/empty/success switch, and vice versa.
-  /// `GetBuilder` was chosen over `Obx`/`Rx` for this framework's page-
-  /// and list-level granularity: no per-value `Stream` wrapper, just a
-  /// direct listener callback fired from [update].
-  static const pageStateUpdateId = 'ag_page_state';
-
-  /// Whether [loadInitial] runs automatically from [onInit].
+  /// Whether [loadInitial] runs automatically once this controller is
+  /// realized by `AgLocator` (see [onAgInit]).
   final bool autoLoadOnInit;
 
   AgPageState<T> _pageState = const AgPageState.initial();
+  bool _disposed = false;
 
   /// The current page state.
   AgPageState<T> get state => _pageState;
 
+  /// Whether this controller has been disposed — its route popped, and
+  /// its registration torn down by `AgBinding`.
+  ///
+  /// An in-flight [fetch] that completes *after* that point must not
+  /// touch state or notify listeners (a disposed [ChangeNotifier] throws
+  /// on [notifyListeners]). Backing out of a screen while its first load
+  /// is still running is completely ordinary, so this is a normal path,
+  /// not an edge case — [emit] silently no-ops once disposed.
+  bool get isDisposed => _disposed;
+
   @override
-  void onInit() {
-    super.onInit();
+  void onAgInit() {
     if (autoLoadOnInit) {
       unawaited(loadInitial());
     }
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+    super.dispose();
   }
 
   /// Loads this controller's data. Must call the Repo — never a Service or
@@ -60,7 +75,6 @@ abstract class AgBaseController<T> extends GetxController {
   /// Re-runs [fetch]. If data is already loaded, it stays visible (via
   /// [AgPageState.success]'s `isRefreshing` flag) instead of being
   /// replaced by a loading indicator while the refresh is in flight.
-  @override
   Future<void> refresh() async {
     final current = state;
     emit(
@@ -99,7 +113,8 @@ abstract class AgBaseController<T> extends GetxController {
   // an explicit, deliberate override rather than a plain property
   // assignment.
   void emit(AgPageState<T> next) {
+    if (_disposed) return;
     _pageState = next;
-    update([pageStateUpdateId]);
+    notifyListeners();
   }
 }

@@ -2,6 +2,43 @@
 
 ## Unreleased
 
+- **Removed the GetX dependency entirely.** `ag_flow` no longer depends on
+  `get` — DI, rebuild plumbing, and routing are all AG's own now, built on
+  Flutter SDK primitives (`ChangeNotifier`, `ListenableBuilder`,
+  `Navigator`). Deliberately three separate primitives rather than one
+  `Get`-style god object:
+  - **`AgLocator`** replaces `Get.put`/`lazyPut`/`find`/`delete` — a
+    type-keyed registry with no tags, scoping, or `fenix` (AG never used
+    them). `find` on an unregistered type throws a named `StateError`
+    naming the type. An `AgInitializable` instance gets `onAgInit()` the
+    moment it's realized, which is how a controller auto-starts its load
+    without `AgLocator` knowing what a controller is.
+  - **`AgBuilder`/`AgNotifier`** replace `GetBuilder`. `AgBaseController`
+    now extends `ChangeNotifier`; `AgPaginationMixin` owns a *separate*
+    notifier (`paginationListenable`) so pagination changes never
+    re-trigger `AgPage`'s state switch. Two distinct objects rather than
+    one controller multiplexing rebuild groups by string id — two objects
+    can't collide the way a typo'd id silently could.
+  - **`AgApp`/`AgRoute`/`AgBinding`/`AgNavigator`/`AgTransition`** replace
+    `GetMaterialApp`/`GetPage`/`Bindings`/`Get.toNamed`/`Transition`.
+    Context-less navigation goes through a `GlobalKey<NavigatorState>` —
+    the same technique GetX used internally.
+- **Fixed three real lifecycle defects found by probing the new
+  primitives before trusting them** (all now regression-tested):
+  - `AgLocator.delete` dropped a controller's reference without disposing
+    it, leaking its listeners on every popped route. It now disposes any
+    realized `ChangeNotifier` — GetX did the equivalent via `onClose`, and
+    losing that silently was the biggest risk in replacing it.
+  - `emit()` after disposal threw "was used after being disposed". An
+    in-flight `fetch()` routinely outlives its route — a user backing out
+    mid-load is ordinary, not an edge case — so `emit()` (and the
+    pagination equivalent) now no-op once `isDisposed`.
+  - Popping one of two *stacked* instances of the same route tore down
+    dependencies the other still needed. Binding teardown is now
+    reference-counted, keyed by `Route` identity rather than route name,
+    and fires on all three of `didPop`/`didRemove`/`didReplace` — handling
+    only `didPop` silently leaked every route left via `offNamed`.
+
 - **`example/` is back, this time generated rather than hand-wired**:
   `ag init` + `ag g m product` + `ag g m product/details` against a real
   Melos workspace member, with only `main.dart` written by hand. Building

@@ -13,11 +13,11 @@ class AgFlowExampleApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GetMaterialApp(
+    return AgApp(
       title: 'ag_flow example',
       initialRoute: AppRoutes.product,
       initialBinding: InitialBinding(),
-      getPages: AppPages.pages,
+      routes: AppPages.pages,
     );
   }
 }

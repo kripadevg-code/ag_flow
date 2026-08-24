@@ -12,6 +12,11 @@ analyzer:
     # group-aware" note.
     always_use_package_imports: ignore
     # RouteManagement's generated nav methods are intentionally
-    # fire-and-forget: `Get.toNamed(...)`'s return value (what the pushed
-    # route eventually pops with) is never the caller's concern.
+    # fire-and-forget: `AgNavigator.toNamed(...)`'s return value (what the
+    # pushed route eventually pops with) is never the caller's concern.
     discarded_futures: ignore
+    # Every generated AgRoute entry explicitly passes `transition:
+    # AppPages.defaultTransition` — a configurable single source of truth,
+    # not a hardcoded value — even though it currently happens to equal
+    # AgRoute's own default. The lint compares values, not intent.
+    avoid_redundant_argument_values: ignore
