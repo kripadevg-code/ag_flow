@@ -37,47 +37,43 @@ mixin AgCrudService<T, ID extends Object> on AgBaseService {
   Map<String, dynamic> toJson(T item);
 
   Future<T> add(T item) async {
-    final response = await send<Map<String, dynamic>>(
+    return fetchItem(
       AgRequest(
         endpoint: collectionEndpoint,
         method: AgHttpMethod.post,
         body: toJson(item),
       ),
-      decode: (json) => json! as Map<String, dynamic>,
+      fromJson,
     );
-    return fromJson(response.data);
   }
 
   Future<List<T>> getAll({Map<String, dynamic>? queryParams}) async {
-    final response = await send<List<dynamic>>(
+    return fetchList(
       AgRequest(
         endpoint: collectionEndpoint,
         queryParams: queryParams ?? const {},
       ),
-      decode: (json) => json! as List<dynamic>,
+      fromJson,
     );
-    return response.data.cast<Map<String, dynamic>>().map(fromJson).toList();
   }
 
   Future<T> getById(ID id) async {
-    final response = await send<Map<String, dynamic>>(
+    return fetchItem(
       AgRequest(endpoint: resourceEndpoint, pathParams: {'id': id}),
-      decode: (json) => json! as Map<String, dynamic>,
+      fromJson,
     );
-    return fromJson(response.data);
   }
 
   Future<T> update(ID id, T item) async {
-    final response = await send<Map<String, dynamic>>(
+    return fetchItem(
       AgRequest(
         endpoint: resourceEndpoint,
         method: AgHttpMethod.put,
         pathParams: {'id': id},
         body: toJson(item),
       ),
-      decode: (json) => json! as Map<String, dynamic>,
+      fromJson,
     );
-    return fromJson(response.data);
   }
 
   Future<void> delete(ID id) async {

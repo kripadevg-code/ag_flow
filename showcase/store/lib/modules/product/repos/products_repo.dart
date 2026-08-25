@@ -7,6 +7,9 @@ class ProductsRepo extends AgBaseRepo {
 
   final ProductsService _service;
 
+  Future<AgListPage<Product, int>> getPage(int pageKey) =>
+      _service.getPage(pageKey);
+
   Future<List<Product>> getAll() => _service.getAll();
 
   Future<List<Product>> getByCategory(String category) =>

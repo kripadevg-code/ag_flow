@@ -113,6 +113,29 @@ Page → Controller → Repo → Service → ApiProvider
   reading the same instance within one page.
 - **`AgDetailController<T, A>`** — adds `late final A arguments`, resolved via `AgArguments.resolve<A>()`
   (throws a named `AgArgumentError`, never a bare cast failure).
+- **Services are declarative, and that's load-bearing.** A Service should contain *no* request
+  plumbing — no query-param building, no decoding, no `hasMore` arithmetic. Everything that differs
+  between backends is a **value it declares**, so every Service in every module reads the same way:
+  - **`AgPageStrategy<K>`** — the paging dialect: `AgPageNumberStrategy` (`?page=1&limit=20`),
+    `AgOffsetStrategy`, `AgCursorStrategy` (opaque token read from beside the payload), and
+    `AgSinglePageStrategy` for a backend that returns everything at once. That last one is
+    deliberately first-class rather than something each app hand-codes — it's what keeps a
+    non-paginating backend on the identical Service shape as a paginating one.
+  - **`AgEnvelope`** — where the payload sits in a response body: `raw` (the body is it),
+    `AgEnvelope.key('data')`, `AgEnvelope.path([...])`, or `custom`. A mismatch throws
+    `AgEnvelopeException` naming the fix, never an opaque cast failure inside a decode callback.
+  - **`AgPagedService<T, K>`** implements `getPage` once, from those two values. Its absence was the
+    original consistency hole: with no framework-owned paging, every paginated collection fell out of
+    the declarative shape and hand-rolled its own plumbing, so no two modules looked alike. Composes
+    with `AgCrudService` — both declare `collectionEndpoint`/`fromJson`, satisfied once by the class
+    (verified: mixing both compiles with no override conflict).
+  - **`AgBaseService.fetchList`/`fetchItem`/`decodeListPayload`/`decodeItemPayload`** cover the
+    feature-specific reads no mixin can anticipate (`getByCategory`, `search`, ...), so even those
+    stay one declarative line and decode through the same envelope. Without them, bespoke methods
+    re-implement unwrapping by hand and modules drift apart exactly where the framework stops looking.
+  - The two showcase apps are the proof: `showcase/blog` (jsonplaceholder, `?_page`/`_limit`, bare
+    array) and `showcase/store` (fakestoreapi, no pagination at all) have byte-for-byte the same
+    Service *shape*; the entire difference is which `AgPageStrategy` each names.
 - **`AgBaseRepo`** / **`AgBaseService`** (`AgCrudService<T, ID>` opt-in mixin) — no `Impl` classes.
   `AgCrudService` needs *two* endpoints, not one: `collectionEndpoint` (no path parameter — `getAll`/`add`)
   and `resourceEndpoint` (one `{id}` parameter — `getById`/`update`/`delete`). A single shared endpoint

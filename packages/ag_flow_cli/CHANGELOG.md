@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+- **Generated Services are now pure declaration — no stub bodies at all.**
+  A generated collection Service is `with AgCrudService<..>,
+  AgPagedService<..>` plus five declared values (two endpoints, a
+  `pageStrategy`, an `envelope`, `fromJson`/`toJson`); a detail Service is
+  the same minus paging, plus a single `idOf` hook naming which field of
+  the navigation argument identifies the resource. There is no request,
+  decoding, or `hasMore` code left to write or delete.
+  - Consequently `--methods=` now shapes the **Repo and Controller**
+    passthroughs, not the Service. Its original purpose was avoiding stub
+    bodies a developer had to delete; the mixins provide those methods for
+    free, as zero lines of code, so there is nothing left to opt out of at
+    the Service layer.
+  - The detail Repo calls `updateByArgument`/`deleteByArgument` — distinct
+    names because `AgCrudService.update(ID, T)` already occupies `update`.
+
 - **Generated code no longer references GetX.** Following `ag_flow`'s
   removal of the `get` dependency, every template and aggregator updater
   now emits AG's own primitives: `AgBinding` + `AgLocator.find` in

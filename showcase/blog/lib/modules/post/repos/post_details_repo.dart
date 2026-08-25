@@ -12,8 +12,8 @@ class PostDetailsRepo extends AgBaseRepo {
       _service.getByArgument(argument);
 
   Future<Post> update(PostDetailsPageArgument argument, Post item) =>
-      _service.update(argument, item);
+      _service.updateByArgument(argument, item);
 
   Future<void> delete(PostDetailsPageArgument argument) =>
-      _service.delete(argument);
+      _service.deleteByArgument(argument);
 }

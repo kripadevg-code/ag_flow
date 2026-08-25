@@ -7,15 +7,12 @@ class ProductsController extends AgListController<Product, int> {
 
   final ProductsRepo _repo;
 
-  /// fakestoreapi.com has no real server-side pagination — the whole
-  /// catalog comes back from one call. Page 1 fetches it; anything past
-  /// that is simply exhausted.
+  /// "This backend doesn't paginate" is declared once, as
+  /// AgSinglePageStrategy in ProductsService — so this stays the same
+  /// one-liner it would be against a paginated API.
   @override
-  Future<AgListPage<Product, int>> fetchPage(int pageKey) async {
-    if (pageKey > 1) return const AgListPage(items: [], hasMore: false);
-    final items = await _repo.getAll();
-    return AgListPage(items: items, hasMore: false);
-  }
+  Future<AgListPage<Product, int>> fetchPage(int pageKey) =>
+      _repo.getPage(pageKey);
 
   /// Full-list replace via the pagination escape hatch — distinct from
   /// [add]/[delete] below, which mutate the existing list in place.

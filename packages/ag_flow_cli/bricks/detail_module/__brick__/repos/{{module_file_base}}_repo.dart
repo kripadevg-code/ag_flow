@@ -11,10 +11,11 @@ class {{module_class_prefix}}Repo extends AgBaseRepo {
 {{#generate_update}}
 
   Future<dynamic> update({{module_class_prefix}}PageArgument argument, dynamic item) =>
-      _service.update(argument, item);
+      _service.updateByArgument(argument, item);
 {{/generate_update}}
 {{#generate_delete}}
 
-  Future<void> delete({{module_class_prefix}}PageArgument argument) => _service.delete(argument);
+  Future<void> delete({{module_class_prefix}}PageArgument argument) =>
+      _service.deleteByArgument(argument);
 {{/generate_delete}}
 }

@@ -3,40 +3,32 @@ import 'package:ag_showcase_blog/core/arguments/arguments.dart';
 import 'package:ag_showcase_blog/core/endpoints.dart';
 import 'package:ag_showcase_blog/modules/post/models/post.dart';
 
-class PostDetailsService extends AgBaseService {
+/// The same declarative shape as every other Service. The only
+/// app-specific line is [idOf] — which field of the navigation argument
+/// identifies the post.
+class PostDetailsService extends AgBaseService with AgCrudService<Post, int> {
   PostDetailsService(super.apiProvider);
 
-  Future<Post> getByArgument(PostDetailsPageArgument argument) async {
-    final response = await send<Map<String, dynamic>>(
-      AgRequest(
-        endpoint: PostEndpoints.postById,
-        pathParams: {'id': '${argument.postId}'},
-      ),
-      decode: (json) => json as Map<String, dynamic>,
-    );
-    return Post.fromJson(response.data);
-  }
+  @override
+  AgEndpoint get collectionEndpoint => PostEndpoints.posts;
 
-  Future<Post> update(PostDetailsPageArgument argument, Post item) async {
-    final response = await send<Map<String, dynamic>>(
-      AgRequest(
-        endpoint: PostEndpoints.postById,
-        method: AgHttpMethod.put,
-        pathParams: {'id': '${argument.postId}'},
-        body: item.toJson(),
-      ),
-      decode: (json) => json as Map<String, dynamic>,
-    );
-    return Post.fromJson(response.data);
-  }
+  @override
+  AgEndpoint get resourceEndpoint => PostEndpoints.postById;
 
-  Future<void> delete(PostDetailsPageArgument argument) async {
-    await send<void>(
-      AgRequest(
-        endpoint: PostEndpoints.postById,
-        method: AgHttpMethod.delete,
-        pathParams: {'id': '${argument.postId}'},
-      ),
-    );
-  }
+  @override
+  Post fromJson(Map<String, dynamic> json) => Post.fromJson(json);
+
+  @override
+  Map<String, dynamic> toJson(Post item) => item.toJson();
+
+  int idOf(PostDetailsPageArgument argument) => argument.postId;
+
+  Future<Post> getByArgument(PostDetailsPageArgument argument) =>
+      getById(idOf(argument));
+
+  Future<Post> updateByArgument(PostDetailsPageArgument argument, Post item) =>
+      update(idOf(argument), item);
+
+  Future<void> deleteByArgument(PostDetailsPageArgument argument) =>
+      delete(idOf(argument));
 }

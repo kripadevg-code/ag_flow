@@ -2,6 +2,33 @@
 
 ## Unreleased
 
+- **Services are declarative now — backend differences are values, not
+  code.** Previously `AgCrudService` had no `getPage`, so the moment a
+  backend paginated, a module fell out of the declarative shape and
+  hand-wrote its own query params, decoding, and `hasMore` arithmetic.
+  That was the single largest source of inconsistency between modules:
+  every paginated collection encoded its backend's quirks in imperative
+  code that looked different everywhere. Three new pieces close it:
+  - **`AgPageStrategy<K>`** — a backend's paging dialect as a declared
+    value: `AgPageNumberStrategy`, `AgOffsetStrategy`, `AgCursorStrategy`,
+    and `AgSinglePageStrategy` for backends that return everything at
+    once. That last one is first-class on purpose: it keeps a
+    non-paginating backend on the identical Service shape as a
+    paginating one.
+  - **`AgEnvelope`** — where the payload sits in a response body (`raw`,
+    `.key('data')`, `.path([...])`, `.custom`). A mismatch throws
+    `AgEnvelopeException` naming the fix rather than failing as an opaque
+    cast inside a decode callback.
+  - **`AgPagedService<T, K>`** — implements `getPage` once from those two
+    values. Composes with `AgCrudService`; both declare
+    `collectionEndpoint`/`fromJson`, satisfied once by the class.
+- **`AgBaseService` gained `fetchList`/`fetchItem` (and the underlying
+  `decodeListPayload`/`decodeItemPayload`)** so the feature-specific reads
+  no mixin can anticipate — `getByCategory`, `search`, a nested
+  collection — are also one declarative line decoding through the same
+  envelope. `AgCrudService`'s own five methods were rewritten onto them,
+  so every read in the framework now unwraps identically.
+
 - **Removed the GetX dependency entirely.** `ag_flow` no longer depends on
   `get` — DI, rebuild plumbing, and routing are all AG's own now, built on
   Flutter SDK primitives (`ChangeNotifier`, `ListenableBuilder`,

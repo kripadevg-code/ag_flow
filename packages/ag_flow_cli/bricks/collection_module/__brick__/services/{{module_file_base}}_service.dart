@@ -1,38 +1,45 @@
 import 'package:ag_flow/ag_flow.dart';
 
-class {{module_class_prefix}}Service extends AgBaseService {
+/// Declarative by design — this Service contains no request plumbing.
+///
+/// Everything that differs between backends is a *value* you declare:
+/// [pageStrategy] (the paging dialect) and [envelope] (where the payload
+/// sits inside a response body). AG owns the requests, the decoding, and
+/// the paging arithmetic — so this file reads the same in every module of
+/// every app, no matter how unusual the API behind it is.
+///
+/// Replace `dynamic` with your real model type.
+class {{module_class_prefix}}Service extends AgBaseService
+    with AgCrudService<dynamic, Object>, AgPagedService<dynamic, int> {
   {{module_class_prefix}}Service(super.apiProvider);
 
-  Future<AgListPage<dynamic, int>> getPage(int pageKey) async {
-    // TODO: replace with a real AgEndpoint from core/endpoints.dart and
-    // decode the response into your item type.
-    throw UnimplementedError('{{module_class_prefix}}Service.getPage is not implemented yet.');
-  }
-{{#generate_add}}
+  // TODO: point these at real endpoints declared in core/endpoints.dart.
+  @override
+  AgEndpoint get collectionEndpoint =>
+      throw UnimplementedError('{{module_class_prefix}}Service.collectionEndpoint');
 
-  Future<dynamic> add(dynamic item) async {
-    // TODO: replace with a real AgEndpoint from core/endpoints.dart and
-    // encode/decode your item type. Not mandatory — delete this method
-    // (and its Repo/Controller counterparts) if this module never creates.
-    throw UnimplementedError('{{module_class_prefix}}Service.add is not implemented yet.');
-  }
-{{/generate_add}}
-{{#generate_update}}
+  @override
+  AgEndpoint get resourceEndpoint =>
+      throw UnimplementedError('{{module_class_prefix}}Service.resourceEndpoint');
 
-  Future<dynamic> update(dynamic id, dynamic item) async {
-    // TODO: replace with a real AgEndpoint from core/endpoints.dart and
-    // encode/decode your item type. Not mandatory — delete this method
-    // (and its Repo/Controller counterparts) if this module never updates.
-    throw UnimplementedError('{{module_class_prefix}}Service.update is not implemented yet.');
-  }
-{{/generate_update}}
-{{#generate_delete}}
+  /// How this backend paginates. Swap in [AgOffsetStrategy],
+  /// [AgCursorStrategy], or [AgSinglePageStrategy] (for a backend that
+  /// returns the whole collection in one response) to match yours.
+  @override
+  AgPageStrategy<int> get pageStrategy => const AgPageNumberStrategy();
 
-  Future<void> delete(dynamic id) async {
-    // TODO: replace with a real AgEndpoint from core/endpoints.dart. Not
-    // mandatory — delete this method (and its Repo/Controller
-    // counterparts) if this module never deletes.
-    throw UnimplementedError('{{module_class_prefix}}Service.delete is not implemented yet.');
-  }
-{{/generate_delete}}
+  /// Where the payload sits in a response body. Delete this override if
+  /// the body *is* the payload; use `AgEnvelope.key('data')` for
+  /// `{"data": [...]}`, or `AgEnvelope.path([...])` when it's nested.
+  @override
+  AgEnvelope get envelope => AgEnvelope.raw;
+
+  // TODO: replace `dynamic` with your model type, then decode/encode it.
+  @override
+  dynamic fromJson(Map<String, dynamic> json) =>
+      throw UnimplementedError('{{module_class_prefix}}Service.fromJson');
+
+  @override
+  Map<String, dynamic> toJson(dynamic item) =>
+      throw UnimplementedError('{{module_class_prefix}}Service.toJson');
 }
