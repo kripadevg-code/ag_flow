@@ -1,7 +1,8 @@
 name: ag_flow_cli
 description: >-
-  The `ag` CLI — generates and wires AG feature modules (page, controller,
-  repo, service, binding) against the ag_flow runtime framework.
+  The `ag` CLI — generates and wires AG Flow feature modules (page, controller,
+  repo, service, binding) against the ag_flow runtime framework. One command,
+  fully wired module.
 version: 0.1.0
 publish_to: none
 resolution: workspace

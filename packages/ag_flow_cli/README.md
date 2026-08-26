@@ -1,14 +1,14 @@
 # ag_flow_cli
 
-The `ag` CLI — the generator half of [AG](../../README.md). Scaffolds and
+The `ag` CLI — the generator half of [AG Flow](../../README.md). Scaffolds and
 wires [`ag_flow`](../ag_flow) feature modules so a developer runs one
 command instead of hand-writing a page/controller/repo/service/binding set
 — and its routing/argument wiring — every time.
 
-## Install (enterprise-internal)
+## Install
 
 ```bash
-dart pub global activate --source git <enterprise-git-host>/ag_flow.git --git-path packages/ag_flow_cli --git-ref ag_flow_cli-v0.1.0
+dart pub global activate --source git https://github.com/kripadevg-code/ag_flow.git --git-path packages/ag_flow_cli --git-ref ag_flow_cli-v0.1.0
 ```
 
 ## Usage

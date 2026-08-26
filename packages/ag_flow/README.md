@@ -1,19 +1,19 @@
 # ag_flow
 
-The runtime half of [AG](../../README.md) — Infraon's opinionated Flutter
+The runtime half of [AG Flow](../../README.md) — an opinionated Flutter
 framework with no third-party state-management dependency. `ag_flow` gives
 every feature module the same page/controller/repo/service layering,
 page-state handling, pagination, and networking primitives, so the
 [`ag_flow_cli`](../ag_flow_cli) generator (and hand-written modules) build
 on a single, consistent contract.
 
-## Install (enterprise-internal)
+## Install
 
 ```yaml
 dependencies:
   ag_flow:
     git:
-      url: <enterprise-git-host>/ag_flow.git
+      url: https://github.com/kripadevg-code/ag_flow.git
       path: packages/ag_flow
       ref: ag_flow-v0.1.0
 ```

@@ -1,25 +1,24 @@
-# AG
+# AG Flow
 
-<!-- Replace <org> below with the real GitHub org/repo once this is pushed
-     to Infraon's private GitHub. Native GitHub Actions badges work for
-     private repos for anyone with access to the repo. -->
-
-[![CI](https://github.com/<org>/ag_flow/actions/workflows/ci.yaml/badge.svg)](https://github.com/<org>/ag_flow/actions/workflows/ci.yaml)
-[![Generator Integration](https://github.com/<org>/ag_flow/actions/workflows/generator-integration.yaml/badge.svg)](https://github.com/<org>/ag_flow/actions/workflows/generator-integration.yaml)
-[![License: Proprietary](https://img.shields.io/badge/license-proprietary-blue.svg)](LICENSE)
-[![Distribution: enterprise-internal](https://img.shields.io/badge/distribution-enterprise--internal-orange.svg)](#installing-enterprise-internal)
+[![CI](https://github.com/kripadevg-code/ag_flow/actions/workflows/ci.yaml/badge.svg)](https://github.com/kripadevg-code/ag_flow/actions/workflows/ci.yaml)
+[![Generator Integration](https://github.com/kripadevg-code/ag_flow/actions/workflows/generator-integration.yaml/badge.svg)](https://github.com/kripadevg-code/ag_flow/actions/workflows/generator-integration.yaml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![Open Source](https://img.shields.io/badge/open--source-yes-brightgreen.svg)](https://github.com/kripadevg-code/ag_flow)
 
 **An opinionated Flutter framework and CLI — zero third-party state-management dependency — that turns "write a new feature module" into a single command.**
 
-AG standardizes the shape of every feature module (page → controller →
+AG Flow standardizes the shape of every feature module (page → controller →
 repo → service → binding), the routing/navigation-argument wiring, and
-page-state handling (loading/error/empty/refresh/retry) — so teams spend
-their time on business logic and UI instead of re-building the same
+page-state handling (loading/error/empty/refresh/retry) — so you spend
+your time on business logic and UI instead of re-building the same
 infrastructure for every screen.
+
+Built for developers who want structure without ceremony. Open-source,
+free to use, adopt, and adapt in your own personal or professional projects.
 
 ![ag init, ag g m, and ag analyze generating and validating a real module end-to-end](docs/demo.gif)
 
-## Why AG
+## Why AG Flow
 
 - **One command per module.** `ag g m product` generates a fully-wired
   page/controller/repo/service/binding/component set — routing, DI, and
@@ -41,13 +40,13 @@ infrastructure for every screen.
   existing module is a no-op; a hand-customized navigation method survives
   regeneration byte-for-byte, forever.
 
-The binding specification for AG lives in [requirments/](requirments/):
+The binding specification for AG Flow lives in [requirments/](requirments/):
 
 - [ag_framework.md](requirments/ag_framework.md) — module structure, architectural layers, page/controller/repo/service contracts
 - [routes.md](requirments/routes.md) — routing/navigation/arguments generation rules
 - [ag_endpoint_rules.md](requirments/ag_endpoint_rules.md) — centralized API endpoint/request rules
 
-**New to AG?** See [GETTING_STARTED.md](GETTING_STARTED.md) — a
+**New to AG Flow?** See [GETTING_STARTED.md](GETTING_STARTED.md) — a
 hands-on walkthrough of every feature, from `ag init` through a fully
 wired detail module, written for a developer who's never touched this
 framework before.
@@ -65,17 +64,15 @@ Dart pub workspaces.
 | [`packages/ag_flow`](packages/ag_flow) | Available | The runtime framework: `AgBasePage`, `AgBaseController`, `AgListBuilder`, `AgBaseRepo`, `AgBaseService`, `ApiProvider`, and the rest of the classes every generated module is built from. |
 | [`packages/ag_flow_cli`](packages/ag_flow_cli) | Available | The `ag` CLI. `ag init` bootstraps a bare project's `lib/core/` skeleton; `ag g m <module>` generates a module's page/controller/repo/service/binding/component files *and* idempotently wires its route/argument/nav-method into the shared aggregator files; `ag analyze` validates a project against AG's structural rules, including resolved-model checks (dependency-direction violations, unused detail arguments) once dependencies are resolved. Named `ag_flow_cli` (not `ag_cli`) to avoid colliding with the maintainer's unrelated, separately published `ag-cli` package. |
 
-## Installing (enterprise-internal)
+## Installing
 
-Neither package is published to public pub.dev — per Infraon policy, this
-code stays inside the enterprise. Consuming apps depend on it via a git
-dependency pinned to a tag:
+Add as a git dependency pinned to a tag in your app's `pubspec.yaml`:
 
 ```yaml
 dependencies:
   ag_flow:
     git:
-      url: <enterprise-git-host>/ag_flow.git
+      url: https://github.com/kripadevg-code/ag_flow.git
       path: packages/ag_flow
       ref: ag_flow-v0.1.0
 ```

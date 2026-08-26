@@ -1,9 +1,9 @@
 name: ag_flow
 description: >-
-  Infraon's opinionated Flutter framework: standardized page/controller/
-  repo/service layers, page-state handling, pagination, DI/routing owned
-  in-house (no third-party state-management dependency), and a
-  centralized networking layer.
+  An opinionated Flutter framework: standardized page/controller/
+  repo/service layers, page-state handling, pagination, DI/routing
+  (no third-party state-management dependency), and a centralized
+  networking layer. Built to boost developer productivity.
 version: 0.1.0
 publish_to: none
 resolution: workspace

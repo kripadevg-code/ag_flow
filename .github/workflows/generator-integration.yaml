@@ -24,7 +24,7 @@ jobs:
       - name: Scaffold a throwaway app outside the workspace
         run: >
           flutter create --project-name generator_smoke_app
-          --org com.infraon --platforms=android
+          --org com.kripadevg --platforms=android
           /tmp/generator_smoke_app
 
       - name: Add ag_flow as a path dependency

@@ -1,4 +1,4 @@
-# Getting started with AG
+# Getting started with AG Flow
 
 This is a hands-on walkthrough for a developer who has never touched AG
 before. It assumes nothing except that you can run `flutter create` and
@@ -21,15 +21,15 @@ Two packages:
   terminal; it writes `.dart` files into your project. It never ships
   inside your app — it's a dev-time tool only.
 
-Neither is on public pub.dev (enterprise policy: this code stays
-in-house). Add them as git dependencies pinned to a tag:
+Neither package is on pub.dev yet — add them as git dependencies pinned to
+a tag:
 
 ```yaml
 # your app's pubspec.yaml
 dependencies:
   ag_flow:
     git:
-      url: <enterprise-git-host>/ag_flow.git
+      url: https://github.com/kripadevg-code/ag_flow.git
       path: packages/ag_flow
       ref: ag_flow-v0.1.0
 ```
@@ -37,7 +37,7 @@ dependencies:
 Activate the CLI globally so `ag` is on your `$PATH`:
 
 ```bash
-dart pub global activate --source git <enterprise-git-host>/ag_flow.git \
+dart pub global activate --source git https://github.com/kripadevg-code/ag_flow.git \
   --git-path packages/ag_flow_cli --git-ref ag_flow_cli-v0.1.0
 ```
 

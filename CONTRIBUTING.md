@@ -1,4 +1,4 @@
-# Contributing to AG
+# Contributing to AG Flow
 
 ## Setup
 
@@ -79,9 +79,9 @@ mismatched version (a tag cut without actually running `melos version`
 first, for instance) fails the workflow loudly rather than publishing a
 release with the wrong notes.
 
-Neither package is published to public pub.dev (`publish_to: none`
-everywhere, per Infraon's enterprise-only policy) — the tag itself, on
-this repo's own enterprise git remote, is the release artifact.
+Neither package is published to pub.dev yet (`publish_to: none` everywhere)
+— the tag itself, on GitHub, is the release artifact. Publishing to pub.dev
+is tracked as a future improvement once the package names are confirmed.
 
 ## Adding a new module type / AG widget
 

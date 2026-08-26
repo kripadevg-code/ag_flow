@@ -1,4 +1,4 @@
-/// AG — Infraon's opinionated Flutter framework.
+/// AG Flow — an opinionated Flutter framework.
 ///
 /// See `ag_framework.md`, `routes.md`, and `ag_endpoint_rules.md` in the
 /// repository's `requirments/` directory for the binding specification

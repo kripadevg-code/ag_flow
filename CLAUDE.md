@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this repo is
 
-A Melos monorepo (native Dart pub workspaces) implementing **AG** — Infraon's opinionated Flutter
+A Melos monorepo (native Dart pub workspaces) implementing **AG Flow** — an opinionated Flutter
 framework + CLI. DI, rebuilds, and routing are all owned in-house — no third-party
 state-management dependency. Two packages:
 
