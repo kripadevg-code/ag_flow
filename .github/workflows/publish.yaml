@@ -33,8 +33,11 @@ on:
       - "ag_flow_cli-v[0-9]+.[0-9]+.[0-9]+"
       - "ag_flow_generator-v[0-9]+.[0-9]+.[0-9]+"
 
-# OIDC token for pub.dev trusted publishing — no stored credentials.
+# Declaring any permission defaults all others to `none`, so `contents:
+# read` must be explicit or checkout fails with "Repository not found".
 permissions:
+  contents: read
+  # OIDC token for pub.dev trusted publishing — no stored credentials.
   id-token: write
 
 jobs:
