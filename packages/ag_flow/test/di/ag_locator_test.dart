@@ -1,4 +1,5 @@
 import 'package:ag_flow/ag_flow.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 class _Service {}
@@ -6,6 +7,16 @@ class _Service {}
 class _Repo {
   const _Repo(this.service);
   final _Service service;
+}
+
+class _DisposableService extends ChangeNotifier {
+  int disposeCallCount = 0;
+
+  @override
+  void dispose() {
+    disposeCallCount++;
+    super.dispose();
+  }
 }
 
 void main() {
@@ -77,5 +88,32 @@ void main() {
     AgLocator.put<_Service>(_Service());
     AgLocator.deleteByType(_Service);
     expect(AgLocator.find<_Service>, throwsStateError);
+  });
+
+  test('put over an existing registration disposes the one it replaces', () {
+    final replaced = _DisposableService();
+    final replacement = _DisposableService();
+
+    AgLocator.put<_DisposableService>(replaced);
+    AgLocator.put<_DisposableService>(replacement);
+
+    expect(
+      replaced.disposeCallCount,
+      1,
+      reason:
+          'the replaced instance is unreachable through the locator from '
+          'that moment on, so anything still listening to it would leak for '
+          'the rest of the app run',
+    );
+    expect(AgLocator.find<_DisposableService>(), same(replacement));
+    expect(replacement.disposeCallCount, 0);
+  });
+
+  test('re-putting the very same instance does not dispose it', () {
+    final service = _DisposableService();
+    AgLocator.put<_DisposableService>(service);
+    AgLocator.put<_DisposableService>(service);
+    expect(service.disposeCallCount, 0);
+    expect(AgLocator.find<_DisposableService>(), same(service));
   });
 }

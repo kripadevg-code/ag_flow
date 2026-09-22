@@ -1,9 +1,10 @@
 name: Generator Integration
 
 on:
-  push:
-    branches: [main]
   pull_request:
+  # Callable so the Release workflow can require this exact proof before
+  # tagging, rather than duplicating it or releasing without it.
+  workflow_call:
 
 jobs:
   init-generate-and-analyze:

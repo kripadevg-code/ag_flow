@@ -9,7 +9,10 @@ abstract class RouteManagement {
   }
 
   static void goToPostDetailsPage(PostDetailsPageArgument argument) {
-    AgNavigator.toNamed<dynamic>(AppRoutes.postDetails, arguments: argument);
+    AgNavigator.toNamed<dynamic>(
+      AppRoutes.postDetails,
+      pathParameters: argument.toPathParameters(),
+    );
   }
 
   static void goToPostDetailsCommentsPage(
@@ -17,7 +20,7 @@ abstract class RouteManagement {
   ) {
     AgNavigator.toNamed<dynamic>(
       AppRoutes.postDetailsComments,
-      arguments: argument,
+      pathParameters: argument.toPathParameters(),
     );
   }
 }

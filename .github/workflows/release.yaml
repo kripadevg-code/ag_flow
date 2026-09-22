@@ -1,74 +1,144 @@
 name: Release
 
+# Fully automated: merging to main verifies the workspace and, for any
+# releasable package whose pubspec version has no matching tag yet, cuts
+# the git tag, publishes the GitHub Release, and publishes to pub.dev.
+#
+# Deliberately driven by the pubspec version rather than by
+# `melos version`'s conventional-commit inference. That was tried and
+# rejected for concrete reasons: melos versions and tags the example and
+# showcase apps (which are demos, not artifacts), bumps 0.1.0 -> 0.1.1 for
+# a `feat:` even when the change is breaking, and rewrites CHANGELOG.md in
+# its own format — prepending its section above the `# Changelog` heading
+# and replacing hand-written release notes with commit subjects.
+#
+# So the version and the release notes are authored (in the same PR as the
+# change), and everything after that is automatic. No human ever runs a
+# release command.
+#
+# pub.dev publishing uses OIDC (trusted publishing) — no stored token.
+# Set it up once in the pub.dev package admin panel:
+#   Repository:  kripadevg-code/ag_flow
+#   Workflow:    release.yaml
+#   Environment: pub-publish
+
 on:
   push:
-    tags:
-      - 'ag_flow-v*'
-      - 'ag_flow_cli-v*'
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  # Required for OIDC pub.dev trusted publishing.
+  id-token: write
 
 jobs:
+  verify:
+    name: Verify
+    uses: ./.github/workflows/ci.yaml
+
+  integration:
+    name: Generator integration
+    uses: ./.github/workflows/generator-integration.yaml
+
   release:
+    name: Tag, release, and publish
+    needs: [verify, integration]
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
+    environment: pub-publish
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Full history + tags so the workflow can tell what is already
+          # released.
+          fetch-depth: 0
 
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
           cache: true
 
-      - name: Resolve package and version from the tag
-        id: tag
+      - name: Fetch tags
+        run: git fetch --tags --force
+
+      - name: Find packages whose version has no tag yet
+        id: pending
         run: |
-          tag="${GITHUB_REF_NAME}"
-          package="${tag%-v*}"
-          version="${tag##*-v}"
-          if [[ "$package" != "ag_flow" && "$package" != "ag_flow_cli" ]]; then
-            echo "Unrecognized package '$package' derived from tag '$tag'." >&2
-            exit 1
-          fi
-          echo "package=$package" >> "$GITHUB_OUTPUT"
-          echo "version=$version" >> "$GITHUB_OUTPUT"
+          set -euo pipefail
+          # Releasable packages only. The example and showcase apps are
+          # demos and must never be tagged or published.
+          packages="packages/ag_flow packages/ag_flow_cli packages/ag_flow_generator"
+          pending=""
+          for dir in $packages; do
+            name=$(grep -m1 '^name:' "$dir/pubspec.yaml" | sed 's/^name: *//')
+            version=$(grep -m1 '^version:' "$dir/pubspec.yaml" | sed 's/^version: *//')
+            tag="${name}-v${version}"
+            if git rev-parse -q --verify "refs/tags/$tag" >/dev/null; then
+              echo "$tag already released — nothing to do."
+            else
+              echo "$tag is not released yet."
+              pending="$pending $dir"
+            fi
+          done
+          echo "dirs=$(echo $pending | xargs)" >> "$GITHUB_OUTPUT"
 
-      - name: Verify pubspec.yaml's version matches the tag
-        run: |
-          pubspec_version=$(grep -m1 '^version:' "packages/${{ steps.tag.outputs.package }}/pubspec.yaml" | sed 's/^version: *//')
-          tag_version="${{ steps.tag.outputs.version }}"
-          if [[ "$pubspec_version" != "$tag_version" ]]; then
-            echo "Tag ${{ github.ref_name }} says version $tag_version, but packages/${{ steps.tag.outputs.package }}/pubspec.yaml says $pubspec_version." >&2
-            exit 1
-          fi
+      - name: Nothing to release
+        if: steps.pending.outputs.dirs == ''
+        run: echo "Every releasable package's version is already tagged."
 
-      - name: Activate melos
-        run: dart pub global activate melos
-
-      - name: Bootstrap workspace
-        run: melos bootstrap
-
-      - name: Test the released package
-        run: melos run test:${{ steps.tag.outputs.package == 'ag_flow' && 'flow' || 'cli' }}
-
-      - name: Extract this version's changelog section
-        id: changelog
-        run: |
-          notes_file=$(mktemp)
-          awk -v ver="## ${{ steps.tag.outputs.version }}" '
-            $0 == ver { found=1; next }
-            found && /^## / { exit }
-            found { print }
-          ' "packages/${{ steps.tag.outputs.package }}/CHANGELOG.md" > "$notes_file"
-          if [[ ! -s "$notes_file" ]]; then
-            echo "No '## ${{ steps.tag.outputs.version }}' section found in packages/${{ steps.tag.outputs.package }}/CHANGELOG.md." >&2
-            exit 1
-          fi
-          echo "notes_file=$notes_file" >> "$GITHUB_OUTPUT"
-
-      - name: Create the GitHub release
+      - name: Tag and create GitHub Releases
+        if: steps.pending.outputs.dirs != ''
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create "${{ github.ref_name }}" \
-            --title "${{ steps.tag.outputs.package }} ${{ steps.tag.outputs.version }}" \
-            --notes-file "${{ steps.changelog.outputs.notes_file }}"
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          for dir in ${{ steps.pending.outputs.dirs }}; do
+            name=$(grep -m1 '^name:' "$dir/pubspec.yaml" | sed 's/^name: *//')
+            version=$(grep -m1 '^version:' "$dir/pubspec.yaml" | sed 's/^version: *//')
+            tag="${name}-v${version}"
+
+            # The quality gate: a release must have real notes. A version
+            # bump with no matching CHANGELOG section is a mistake, and
+            # failing here is better than publishing an empty release.
+            notes=$(mktemp)
+            awk -v ver="## $version" '
+              $0 == ver { found=1; next }
+              found && /^## / { exit }
+              found { print }
+            ' "$dir/CHANGELOG.md" > "$notes"
+            if [ ! -s "$notes" ]; then
+              echo "::error::$dir/CHANGELOG.md has no '## $version' section." \
+                   "Add the release notes for $version before merging."
+              exit 1
+            fi
+
+            echo "Releasing $tag"
+            git tag -a "$tag" -m "$name $version"
+            git push origin "$tag"
+            gh release create "$tag" \
+              --title "$name $version" \
+              --notes-file "$notes"
+          done
+
+      - name: Publish to pub.dev (OIDC trusted publishing)
+        if: steps.pending.outputs.dirs != ''
+        run: |
+          set -euo pipefail
+          for dir in ${{ steps.pending.outputs.dirs }}; do
+            name=$(grep -m1 '^name:' "$dir/pubspec.yaml" | sed 's/^name: *//')
+            echo "Publishing $name from $dir"
+
+            # ag_flow is a Flutter package; everything else is pure Dart.
+            if [ "$name" = "ag_flow" ]; then
+              (cd "$dir" && flutter pub publish --force)
+            else
+              (cd "$dir" && dart pub publish --force)
+            fi
+          done

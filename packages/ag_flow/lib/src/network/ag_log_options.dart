@@ -33,7 +33,7 @@ class AgLogOptions {
   /// with `***`.
   final Set<String> maskedBodyKeys;
 
-  /// Sink for log lines. Defaults to [debugPrint] (from
+  /// Sink for log lines. Defaults to `debugPrint` (from
   /// `package:flutter/foundation.dart`).
   final void Function(String message)? logger;
 }

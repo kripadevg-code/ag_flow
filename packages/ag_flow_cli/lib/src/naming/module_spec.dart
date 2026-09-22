@@ -110,6 +110,24 @@ class ModuleSpec {
   /// Only meaningful for detail modules — see [isDetail].
   String get argumentClass => '${classPrefix}PageArgument';
 
+  /// The name of the path parameter a detail module's route declares.
+  ///
+  /// One parameter, always named this, always last. A detail module
+  /// addresses a single resource by definition, so giving it a
+  /// predictable identifier is what lets every generated detail route be
+  /// deep-linkable without the developer designing a URL scheme.
+  static const String pathParameterName = 'id';
+
+  /// The route path as registered, including the path parameter a detail
+  /// module declares — `/product` for a root module, `/product/details/:id`
+  /// for a detail one.
+  ///
+  /// Kept separate from [routePath], which stays parameter-free: that is
+  /// the form `ag analyze` re-derives a spec from, and it must round-trip
+  /// through `ModulePath.parse` losslessly.
+  String get registeredRoutePath =>
+      isDetail ? '$routePath/:$pathParameterName' : routePath;
+
   String get navMethod => 'goTo${classPrefix}Page';
 
   String get pageFile => '${layerFileBase}_page.dart';

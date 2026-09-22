@@ -5,8 +5,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## What this repo is
 
 A Melos monorepo (native Dart pub workspaces) implementing **AG Flow** — an opinionated Flutter
-framework + CLI. DI, rebuilds, and routing are all owned in-house — no third-party
-state-management dependency. Two packages:
+framework + CLI. DI and rebuilds are owned in-house — no third-party state-management
+dependency. Routing is AG's own API over **go_router**, the Flutter team's own package
+(`flutter/packages`): that reintroduces a dependency, but not the problem the previous one had, and it
+buys real URLs, deep links, web history, and correct system-back behaviour that AG would
+otherwise have to maintain itself. Two packages:
 
 - [packages/ag_flow](packages/ag_flow) — the runtime framework (`AgBasePage`, `AgBaseController`, etc.). Complete for the classes listed below.
 - [packages/ag_flow_cli](packages/ag_flow_cli) — the `ag` generator CLI. `ag init` bootstraps a bare
@@ -49,6 +52,16 @@ format-check`, which already does this correctly) against `.` or a whole package
 explicit source-root list in the root `pubspec.yaml`'s `melos.scripts.format-check`, or when formatting a
 single file/dir, avoid `bricks/`.
 
+**`dart doc` must not be run through the FVM symlink.** `.fvm/flutter_sdk` is a symlink to the real SDK,
+and dartdoc resolves its own SDK root from the running executable's path — through the symlink that
+resolution yields null and it crashes with `type 'Null' is not a subtype of type 'String'` in
+`DartdocOptionContext.sdkDir`, for every package, before documenting anything. It is an environment trap,
+not a code problem: invoke the real SDK path instead (`~/fvm/versions/<version>/bin/dart doc`). The same
+crash is why `pana` reports 0/10 for "20% or more of the public API has dartdoc comments" — the check
+never runs. Actual state, measured that way: **0 dartdoc warnings, 0 errors**. A doc reference split
+across two lines (`[AgListController\n/// .loadMore]`) does not resolve — keep each `[reference]` on one
+line, the same hazard as a backtick span breaking across lines.
+
 Single-test-file runs:
 
 ```bash
@@ -88,6 +101,15 @@ Page → Controller → Repo → Service → ApiProvider
   **`emit()` no-ops once `isDisposed`** — an in-flight `fetch()` routinely outlives its route (a user
   backing out mid-load is ordinary, not an edge case), and notifying a disposed `ChangeNotifier` throws.
   Covered by `test/controller/ag_controller_disposal_test.dart`; don't remove that guard.
+  **Overlapping loads are settled by a request token** (`startRequest`/`isCurrentRequest`/
+  `currentRequestToken`, all `@protected`). Two loads overlap in completely ordinary use — tapping retry
+  twice, pulling to refresh while the first load is still running — and responses are not guaranteed to
+  come back in the order they were sent. Without the token the *slower* request wins and silently
+  replaces fresh data with stale data (or blanks a loaded screen with an abandoned request's error).
+  `_runFetch` starts a new token; `AgPaginationMixin.loadMore` deliberately *captures* the current token
+  without starting one, because a load-more continues the current load rather than replacing it — which
+  is exactly what makes a `refresh()` invalidate an in-flight page instead of letting it append stale
+  rows onto the refreshed list.
 - **`AgListController<ItemType, PageKeyType>`** (`AgPaginationMixin`) — pagination/load-more state,
   tracked separately from page-level state (a load-more failure never corrupts `AgPageSuccess`) via its
   own `AgNotifier` (`paginationListenable`), so a pagination-only change never re-triggers `AgPage`'s
@@ -110,7 +132,22 @@ Page → Controller → Repo → Service → ApiProvider
   `AgBuilder` — never a DI lookup by type, which matters for testability: every widget test constructs a
   controller directly, with nothing registered in `AgLocator` at all. Neither widget owns the
   controller's lifecycle (an `AgBinding` does), so neither disposes it on its own unmount — both may be
-  reading the same instance within one page.
+  reading the same instance within one page. **Scroll-driven load-more has three guards that all matter**
+  (`test/list/ag_list_builder_test.dart`): it ignores notifications with `depth != 0` (a nested
+  scrollable — a horizontal carousel inside a row — bubbles *its own* metrics up, and a short inner list
+  always reads as "near the bottom", which would page the outer list while the user scrolls something
+  else entirely); it re-checks `hasNextPage`/`isLoadingMore` synchronously rather than leaning on
+  `loadMore`'s own guard, because this runs on every scroll frame and an async call allocates a Future
+  each time even when it returns immediately; and it refuses to fire while `loadMoreError != null`, so a
+  backend that is already failing isn't retried once per scroll frame — recovery is the deliberate
+  `retryLoadMore()` from the error slot.
+- **`AgPage`'s refresh bar is slotted into an unconditional `Stack`** (`StackFit.passthrough`), not
+  wrapped around the content only while refreshing. Moving the success content between "direct child"
+  and "child of a Stack" changes the widget type at that slot, so Flutter re-inflates the whole subtree:
+  a scrolled list lost its `ScrollPosition` and jumped back to the top on *every* refresh, and the
+  content was laid out under loose constraints mid-refresh and tight ones otherwise. Holding the shape
+  fixed keeps the element in place; `passthrough` keeps the constraints identical to being a direct
+  child. Covered by `test/page/ag_page_test.dart`.
 - **`AgDetailController<T, A>`** — adds `late final A arguments`, resolved via `AgArguments.resolve<A>()`
   (throws a named `AgArgumentError`, never a bare cast failure).
 - **Services are declarative, and that's load-bearing.** A Service should contain *no* request
@@ -158,34 +195,69 @@ Page → Controller → Repo → Service → ApiProvider
 
 ### Owned primitives (`src/di/`, `src/state/`, `src/navigation/`)
 
-GetX supplied exactly three things here — DI, rebuild plumbing, routing — and each is now AG's own. They
-are deliberately three separate primitives, not one `Get`-style god object; that split is the point.
+Three concerns live here — DI, rebuild plumbing, routing. DI and rebuilds are AG's own; routing is AG's
+own *API* over go_router. They are deliberately three separate primitives rather than one god object;
+that split is the point, and it is what made swapping the routing engine a contained change rather than
+a rewrite.
 
 - **`AgLocator`** (DI) — `put`/`lazyPut`/`find`/`delete` over a `Map<Type, Object>` plus a
   `Map<Type, Object Function()>` of pending factories. No tags, no scoping, no `fenix` — AG never used
   them. **`delete` disposes a realized `ChangeNotifier` before dropping it**; without that, every popped
-  route leaks its controller's listeners (GetX did the equivalent via `onClose`, and losing it silently
-  was the single biggest risk in replacing it). `find` on an unregistered type throws a named `StateError`
+  route leaks its controller's listeners. **`put` disposes the instance it replaces** for the same
+  reason — the moment the new one is stored, the old one is unreachable through the locator, so anything
+  still listening to it leaks for the rest of the app run. `find` on an unregistered type throws a named `StateError`
   naming the type, never a null-deref. An instance implementing `AgInitializable` gets `onAgInit()` called
   the moment it's realized — that's how a controller auto-starts `loadInitial()` without `AgLocator`
   knowing anything about controllers.
 - **`AgBuilder` / `AgNotifier`** (rebuilds) — `AgBuilder` is a thin, consistently-named wrapper over
   Flutter's own `ListenableBuilder`. `AgNotifier` exists only because `ChangeNotifier.notifyListeners` is
   `@protected`: `AgPaginationMixin` holds a *separate* notifier instance and must fire it from outside.
-- **`AgApp` / `AgRoute` / `AgBinding` / `AgNavigator` / `AgTransition`** (routing) — `MaterialApp` +
-  `onGenerateRoute` + `PageRouteBuilder`, with a `GlobalKey<NavigatorState>` for context-less navigation
-  (the same technique GetX used internally) and an `AgNavigatorObserver` recording `route.settings
-  .arguments` into `AgNavigator.arguments` for `AgArguments.resolve`. Three non-obvious invariants, each
-  a real bug that was found and fixed by probing rather than assumed away — all three have regression
-  tests in `test/navigation/ag_app_test.dart`:
+- **`AgApp` / `AgRoute` / `AgShellRoute` / `AgBinding` / `AgNavigator` / `AgGuard` / `AgTransition`**
+  (routing) — `MaterialApp.router` over a `GoRouter` that `AgApp` builds from `AgRoute`s. go_router is
+  an *implementation detail*: it appears in no consuming app's pubspec and in no generated file, so the
+  framework keeps owning the abstraction. What each AG piece maps onto:
+  - **`AgRoute.path` is both the URL and the route's identity.** It is registered with go_router as
+    `path` *and* as `name`, which is what keeps one `AppRoutes` constant per module — the generator
+    writes it, `AgNavigator` is given it, and `ag analyze` validates it, all as the same string. A
+    detail module's path declares a parameter (`/product/details/:id`), which is what makes the page
+    reachable from a link and not only from an in-app push.
+  - **`AgGuard` → `GoRoute.redirect`.** Guards run in order and the first non-null path wins; a blocked
+    route is never built, so its binding never registers. The `path` a guard receives is the route
+    *template*, so it compares directly against the `AppRoutes` constant.
+  - **`AgShellRoute` → `ShellRoute`**, for persistent chrome (bottom nav, rail). Its binding is tied to
+    the shell's own lifetime via a small `StatefulWidget` scope, not to any one route inside it.
+  - **`AgNavigator.offNamed` uses `pushReplacement`, never go_router's `replace`.** Verified by probe,
+    and the distinction is not cosmetic: `replace` reuses the outgoing page's key, so Flutter *updates*
+    the existing route instead of creating a new one — `createRoute` never runs, `dispose` never runs,
+    the new page's binding is never registered, the old one is never released, and the route keeps
+    rendering the previous page's content. Don't "simplify" this to `replace`.
+  - **`toNamed` is a push and deliberately does not change the URL** (go_router's own semantics for an
+    imperative push); `offAllNamed` is a `go` and does. `toLocation` exists for raw inbound links.
+
+  Two non-obvious invariants, each a real bug found by probing rather than assumed away — both have
+  regression tests in `test/navigation/ag_app_test.dart`:
   - **Binding teardown is reference-counted.** `AgLocator` is type-keyed, so one type has at most one
     live instance, so two stacked pushes of the same route legitimately *share* one controller. Tearing
     down on the first pop would leave the instance still on the stack holding a disposed controller.
-  - **`_bindingForRoute` is keyed by the `Route` object, not its name** — two stacked instances of one
-    route are distinct keys where names would collide.
-  - **All three removal callbacks are handled** (`didPop`, `didRemove`, `didReplace`), not just `didPop`.
-    `Navigator` reports removal three different ways, and `offNamed`/`offAllNamed` never pop — handling
-    only `didPop` silently leaked every route left that way.
+  - **Teardown fires from the route's own `dispose`, never from a `NavigatorObserver`.** This replaced an
+    earlier design that released bindings from `didPop`/`didRemove`/`didReplace`, and it fixed a real
+    defect rather than just tidying: an observer's `didPop` fires when the pop *begins*, while the
+    outgoing page is still mounted and still reading its controller for the length of the exit
+    transition — so teardown there disposes a controller out from under a live widget. `Route.dispose`
+    runs once the route is genuinely gone. It also collapses three callbacks into one path and covers a
+    case none of them did: the navigator itself being torn down with routes still on the stack.
+    `_AgPage` (a `Page` whose `createRoute` acquires the binding) plus `_AgPageRoute` (a
+    `PageRouteBuilder` whose `dispose` releases it) is the whole mechanism — and it survived the move to
+    go_router unchanged, because go_router builds pages through `pageBuilder` and lets the `Page` decide
+    what `Route` to create. Don't "simplify" this back to an observer.
+
+  **Known limitation, pre-dating go_router and not introduced by it**: `AgLocator` is keyed by type, so
+  two live instances of the same route *share one controller*. Pushing `/product/7` and then
+  `/product/9` shows product 7's data on both, and popping back does not restore the first. The same was
+  true of the old argument-object mechanism; path parameters only make it easier to see. Fixing it
+  properly means per-route scoping in `AgLocator` (registrations keyed by the route instance that made
+  them, with `find` resolving in the current route's scope and falling back to the global one) — a real
+  design change, deliberately not bundled into the routing migration.
 
 **`packages/ag_flow/example/`** is entirely `ag_flow_cli`-generated, not hand-wired — `ag init` +
 `ag g m product` + `ag g m product/details`, with only `lib/main.dart` written by hand (the
@@ -202,9 +274,9 @@ which is exactly what caught two real bugs no isolated test fixture would have:
 - **`very_good_analysis` (this example's own dev dependency, matching the root's) flags generated code
   that a bare-pubspec test fixture never exercises against any lint config at all**: required named
   constructor params declared after optional ones (`always_put_required_named_parameters_first` — bricks
-  fixed to put `required` params first), and `Get.toNamed(...)`'s untyped generic call
+  fixed to put `required` params first), and `AgNavigator.toNamed(...)`'s untyped generic call
   (`inference_failure_on_function_invocation` — `route_management_updater.dart` fixed to emit
-  `Get.toNamed<dynamic>(...)`). Three more lints don't fit generated/aggregator-file conventions at all —
+  `AgNavigator.toNamed<dynamic>(...)`). Three more lints don't fit generated/aggregator-file conventions at all —
   `flutter_style_todos` (generated TODOs have no real author to attribute), `always_use_package_imports`
   and `discarded_futures` (both inherent to `core/routes/*.dart`'s deliberate relative-sibling-import and
   fire-and-forget-navigation conventions, not violations) — disabled with a rationale comment in the
@@ -254,11 +326,9 @@ which is exactly what caught two real bugs no isolated test fixture would have:
   var at all, so `ModuleGenerator` passing that key unconditionally in its vars map (matching the
   pre-existing pattern of passing every var to both bundles regardless of which brick uses it) is a
   harmless no-op there, not a validation error. All three stubs keep the same name across Service, Repo,
-  and Controller. (Historical note: the Controller's was briefly `updateItem`, because `GetxController`
-  declared its own `update([List<Object>? ids, bool condition])` and a same-named override was a real
-  `invalid_override` error. `AgBaseController` extends `ChangeNotifier` now, which declares no `update`,
-  so the workaround was removed rather than left as cargo cult — it also read almost identically to
-  `AgPaginationMixin.updateItems`, one character apart, which was its own hazard.)
+  and Controller. (`AgBaseController` extends `ChangeNotifier`, which declares no `update`, so the
+  Controller's stub is plainly named `update` — take care not to confuse it with
+  `AgPaginationMixin.updateItems`, one character apart.)
   - **Page-level chrome slots each get their own component file; the success content stays in the page.**
     `appBar`, `loadingBuilder`, `errorBuilder`, and `emptyBuilder` each get a dedicated file under
     `components/<namespace>/` (`_appbar.dart`, `_loading.dart`, `_error.dart`, `_empty.dart`), generated
@@ -274,6 +344,31 @@ which is exactly what caught two real bugs no isolated test fixture would have:
     constructor isn't `const` in the pinned Flutter version, so neither is the generated subclass's. Every
     chrome component is a plain, fully-owned starting point: delete one and its one-line reference in the
     page to fall back to `AgBasePage`'s own default for that slot.
+- **Typed models (`--model` / `--from-json`)** close the generator's largest remaining gap: without one,
+  a generated module hands back **17 `dynamic` placeholders across 5 files** for the developer to find and
+  replace, which is the opposite of the stated goal. `ModelSpec` (`lib/src/naming/model_spec.dart`) infers
+  fields from a real JSON sample and `renderModel` (`lib/src/generators/model_generator.dart`) emits a
+  plain data class — no `build_runner`, no annotations, no part file to keep in sync. The model type is
+  then threaded through Service, Repo, Controller, Page and the item component via the `model_class` /
+  `id_type` / `has_model` brick vars.
+  - **The feature is strictly additive.** With no model the vars default to `model_class: dynamic`,
+    `id_type: Object`, `has_model: false`, and the output is what it always was — the golden files prove
+    it. (One deliberate improvement came with it: the Repo/Controller's `id` parameter went from `dynamic`
+    to `Object`, which is what the Service's `AgCrudService<dynamic, Object>` had always declared. They
+    previously contradicted each other.)
+  - **A detail module reuses its root's model**, never its own last segment — `product/details` gets
+    `Product`, not a second `Details` class. Same reasoning as the flat per-root layer folders.
+  - **Path parameters are always strings, so `idOf` is generated with the conversion already written**
+    (`int idOf(...) => int.parse(argument.id)`). That single line is the thing a developer would otherwise
+    forget on every detail module.
+  - **Envelope unwrapping is a fixed key list** (`data`, `result`, `results`, `payload`, `response`,
+    `content`, `records`, `rows`), never "any single-key object". `{"rating": {...}}` is a one-field model,
+    not an envelope, and shape alone cannot tell them apart — guessing would silently model the wrong
+    object. Found by a test, not by reasoning about it afterwards.
+  - **`double` decodes through `num`** (`(json['x'] as num).toDouble()`): JSON sends `10`, not `10.0`, for
+    a conceptually-double field whenever the sampled value happened to be whole, and `as double` throws on
+    it. A `null` in the sample yields `Object?` rather than a guessed type that the next payload
+    contradicts.
 - **`ModuleGenerator.plan()`** never writes to disk directly — it renders via an in-memory
   `GeneratorTarget`, formats with `DartFormatter`, checks existence, and returns `FileOp`s (`create` /
   `update` / `skipExisting`) for an `Executor` to apply (or, under `--dry-run`, just report). This is what
@@ -292,7 +387,7 @@ which is exactly what caught two real bugs no isolated test fixture would have:
   - **A bare `Foo(...)` call parses as `MethodInvocation`, not `InstanceCreationExpression`.** This is the
     one real bug this design produced and a debug script caught immediately: `parseString` only parses
     syntax, and disambiguating "constructor call" from "function call" for an unprefixed identifier
-    requires semantic resolution, which offset-splice editing deliberately never does. `GetPage(...)` in
+    requires semantic resolution, which offset-splice editing deliberately never does. `AgRoute(...)` in
     `app_pages_updater.dart` is matched as `MethodInvocation` for exactly this reason — don't
     "fix" that back to `InstanceCreationExpression`.
   - **`ClassDeclaration` doesn't have `.name`/`.members` directly in the pinned analyzer version** — it's
@@ -320,6 +415,16 @@ which is exactly what caught two real bugs no isolated test fixture would have:
   create`d app (not just the bare-pubspec test fixtures): `ag init` → `ag g m product` → `ag g m
   product/details` → `flutter pub get` → `flutter analyze --fatal-infos` reports zero issues, and
   re-running all three `ag` commands a second time is a confirmed no-op.
+- **`ag init` scaffolds the architecture standard alongside the code** — `AGENTS.md` (the layer contract,
+  folder rules, generator commands and prohibitions), `CLAUDE.md` (a pointer to it, never a second copy),
+  `.github/workflows/ag.yaml` and an opt-in `.githooks/pre-commit`. The reasoning is that an agent which
+  already knows the standard uses `ag g m` instead of inventing a module layout — which is both more
+  consistent and far cheaper, since one command replaces ~14 hand-written files. Instructions alone are
+  advisory, so the CI workflow and hook run `ag analyze` as the actual gate. **The hook resolves the CLI
+  through the project's own `ag_flow_cli` dev_dependency before anything on `PATH`** — a real bug found by
+  running it: a globally-activated, unrelated `ag` shadowed the project's, and its missing `analyze`
+  command surfaced as a bogus "architecture violation". A missing tool is reported as a missing tool and
+  skips, never as a violation; CI is the authoritative gate and always has the dependency.
 - **`ag analyze`** (`lib/src/analyze/`): a structural validator combining two tiers. The **syntax-only
   tier** (no resolved element model, `parseString` throughout, same as the generators) reads every route
   out of `_Routes` in `app_routes.dart` (`route_table.dart`), then re-derives each route's expected
@@ -328,10 +433,10 @@ which is exactly what caught two real bugs no isolated test fixture would have:
   losslessly regardless of which pluralizer (or `--plural=` override) produced the constant's *name*. This
   is what lets the checks reuse the exact same naming machinery the generators use instead of inventing a
   second, possibly-diverging derivation. Five rule categories: missing layer file, missing route wiring
-  (`GetPage`/nav method/argument class — matched via the identical AST predicates the updaters already use,
+  (`AgRoute` entry/nav method/argument class — matched via the identical AST predicates the updaters already use,
   see `app_pages_updater.dart`'s `alreadyRegistered` check), duplicate route (two different constants
   resolving to the same path — the mirror image of the generator's own same-name-different-path conflict
-  check), nested architectural/component folders, and hard-coded route strings (`Get.toNamed('/literal')`
+  check), nested architectural/component folders, and hard-coded route strings (`AgNavigator.toNamed('/literal')`
   outside `route_management.dart` — matched with a `RecursiveAstVisitor`, verified empirically to walk
   arbitrarily nested call sites correctly before being relied on).
   - **Known limitation**: a module generated with a custom `--plural=` override has no record of that

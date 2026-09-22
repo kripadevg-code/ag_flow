@@ -1,0 +1,8 @@
+include: package:flutter_lints/flutter.yaml
+
+linter:
+  rules:
+    # AG showcase apps use dynamic nav calls intentionally
+    discarded_futures: false
+    # Generated navigation methods use untyped generics by convention
+    always_specify_types: false

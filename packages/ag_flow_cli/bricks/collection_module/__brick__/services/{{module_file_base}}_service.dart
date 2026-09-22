@@ -1,5 +1,6 @@
 import 'package:ag_flow/ag_flow.dart';
-
+{{#has_model}}import 'package:{{app_package_name}}/{{{module_import_path}}}/models/{{model_file_base}}.dart';
+{{/has_model}}
 /// Declarative by design — this Service contains no request plumbing.
 ///
 /// Everything that differs between backends is a *value* you declare:
@@ -7,10 +8,12 @@ import 'package:ag_flow/ag_flow.dart';
 /// sits inside a response body). AG owns the requests, the decoding, and
 /// the paging arithmetic — so this file reads the same in every module of
 /// every app, no matter how unusual the API behind it is.
-///
+{{^has_model}}///
 /// Replace `dynamic` with your real model type.
-class {{module_class_prefix}}Service extends AgBaseService
-    with AgCrudService<dynamic, Object>, AgPagedService<dynamic, int> {
+{{/has_model}}class {{module_class_prefix}}Service extends AgBaseService
+    with
+        AgCrudService<{{model_class}}, {{id_type}}>,
+        AgPagedService<{{model_class}}, int> {
   {{module_class_prefix}}Service(super.apiProvider);
 
   // TODO: point these at real endpoints declared in core/endpoints.dart.
@@ -34,7 +37,13 @@ class {{module_class_prefix}}Service extends AgBaseService
   @override
   AgEnvelope get envelope => AgEnvelope.raw;
 
-  // TODO: replace `dynamic` with your model type, then decode/encode it.
+{{#has_model}}  @override
+  {{model_class}} fromJson(Map<String, dynamic> json) =>
+      {{model_class}}.fromJson(json);
+
+  @override
+  Map<String, dynamic> toJson({{model_class}} item) => item.toJson();
+{{/has_model}}{{^has_model}}  // TODO: replace `dynamic` with your model type, then decode/encode it.
   @override
   dynamic fromJson(Map<String, dynamic> json) =>
       throw UnimplementedError('{{module_class_prefix}}Service.fromJson');
@@ -42,4 +51,5 @@ class {{module_class_prefix}}Service extends AgBaseService
   @override
   Map<String, dynamic> toJson(dynamic item) =>
       throw UnimplementedError('{{module_class_prefix}}Service.toJson');
+{{/has_model}}
 }

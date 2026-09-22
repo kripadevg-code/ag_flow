@@ -39,8 +39,10 @@ void main() {
       ).execute(initOps);
       expect(
         initWritten,
-        6,
-        reason: 'a bare project should get the full 6-file skeleton',
+        10,
+        reason:
+            'a bare project gets the core/ skeleton plus the agent '
+            'standard, CI gate and pre-commit hook',
       );
 
       final generator = ModuleGenerator(project: project);

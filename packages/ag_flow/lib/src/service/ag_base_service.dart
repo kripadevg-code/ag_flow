@@ -17,6 +17,35 @@ import 'package:meta/meta.dart';
 /// anticipate. Without them, each bespoke method re-implements unwrapping
 /// and casting by hand, and modules drift apart exactly where the
 /// framework stops looking.
+///
+/// ---
+/// ### Accessing a service anywhere — no generics
+///
+/// Every concrete service should expose an `instance` static getter so it
+/// can be resolved from [AgLocator] without any generic syntax:
+///
+/// ```dart
+/// class AuthService extends AgBaseService {
+///   // One line — add this to every service.
+///   static AuthService get instance => AgLocator.find<AuthService>();
+///
+///   AuthService(super.apiProvider);
+///   // ...
+/// }
+/// ```
+///
+/// Then anywhere in the app — a guard, a controller, a repo:
+///
+/// ```dart
+/// final authService = AuthService.instance;
+/// ```
+///
+/// Dart infers the type from the left-hand side. No `<AuthService>`
+/// needed at the call site.
+///
+/// The naming convention is intentional:
+/// - Controllers use `.find`    — they are scoped to a route's lifetime.
+/// - Services use `.instance`   — they are permanent app-wide singletons.
 abstract class AgBaseService {
   const AgBaseService(this.apiProvider);
 

@@ -110,6 +110,45 @@ exists" conflict error (requirments/routes.md §21) rather than silently
 overwriting or duplicating it — this is different from the safe idempotent
 case above, which only applies when re-deriving the *exact same* module.
 
+### Typed modules
+
+`--from-json` infers the module's model from a real API response and
+threads the type through every layer, so a generated module compiles
+against your data instead of leaving `dynamic` placeholders behind:
+
+```bash
+ag g m product --from-json=product.json   # infer Product from a real response
+ag g m product --model=Product            # name the type, write the fields yourself
+```
+
+Nested objects become nested classes; a list response and a single-key
+envelope (`{"data": [...]}`) are both understood. The generated model is
+a plain data class — no `build_runner`, no annotations — and is never
+overwritten once it exists. A detail module reuses its root's model and
+gets its `idOf` path-parameter conversion written for it.
+
+### The architecture standard
+
+`ag init` writes more than code. It also scaffolds the standard itself, so
+every developer — and every coding agent — working in the project follows
+the same architecture without being told:
+
+| File | Purpose |
+|---|---|
+| `AGENTS.md` | The layer contract, folder rules, generator commands, and an explicit "must not" list. Coding agents read this automatically. |
+| `CLAUDE.md` | A pointer to `AGENTS.md`, not a second copy that can drift. |
+| `.github/workflows/ag.yaml` | Runs `ag analyze` + analysis + tests on every push. |
+| `.githooks/pre-commit` | The same check locally. Opt in with `git config core.hooksPath .githooks`. |
+
+Instructions are advisory; the workflow and hook are the gate. All four are
+skipped if they already exist, so re-running `ag init` never overwrites an
+edited standard.
+
+This matters most with AI agents: an agent that knows the standard runs
+`ag g m product --from-json=api.json` — one command — instead of writing
+~14 files and inventing its own structure. That is cheaper, faster, and
+consistent by construction, and `ag analyze` stops it deviating.
+
 ## `ag analyze`
 
 Validates the current project against AG's structural rules — no arguments,

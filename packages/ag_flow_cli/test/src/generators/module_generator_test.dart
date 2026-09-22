@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:ag_flow_cli/src/generators/aggregator_updater.dart';
@@ -6,6 +7,7 @@ import 'package:ag_flow_cli/src/generators/module_generator.dart';
 import 'package:ag_flow_cli/src/io/executor.dart';
 import 'package:ag_flow_cli/src/io/file_op.dart';
 import 'package:ag_flow_cli/src/io/project.dart';
+import 'package:ag_flow_cli/src/naming/model_spec.dart';
 import 'package:ag_flow_cli/src/naming/module_path.dart';
 import 'package:mason_logger/mason_logger.dart';
 import 'package:path/path.dart' as p;
@@ -208,7 +210,7 @@ void main() {
 
   group('ModuleGenerator — aggregator file updates', () {
     test(
-      'generating a root module registers its route and GetPage, and never touches arguments.dart',
+      'generating a root module registers its route and AgRoute entry, and never touches arguments.dart',
       () async {
         final ops = await ModuleGenerator(
           project: Project(appDir),
@@ -229,7 +231,7 @@ void main() {
         );
 
         final appPages = _coreFile(appDir, p.join('routes', 'app_pages.dart'));
-        expect(appPages, contains('name: AppRoutes.product,'));
+        expect(appPages, contains('path: AppRoutes.product,'));
         expect(appPages, contains('page: ProductsPage.new,'));
         expect(appPages, contains('binding: ProductsBinding(),'));
 
@@ -252,7 +254,7 @@ void main() {
     );
 
     test(
-      'generating a detail module registers its argument class, route, GetPage, and nav method',
+      'generating a detail module registers its argument class, route, AgRoute entry, and nav method',
       () async {
         _touchParentController(appDir, ModulePath.parse('product'));
 
@@ -279,11 +281,16 @@ void main() {
         );
         expect(
           appRoutes,
-          contains("static const String productDetails = '/product/details';"),
+          contains(
+            "static const String productDetails = '/product/details/:id';",
+          ),
+          reason:
+              'a detail route declares a path parameter so the page is '
+              'reachable from a deep link, not only an in-app push',
         );
 
         final appPages = _coreFile(appDir, p.join('routes', 'app_pages.dart'));
-        expect(appPages, contains('name: AppRoutes.productDetails,'));
+        expect(appPages, contains('path: AppRoutes.productDetails,'));
         expect(appPages, contains('page: ProductDetailsPage.new,'));
         expect(appPages, contains('binding: ProductDetailsBinding(),'));
         expect(
@@ -312,7 +319,7 @@ void main() {
         expect(
           routeManagement,
           contains(
-            'AgNavigator.toNamed<dynamic>(AppRoutes.productDetails, arguments: argument);',
+            'pathParameters: argument.toPathParameters(),',
           ),
         );
         expect(
@@ -717,5 +724,145 @@ abstract class _Routes {
         );
       },
     );
+  });
+
+  group('ModuleGenerator — typed models', () {
+    String moduleFile(Directory appDir, String relativePath) => File(
+      p.join(appDir.path, 'lib', 'modules', 'product', relativePath),
+    ).readAsStringSync();
+
+    ModelSpec productSpec() => ModelSpec.fromJsonSample(
+      'Product',
+      jsonDecode('{"id": 1, "title": "t", "price": 1.5}'),
+    );
+
+    test(
+      'generates the model and threads its type through every layer',
+      () async {
+        final ops = await ModuleGenerator(
+          project: Project(appDir),
+          model: productSpec(),
+        ).plan(ModulePath.parse('product'));
+        await Executor(dryRun: false, logger: quietLogger).execute(ops);
+
+        expect(
+          File(
+            p.join(
+              appDir.path,
+              'lib',
+              'modules',
+              'product',
+              'models',
+              'product.dart',
+            ),
+          ).existsSync(),
+          isTrue,
+        );
+
+        expect(
+          moduleFile(appDir, p.join('services', 'products_service.dart')),
+          allOf(
+            contains('AgCrudService<Product, int>'),
+            contains('AgPagedService<Product, int>'),
+            contains('Product fromJson(Map<String, dynamic> json) =>'),
+            contains(
+              'Map<String, dynamic> toJson(Product item) => item.toJson()',
+            ),
+            isNot(contains("UnimplementedError('ProductsService.fromJson')")),
+          ),
+        );
+        expect(
+          moduleFile(appDir, p.join('controllers', 'products_controller.dart')),
+          allOf(
+            contains('AgListController<Product, int>'),
+            contains('AgListPage<Product, int>'),
+            contains('add(Product item)'),
+          ),
+        );
+        expect(
+          moduleFile(appDir, p.join('repos', 'products_repo.dart')),
+          contains('AgListPage<Product, int>'),
+        );
+        expect(
+          moduleFile(appDir, p.join('pages', 'products_page.dart')),
+          contains('AgListBuilder<Product, int>'),
+        );
+        expect(
+          moduleFile(
+            appDir,
+            p.join('components', 'product', 'product_item.dart'),
+          ),
+          contains('final Product item;'),
+        );
+      },
+    );
+
+    test(
+      'a detail module converts the String path parameter to the id type',
+      () async {
+        _touchParentController(appDir, ModulePath.parse('product'));
+
+        final ops = await ModuleGenerator(
+          project: Project(appDir),
+          model: productSpec(),
+        ).plan(ModulePath.parse('product/details'));
+        await Executor(dryRun: false, logger: quietLogger).execute(ops);
+
+        expect(
+          moduleFile(
+            appDir,
+            p.join('services', 'product_details_service.dart'),
+          ),
+          contains(
+            'int idOf(ProductDetailsPageArgument argument) => '
+            'int.parse(argument.id);',
+          ),
+          reason:
+              'path parameters are always strings, so an int id needs the '
+              'parse written for it',
+        );
+      },
+    );
+
+    test('without a model the generated stack is unchanged', () async {
+      final ops = await ModuleGenerator(
+        project: Project(appDir),
+      ).plan(ModulePath.parse('product'));
+      await Executor(dryRun: false, logger: quietLogger).execute(ops);
+
+      expect(
+        Directory(
+          p.join(appDir.path, 'lib', 'modules', 'product', 'models'),
+        ).existsSync(),
+        isFalse,
+        reason: 'no model was asked for, so none is invented',
+      );
+      expect(
+        moduleFile(appDir, p.join('controllers', 'products_controller.dart')),
+        contains('AgListController<dynamic, int>'),
+      );
+    });
+
+    test('an existing model file is never overwritten', () async {
+      final modelPath = p.join(
+        appDir.path,
+        'lib',
+        'modules',
+        'product',
+        'models',
+        'product.dart',
+      );
+      File(modelPath)
+        ..createSync(recursive: true)
+        ..writeAsStringSync('// hand-edited\n');
+
+      final ops = await ModuleGenerator(
+        project: Project(appDir),
+        model: productSpec(),
+      ).plan(ModulePath.parse('product'));
+      await Executor(dryRun: false, logger: quietLogger).execute(ops);
+
+      expect(File(modelPath).readAsStringSync(), '// hand-edited\n');
+    });
   });
 }

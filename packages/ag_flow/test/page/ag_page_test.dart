@@ -174,4 +174,86 @@ void main() {
       expect(controller.state, isA<AgPageSuccess<String>>());
     });
   });
+
+  group('refreshing does not disturb the success subtree', () {
+    testWidgets('a scrolled list keeps its position when a refresh starts', (
+      tester,
+    ) async {
+      final controller = _FakeController()
+        ..setState(const AgPageState.success('data'));
+
+      await tester.pumpWidget(
+        _harness(
+          AgPage<String>(
+            controller: controller,
+            onRefresh: () async {},
+            builder: (context, data) => ListView(
+              children: List<Widget>.generate(
+                40,
+                (i) => SizedBox(height: 100, child: Text('row-$i')),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.drag(find.byType(Scrollable).first, const Offset(0, -500));
+      await tester.pumpAndSettle();
+      final offsetBefore = tester
+          .state<ScrollableState>(find.byType(Scrollable).first)
+          .position
+          .pixels;
+      expect(offsetBefore, greaterThan(0));
+
+      controller.setState(
+        const AgPageSuccess<String>('data', isRefreshing: true),
+      );
+      await tester.pump();
+
+      expect(
+        tester
+            .state<ScrollableState>(find.byType(Scrollable).first)
+            .position
+            .pixels,
+        offsetBefore,
+        reason:
+            'the success content must keep its element — changing the '
+            'tree shape to slot in the refresh bar re-inflates it and '
+            'throws the user back to the top of the list',
+      );
+      expect(find.byType(LinearProgressIndicator), findsOneWidget);
+    });
+
+    testWidgets('success content is laid out identically while refreshing', (
+      tester,
+    ) async {
+      final controller = _FakeController()
+        ..setState(const AgPageState.success('data'));
+
+      await tester.pumpWidget(
+        _harness(
+          AgPage<String>(
+            controller: controller,
+            builder: (context, data) =>
+                const SizedBox.expand(key: ValueKey('content')),
+          ),
+        ),
+      );
+      final sizeBefore = tester.getSize(find.byKey(const ValueKey('content')));
+
+      controller.setState(
+        const AgPageSuccess<String>('data', isRefreshing: true),
+      );
+      await tester.pump();
+
+      expect(
+        tester.getSize(find.byKey(const ValueKey('content'))),
+        sizeBefore,
+        reason:
+            'StackFit.passthrough must forward the same constraints the '
+            'content had as a direct child, so nothing resizes mid-refresh',
+      );
+    });
+  });
 }

@@ -1,8 +1,7 @@
 import 'package:ag_flow/src/di/ag_initializable.dart';
 import 'package:flutter/foundation.dart';
 
-/// A minimal, dependency-free service locator — AG's own replacement for
-/// GetX's `Get.put`/`Get.lazyPut`/`Get.find`/`Get.delete`.
+/// A minimal, dependency-free service locator.
 ///
 /// AG only ever needs three things from a DI container: register an
 /// eagerly-created singleton ([put]), register a lazily-created one
@@ -17,7 +16,16 @@ class AgLocator {
   static final Set<Type> _permanent = {};
 
   /// Registers [instance] as the singleton for [T], created eagerly.
+  ///
+  /// Registering over an existing instance disposes the one being
+  /// replaced — it is unreachable through this locator the moment the
+  /// line below runs, so anything still listening to it would leak for
+  /// the rest of the app's lifetime otherwise.
   static void put<T extends Object>(T instance, {bool permanent = false}) {
+    final replaced = _instances[T];
+    if (replaced is ChangeNotifier && !identical(replaced, instance)) {
+      replaced.dispose();
+    }
     _instances[T] = instance;
     _factories.remove(T);
     if (permanent) _permanent.add(T);
@@ -62,9 +70,7 @@ class AgLocator {
   /// A realized instance that is a [ChangeNotifier] — which every
   /// `AgBaseController` is — has [ChangeNotifier.dispose] called before
   /// it's dropped. Without this, every popped route would leak its
-  /// controller's listeners; GetX's own container did the equivalent via
-  /// `onClose`, and losing it silently was the single biggest risk in
-  /// replacing it.
+  /// controller's listeners.
   static void deleteByType(Type type) {
     if (_permanent.contains(type)) return;
     final instance = _instances.remove(type);

@@ -8,6 +8,13 @@ class ProductDetailsController
 
   final ProductDetailsRepo _repo;
 
+  /// Rebuilds this page's argument from the route's path parameters,
+  /// so it opens correctly from a deep link as well as an in-app push.
+  @override
+  ProductDetailsPageArgument? argumentsFromPath(
+    Map<String, String> pathParameters,
+  ) => ProductDetailsPageArgument.fromPathParameters(pathParameters);
+
   @override
   Future<dynamic> fetch() => _repo.getByArgument(arguments);
 

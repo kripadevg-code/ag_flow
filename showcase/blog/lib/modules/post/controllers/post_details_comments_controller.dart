@@ -13,6 +13,13 @@ class PostDetailsCommentsController
 
   final PostDetailsCommentsRepo _repo;
 
+  /// Rebuilds this page's argument from the route's path parameters,
+  /// so it opens correctly from a deep link as well as an in-app push.
+  @override
+  PostDetailsCommentsPageArgument? argumentsFromPath(
+    Map<String, String> pathParameters,
+  ) => PostDetailsCommentsPageArgument.fromPathParameters(pathParameters);
+
   @override
   Future<List<Comment>> fetch() => _repo.getByArgument(arguments);
 }

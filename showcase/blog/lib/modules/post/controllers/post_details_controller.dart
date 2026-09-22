@@ -9,6 +9,13 @@ class PostDetailsController
 
   final PostDetailsRepo _repo;
 
+  /// Rebuilds this page's argument from the route's path parameters,
+  /// so it opens correctly from a deep link as well as an in-app push.
+  @override
+  PostDetailsPageArgument? argumentsFromPath(
+    Map<String, String> pathParameters,
+  ) => PostDetailsPageArgument.fromPathParameters(pathParameters);
+
   @override
   Future<Post> fetch() => _repo.getByArgument(arguments);
 

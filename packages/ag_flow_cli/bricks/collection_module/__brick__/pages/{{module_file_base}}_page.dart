@@ -1,5 +1,6 @@
 import 'package:ag_flow/ag_flow.dart';
-import 'package:{{app_package_name}}/{{{module_import_path}}}/components/{{component_namespace}}/{{component_file_base}}_appbar.dart';
+{{#has_model}}import 'package:{{app_package_name}}/{{{module_import_path}}}/models/{{model_file_base}}.dart';
+{{/has_model}}import 'package:{{app_package_name}}/{{{module_import_path}}}/components/{{component_namespace}}/{{component_file_base}}_appbar.dart';
 import 'package:{{app_package_name}}/{{{module_import_path}}}/components/{{component_namespace}}/{{component_file_base}}_empty.dart';
 import 'package:{{app_package_name}}/{{{module_import_path}}}/components/{{component_namespace}}/{{component_file_base}}_error.dart';
 import 'package:{{app_package_name}}/{{{module_import_path}}}/components/{{component_namespace}}/{{component_file_base}}_item.dart';
@@ -30,7 +31,7 @@ class {{module_class_prefix}}Page extends AgBasePage<{{module_class_prefix}}Cont
 
   @override
   Widget buildSuccess(BuildContext context) {
-    return AgListBuilder<dynamic, int>(
+    return AgListBuilder<{{model_class}}, int>(
       controller: controller,
       itemBuilder: (context, item, index) =>
           {{component_class_prefix}}Item(item: item),

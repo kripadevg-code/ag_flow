@@ -31,7 +31,7 @@ void main() {
         logger: quietLogger,
       ).execute(ops);
 
-      expect(written, 6);
+      expect(written, 10);
       for (final relativePath in [
         'core/arguments/arguments.dart',
         'core/endpoints.dart',
@@ -47,6 +47,60 @@ void main() {
         );
       }
     });
+
+    test(
+      'scaffolds the agent standard and the gate that enforces it',
+      () async {
+        final ops = InitGenerator(project: Project(appDir)).plan();
+        await Executor(dryRun: false, logger: quietLogger).execute(ops);
+
+        String rootFile(String relativePath) =>
+            File(p.join(appDir.path, relativePath)).readAsStringSync();
+
+        // The standard itself, at the project root where a coding agent
+        // picks it up without being told.
+        expect(
+          rootFile('AGENTS.md'),
+          allOf(
+            contains('Page → Controller → Repo → Service → ApiProvider'),
+            contains('ag g m'),
+            contains('You MUST NOT'),
+          ),
+        );
+        expect(
+          rootFile('CLAUDE.md'),
+          contains('AGENTS.md'),
+          reason: 'CLAUDE.md points at the standard rather than duplicating it',
+        );
+
+        // Instructions are advisory; the gate is not.
+        expect(
+          rootFile(p.join('.github', 'workflows', 'ag.yaml')),
+          contains('ag analyze'),
+        );
+        expect(
+          rootFile(p.join('.githooks', 'pre-commit')),
+          contains('ag analyze'),
+        );
+      },
+    );
+
+    test(
+      'the pre-commit hook is written executable',
+      () async {
+        final ops = InitGenerator(project: Project(appDir)).plan();
+        await Executor(dryRun: false, logger: quietLogger).execute(ops);
+
+        final hook = File(p.join(appDir.path, '.githooks', 'pre-commit'));
+        final mode = await Process.run('test', ['-x', hook.path]);
+        expect(
+          mode.exitCode,
+          0,
+          reason: 'git silently ignores a hook without the executable bit',
+        );
+      },
+      skip: Platform.isWindows ? 'POSIX mode bits only' : null,
+    );
 
     test(
       'the generated skeleton has a valid AppRoutes/_Routes/AppPages/RouteManagement shape',

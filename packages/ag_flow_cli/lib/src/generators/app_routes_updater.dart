@@ -45,12 +45,16 @@ AggregatorUpdateResult updateAppRoutes(String source, ModuleSpec spec) {
     ),
   );
 
+  // The *registered* path is what the constant holds: a detail module's
+  // route declares a path parameter (`/product/details/:id`) so the page
+  // is reachable from a deep link, not only from an in-app push.
+  final registeredPath = spec.registeredRoutePath;
   final existingPath = _existingPathFor(routesImpl, spec.routeConstant);
-  if (existingPath != null && existingPath != spec.routePath) {
+  if (existingPath != null && existingPath != registeredPath) {
     throw RouteConflictException(
       routeConstant: spec.routeConstant,
       existingPath: existingPath,
-      newPath: spec.routePath,
+      newPath: registeredPath,
     );
   }
 
@@ -63,7 +67,7 @@ AggregatorUpdateResult updateAppRoutes(String source, ModuleSpec spec) {
     if (existingPath == null)
       _insertMember(
         routesImpl,
-        "\n  static const String ${spec.routeConstant} = '${spec.routePath}';",
+        "\n  static const String ${spec.routeConstant} = '$registeredPath';",
       ),
   ];
 

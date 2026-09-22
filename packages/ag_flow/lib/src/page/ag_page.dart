@@ -77,20 +77,30 @@ class AgPage<T> extends StatelessWidget {
   }
 
   Widget _buildSuccess(BuildContext context, T data, bool isRefreshing) {
-    var content = builder(context, data);
-    if (isRefreshing) {
-      content = Stack(
-        children: [
-          content,
+    // The Stack is unconditional, and that is the point. Moving the
+    // success content between "direct child" and "child of a Stack" when
+    // a refresh starts changes the widget type at that slot, so Flutter
+    // re-inflates the whole subtree — a scrolled list would lose its
+    // ScrollPosition and jump back to the top every single refresh.
+    // Holding the shape fixed keeps the content's element in place.
+    //
+    // StackFit.passthrough forwards this widget's own constraints to the
+    // content unchanged, so it is laid out exactly as it would be as a
+    // direct child — no loose/tight flip, and no resize when a refresh
+    // begins.
+    final content = Stack(
+      fit: StackFit.passthrough,
+      children: [
+        builder(context, data),
+        if (isRefreshing)
           const Positioned(
             top: 0,
             left: 0,
             right: 0,
             child: LinearProgressIndicator(minHeight: 2),
           ),
-        ],
-      );
-    }
+      ],
+    );
     final refresh = onRefresh;
     if (refresh == null) return content;
     return RefreshIndicator(onRefresh: refresh, child: content);

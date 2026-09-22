@@ -11,7 +11,7 @@ class ProductsRepo extends AgBaseRepo {
 
   Future<dynamic> add(dynamic item) => _service.add(item);
 
-  Future<dynamic> update(dynamic id, dynamic item) => _service.update(id, item);
+  Future<dynamic> update(Object id, dynamic item) => _service.update(id, item);
 
-  Future<void> delete(dynamic id) => _service.delete(id);
+  Future<void> delete(Object id) => _service.delete(id);
 }

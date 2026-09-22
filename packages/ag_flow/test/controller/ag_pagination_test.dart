@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:ag_flow/ag_flow.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -188,5 +190,71 @@ void main() {
         expect(controller.pagination.hasNextPage, isFalse);
       },
     );
+  });
+
+  group('refresh racing an in-flight loadMore', () {
+    // Pulling to refresh while a load-more is already in flight is
+    // ordinary use. The in-flight page belongs to the list as it was
+    // *before* the refresh — appending it afterwards splices stale rows
+    // into freshly loaded ones.
+    test('a page that arrives after a refresh is discarded', () async {
+      final pending = <Completer<AgListPage<int, int>>>[];
+      final controller = _TestListController((pageKey) {
+        final completer = Completer<AgListPage<int, int>>();
+        pending.add(completer);
+        return completer.future;
+      });
+
+      unawaited(controller.loadInitial());
+      pending[0].complete(
+        const AgListPage(items: [1, 2], hasMore: true, nextPageKey: 2),
+      );
+      await Future<void>.delayed(Duration.zero);
+      expect(controller.pagination.items, [1, 2]);
+
+      unawaited(controller.loadMore()); // pending[1]
+      unawaited(controller.refresh()); // pending[2] — supersedes it
+
+      pending[2].complete(const AgListPage(items: [9], hasMore: false));
+      await Future<void>.delayed(Duration.zero);
+      pending[1].complete(
+        const AgListPage(items: [3, 4], hasMore: true, nextPageKey: 3),
+      );
+      await Future<void>.delayed(Duration.zero);
+
+      expect(controller.pagination.items, [9]);
+      expect(
+        controller.pagination.isLoadingMore,
+        isFalse,
+        reason: 'a discarded page must not leave a spinner stuck on screen',
+      );
+      controller.dispose();
+    });
+
+    test('a load-more that fails after a refresh reports no error', () async {
+      final pending = <Completer<AgListPage<int, int>>>[];
+      final controller = _TestListController((pageKey) {
+        final completer = Completer<AgListPage<int, int>>();
+        pending.add(completer);
+        return completer.future;
+      });
+
+      unawaited(controller.loadInitial());
+      pending[0].complete(
+        const AgListPage(items: [1], hasMore: true, nextPageKey: 2),
+      );
+      await Future<void>.delayed(Duration.zero);
+
+      unawaited(controller.loadMore()); // pending[1]
+      unawaited(controller.refresh()); // pending[2]
+      pending[2].complete(const AgListPage(items: [5], hasMore: false));
+      await Future<void>.delayed(Duration.zero);
+      pending[1].completeError(Exception('stale load-more failure'));
+      await Future<void>.delayed(Duration.zero);
+
+      expect(controller.pagination.items, [5]);
+      expect(controller.pagination.loadMoreError, isNull);
+      controller.dispose();
+    });
   });
 }

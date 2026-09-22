@@ -15,12 +15,12 @@ class ProductsController extends AgListController<dynamic, int> {
     await refresh();
   }
 
-  Future<void> update(dynamic id, dynamic item) async {
+  Future<void> update(Object id, dynamic item) async {
     await _repo.update(id, item);
     await refresh();
   }
 
-  Future<void> delete(dynamic id) async {
+  Future<void> delete(Object id) async {
     await _repo.delete(id);
     await refresh();
   }

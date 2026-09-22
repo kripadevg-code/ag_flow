@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:ag_flow_cli/src/generators/aggregator_updater.dart';
@@ -7,6 +8,7 @@ import 'package:ag_flow_cli/src/io/executor.dart';
 import 'package:ag_flow_cli/src/io/file_op.dart';
 import 'package:ag_flow_cli/src/io/project.dart';
 import 'package:ag_flow_cli/src/naming/case_convert.dart';
+import 'package:ag_flow_cli/src/naming/model_spec.dart';
 import 'package:ag_flow_cli/src/naming/module_path.dart';
 import 'package:ag_flow_cli/src/naming/pluralizer.dart';
 import 'package:args/command_runner.dart';
@@ -34,6 +36,24 @@ class ModuleCommand extends Command<int> {
             '(add is silently dropped for detail modules, which have '
             'no "create a new one" concept). Defaults to all of them; '
             'pass --methods=none to generate only the read method.',
+      )
+      ..addOption(
+        'model',
+        help:
+            'The model type this module works with, e.g. --model=Product. '
+            'Generates the model class and threads the real type through '
+            'the Service, Repo, Controller, Page and item component, so '
+            'the module compiles against your data instead of leaving '
+            '`dynamic` placeholders to replace by hand.',
+      )
+      ..addOption(
+        'from-json',
+        help:
+            'Path to a JSON file holding a sample API response for this '
+            'module. The model type and its fields are inferred from it — '
+            'paste a real response body; a list and a single-key envelope '
+            'such as {"data": [...]} are both understood. Implies --model, '
+            'whose value (or the module name) becomes the class name.',
       );
   }
 
@@ -50,6 +70,45 @@ class ModuleCommand extends Command<int> {
 
   @override
   String get invocation => 'ag generate module <module_path>';
+
+  /// Builds the module's [ModelSpec] from `--model`/`--from-json`, or
+  /// null when neither was given (in which case the generated stack is
+  /// typed `dynamic`, exactly as before).
+  ModelSpec? _resolveModel(ModulePath modulePath) {
+    final modelOption = argResults!['model'] as String?;
+    final fromJson = argResults!['from-json'] as String?;
+    if (modelOption == null && fromJson == null) return null;
+
+    // Default the class name to the module's *root* segment, not its last
+    // one: `product/details` addresses the same resource as `product`, so
+    // it must reuse `Product` rather than inventing a second `Details`
+    // model alongside it. Layer files live in flat per-root folders for
+    // the same reason.
+    final className = modelOption == null
+        ? pascalCase(modulePath.rootSegment)
+        : pascalCase(modelOption);
+
+    if (fromJson == null) {
+      // --model alone: no payload to infer fields from, so the model is
+      // an empty shell the developer fills in. The win is still the type
+      // threading across five files.
+      return ModelSpec(className: className, fields: const []);
+    }
+
+    final file = File(fromJson);
+    if (!file.existsSync()) {
+      throw FileSystemException('No such file', fromJson);
+    }
+    final Object? decoded;
+    try {
+      decoded = jsonDecode(file.readAsStringSync());
+    } on FormatException catch (e) {
+      throw FormatException(
+        '--from-json file is not valid JSON (${e.message}): $fromJson',
+      );
+    }
+    return ModelSpec.fromJsonSample(className, decoded);
+  }
 
   @override
   Future<int> run() async {
@@ -95,12 +154,24 @@ class ModuleCommand extends Command<int> {
       }
     }
 
+    final ModelSpec? model;
+    try {
+      model = _resolveModel(modulePath);
+    } on FormatException catch (e) {
+      logger.err(e.message);
+      return ExitCode.usage.code;
+    } on FileSystemException catch (e) {
+      logger.err('Could not read --from-json file: ${e.path}');
+      return ExitCode.noInput.code;
+    }
+
     final generator = ModuleGenerator(
       project: project,
       pluralizer: pluralOverride == null
           ? defaultPluralizer
           : (_) => pascalCase(pluralOverride),
       methods: methods,
+      model: model,
     );
 
     final List<FileOp> ops;

@@ -1,7 +1,12 @@
 import 'package:ag_flow/ag_flow.dart';
+import 'package:ag_flow_example/core/auth/auth_service.dart';
 
-/// Registers the single, shared [ApiProvider] used by every Service in
-/// the app (see requirments/ag_endpoint_rules.md §22).
+/// Registers app-wide singletons that live for the entire app lifetime.
+///
+/// Two permanent singletons are registered here:
+///   • [ApiProvider]   — the shared HTTP client every Service uses.
+///   • [AuthService]   — the single source of truth for login state,
+///                       read synchronously by every [AgGuard].
 class InitialBinding extends AgBinding {
   @override
   void dependencies() {
@@ -10,5 +15,9 @@ class InitialBinding extends AgBinding {
       ApiProvider(baseUrl: 'https://example.com'),
       permanent: true,
     );
+
+    // AuthService must be permanent so guards can always find it,
+    // even before any route has pushed its own binding.
+    put<AuthService>(AuthService(), permanent: true);
   }
 }

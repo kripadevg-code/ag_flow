@@ -7,5 +7,5 @@ abstract class AppRoutes {
 abstract class _Routes {
   static const String initial = '/';
   static const String product = '/product';
-  static const String productDetails = '/product/details';
+  static const String productDetails = '/product/details/:id';
 }

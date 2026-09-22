@@ -13,21 +13,21 @@ abstract class AppPages {
 
   static final List<AgRoute> pages = [
     AgRoute(
-      name: AppRoutes.post,
+      path: AppRoutes.post,
       page: PostsPage.new,
       binding: PostsBinding(),
       transition: AppPages.defaultTransition,
     ),
 
     AgRoute(
-      name: AppRoutes.postDetails,
+      path: AppRoutes.postDetails,
       page: PostDetailsPage.new,
       binding: PostDetailsBinding(),
       transition: AppPages.defaultTransition,
     ),
 
     AgRoute(
-      name: AppRoutes.postDetailsComments,
+      path: AppRoutes.postDetailsComments,
       page: PostDetailsCommentsPage.new,
       binding: PostDetailsCommentsBinding(),
       transition: AppPages.defaultTransition,

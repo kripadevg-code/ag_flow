@@ -3,8 +3,10 @@ import 'dart:io';
 
 import 'package:ag_flow_cli/src/generators/aggregator_updater.dart';
 import 'package:ag_flow_cli/src/generators/import_utils.dart';
+import 'package:ag_flow_cli/src/generators/model_generator.dart';
 import 'package:ag_flow_cli/src/io/file_op.dart';
 import 'package:ag_flow_cli/src/io/project.dart';
+import 'package:ag_flow_cli/src/naming/model_spec.dart';
 import 'package:ag_flow_cli/src/naming/module_path.dart';
 import 'package:ag_flow_cli/src/naming/module_spec.dart';
 import 'package:ag_flow_cli/src/naming/pluralizer.dart';
@@ -51,10 +53,23 @@ class ModuleGenerator {
     required this.project,
     this.pluralizer = defaultPluralizer,
     this.methods = generatableMethods,
+    this.model,
   });
 
   final Project project;
   final Pluralizer pluralizer;
+
+  /// The module's model type, when one was requested via `--model` or
+  /// inferred from `--from-json`.
+  ///
+  /// Null means the generated stack is typed `dynamic`, exactly as it
+  /// always was — the whole model feature is additive, and a module
+  /// generated without one is byte-for-byte what it used to be. With a
+  /// model, the real type is threaded through Service, Repo, Controller,
+  /// Page and the item component, and the model class itself is
+  /// generated, so a fresh module compiles against real data instead of
+  /// handing the developer a list of `dynamic`s to replace.
+  final ModelSpec? model;
 
   /// Which of [generatableMethods] to generate stubs for, in addition to
   /// the always-present read method. Defaults to all of them — the whole
@@ -90,9 +105,15 @@ class ModuleGenerator {
     final bundle = spec.isDetail ? detailModuleBundle : collectionModuleBundle;
     final generator = await MasonGenerator.fromBundle(bundle);
 
+    final model = this.model;
     final vars = <String, dynamic>{
       'app_package_name': project.packageName,
       'module_import_path': 'modules/${modulePath.rootSegment}',
+      'has_model': model != null,
+      'model_class': model?.className ?? 'dynamic',
+      'model_file_base': model?.fileBase ?? 'model',
+      'id_type': model?.idType ?? 'Object',
+      'id_of_expression': _idOfExpression(model, spec.serviceClass),
       'module_class_prefix': spec.classPrefix,
       'module_file_base': spec.layerFileBase,
       'component_class_prefix': spec.componentClassPrefix,
@@ -122,9 +143,51 @@ class ModuleGenerator {
       );
     }
 
+    if (model != null) {
+      final modelPath = p.join(moduleRoot, 'models', '${model.fileBase}.dart');
+      // Skipped when it already exists, like every other generated file:
+      // a detail module generated after its parent shares the parent's
+      // model rather than overwriting an edited one.
+      ops.add(
+        File(modelPath).existsSync()
+            ? FileOp.skipExisting(path: modelPath)
+            : FileOp.create(
+                path: modelPath,
+                content: _formatter.format(renderModel(model)),
+              ),
+      );
+    }
+
     ops.addAll(AggregatorUpdater(project: project).plan(spec));
     return ops;
   }
+
+  /// How a detail Service turns its page argument into the resource id.
+  ///
+  /// Path parameters are always strings, so a model whose id is an `int`
+  /// needs the parse written for it — that conversion is the one piece a
+  /// developer would otherwise have to remember on every detail module.
+  static String _idOfExpression(ModelSpec? model, String serviceClass) {
+    switch (model?.idType) {
+      case 'String':
+        return 'argument.id';
+      case 'int':
+        return 'int.parse(argument.id)';
+      case null:
+        return _unimplementedIdOf(
+          serviceClass,
+          'return the id field from the argument.',
+        );
+      default:
+        return _unimplementedIdOf(
+          serviceClass,
+          'convert argument.id to ${model!.idType}.',
+        );
+    }
+  }
+
+  static String _unimplementedIdOf(String serviceClass, String hint) =>
+      "throw UnimplementedError('$serviceClass.idOf — $hint')";
 }
 
 /// Records rendered files in memory instead of writing them to disk — lets
@@ -133,7 +196,6 @@ class ModuleGenerator {
 /// unit-testable without one.
 class _RecordingGeneratorTarget implements GeneratorTarget {
   final Map<String, String> files = {};
-
   @override
   Future<GeneratedFile> createFile(
     String path,

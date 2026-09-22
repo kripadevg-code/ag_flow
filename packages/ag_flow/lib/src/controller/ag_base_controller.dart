@@ -16,6 +16,32 @@ import 'package:flutter/foundation.dart';
 /// pagination-only change (see [AgPaginationMixin]) notifies through a
 /// *separate* notifier instead, so it never also re-triggers `AgPage`'s
 /// loading/error/empty/success switch, and vice versa.
+///
+/// ---
+/// ### Accessing a controller anywhere — no generics
+///
+/// Every concrete controller should expose a `find` static getter so it
+/// can be resolved from [AgLocator] without any generic syntax:
+///
+/// ```dart
+/// class LoginController extends AgBaseController<User> {
+///   // One line — add this to every controller.
+///   static LoginController get find => AgLocator.find<LoginController>();
+///
+///   LoginController(this._repo);
+///   final LoginRepo _repo;
+///   // ...
+/// }
+/// ```
+///
+/// Then anywhere in the app — a guard, a page, another controller:
+///
+/// ```dart
+/// final loginController = LoginController.find;
+/// ```
+///
+/// Dart infers the type from the left-hand side. No `<LoginController>`
+/// needed at the call site.
 abstract class AgBaseController<T> extends ChangeNotifier
     implements AgInitializable {
   AgBaseController({this.autoLoadOnInit = true});
@@ -26,6 +52,7 @@ abstract class AgBaseController<T> extends ChangeNotifier
 
   AgPageState<T> _pageState = const AgPageState.initial();
   bool _disposed = false;
+  int _requestToken = 0;
 
   /// The current page state.
   AgPageState<T> get state => _pageState;
@@ -39,6 +66,31 @@ abstract class AgBaseController<T> extends ChangeNotifier
   /// is still running is completely ordinary, so this is a normal path,
   /// not an edge case — [emit] silently no-ops once disposed.
   bool get isDisposed => _disposed;
+
+  /// The token identifying the most recently started load.
+  ///
+  /// Capture this before an `await` and pass it to [isCurrentRequest]
+  /// afterwards to find out whether the result is still wanted. Used by
+  /// [AgPaginationMixin.loadMore], which must be invalidated by a
+  /// [refresh] that started while it was in flight.
+  @protected
+  int get currentRequestToken => _requestToken;
+
+  /// Starts a new logical load, invalidating any still in flight.
+  ///
+  /// Two loads can overlap in completely ordinary use — tapping retry
+  /// twice, or pulling to refresh while the first load is still
+  /// running — and responses can arrive out of order. Without this, the
+  /// *slower* request wins and quietly overwrites fresher data with
+  /// staler data.
+  @protected
+  int startRequest() => ++_requestToken;
+
+  /// Whether [token] is still the newest started load and this
+  /// controller is alive. False means the result must be discarded
+  /// rather than emitted.
+  @protected
+  bool isCurrentRequest(int token) => token == _requestToken && !_disposed;
 
   @override
   void onAgInit() {
@@ -90,8 +142,10 @@ abstract class AgBaseController<T> extends ChangeNotifier
   Future<void> retry() => loadInitial();
 
   Future<void> _runFetch() async {
+    final token = startRequest();
     try {
       final data = await fetch();
+      if (!isCurrentRequest(token)) return;
       emit(
         isEmptyData(data)
             ? const AgPageState.empty()
@@ -102,6 +156,7 @@ abstract class AgBaseController<T> extends ChangeNotifier
       // AgPageState.error, so this catch is deliberately unconstrained.
       // ignore: avoid_catches_without_on_clauses
     } catch (error, stackTrace) {
+      if (!isCurrentRequest(token)) return;
       emit(AgPageState.error(error, stackTrace, state.dataOrNull));
     }
   }

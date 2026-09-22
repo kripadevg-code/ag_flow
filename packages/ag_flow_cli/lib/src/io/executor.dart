@@ -26,6 +26,7 @@ class Executor {
             final file = File(op.path);
             await file.create(recursive: true);
             await file.writeAsString(op.content);
+            if (op.executable) await _makeExecutable(file);
             logger.info('${lightGreen.wrap('create')}  ${_relative(op.path)}');
             written++;
           }
@@ -46,6 +47,16 @@ class Executor {
       }
     }
     return written;
+  }
+
+  /// Git silently ignores a hook that isn't executable, so the bit has to
+  /// be set at write time. No-op on Windows, which has no POSIX mode.
+  Future<void> _makeExecutable(File file) async {
+    if (Platform.isWindows) return;
+    final result = await Process.run('chmod', ['+x', file.path]);
+    if (result.exitCode != 0) {
+      logger.detail('Could not mark ${file.path} executable: ${result.stderr}');
+    }
   }
 
   String _relative(String path) =>

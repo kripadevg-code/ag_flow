@@ -6,7 +6,13 @@ import 'package:flutter_test/flutter_test.dart';
 
 class _Argument {
   const _Argument(this.id);
-  final int id;
+
+  factory _Argument.fromPathParameters(Map<String, String> pathParameters) =>
+      _Argument(pathParameters['id']!);
+
+  final String id;
+
+  Map<String, String> toPathParameters() => {'id': id};
 }
 
 int _bindingRunCount = 0;
@@ -28,6 +34,36 @@ class _DetailBinding extends AgBinding {
 
 class _Marker {}
 
+/// A controller that records when it was disposed, so a test can check
+/// *when* teardown happened rather than only that it eventually did.
+class _TrackedController extends AgBaseController<String> {
+  // Loads on init so the page reaches its success state; leaving it on
+  // AgLoading would spin a CircularProgressIndicator forever and
+  // pumpAndSettle could never settle.
+  int disposeCallCount = 0;
+
+  @override
+  Future<String> fetch() async => 'ready';
+
+  @override
+  void dispose() {
+    disposeCallCount++;
+    super.dispose();
+  }
+}
+
+class _TrackedBinding extends AgBinding {
+  @override
+  void dependencies() => put<_TrackedController>(_TrackedController());
+}
+
+class _TrackedPage extends AgBasePage<_TrackedController> {
+  const _TrackedPage();
+
+  @override
+  Widget buildSuccess(BuildContext context) => const Text('tracked');
+}
+
 class _HomePage extends StatelessWidget {
   const _HomePage();
 
@@ -36,8 +72,8 @@ class _HomePage extends StatelessWidget {
     return Scaffold(
       body: TextButton(
         onPressed: () => AgNavigator.toNamed<void>(
-          '/detail',
-          arguments: const _Argument(1),
+          '/detail/:id',
+          pathParameters: const _Argument('1').toPathParameters(),
         ),
         child: const Text('Go'),
       ),
@@ -50,7 +86,7 @@ class _DetailPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final argument = AgArguments.resolve<_Argument>();
+    final argument = _Argument.fromPathParameters(AgNavigator.pathParameters);
     return Scaffold(
       body: Column(
         children: [
@@ -81,9 +117,9 @@ void main() {
         AgApp(
           initialRoute: '/',
           routes: [
-            AgRoute(name: '/', page: () => const _HomePage()),
+            AgRoute(path: '/', page: () => const _HomePage()),
             AgRoute(
-              name: '/detail',
+              path: '/detail/:id',
               page: () => const _DetailPage(),
               binding: _DetailBinding(),
             ),
@@ -106,9 +142,9 @@ void main() {
         AgApp(
           initialRoute: '/',
           routes: [
-            AgRoute(name: '/', page: () => const _HomePage()),
+            AgRoute(path: '/', page: () => const _HomePage()),
             AgRoute(
-              name: '/detail',
+              path: '/detail/:id',
               page: () => const _DetailPage(),
               binding: _DetailBinding(),
             ),
@@ -139,9 +175,9 @@ void main() {
         AgApp(
           initialRoute: '/',
           routes: [
-            AgRoute(name: '/', page: () => const _HomePage()),
+            AgRoute(path: '/', page: () => const _HomePage()),
             AgRoute(
-              name: '/detail',
+              path: '/detail/:id',
               page: () => const _DetailPage(),
               binding: _DetailBinding(),
             ),
@@ -167,9 +203,9 @@ void main() {
         AgApp(
           initialRoute: '/',
           routes: [
-            AgRoute(name: '/', page: () => const _HomePage()),
+            AgRoute(path: '/', page: () => const _HomePage()),
             AgRoute(
-              name: '/detail',
+              path: '/detail/:id',
               page: () => const _DetailPage(),
               binding: _DetailBinding(),
             ),
@@ -185,15 +221,15 @@ void main() {
       // *popped*, so awaiting it here would hang.)
       unawaited(
         AgNavigator.toNamed<void>(
-          '/detail',
-          arguments: const _Argument(1),
+          '/detail/:id',
+          pathParameters: const _Argument('1').toPathParameters(),
         ),
       );
       await tester.pumpAndSettle();
       unawaited(
         AgNavigator.toNamed<void>(
-          '/detail',
-          arguments: const _Argument(2),
+          '/detail/:id',
+          pathParameters: const _Argument('2').toPathParameters(),
         ),
       );
       await tester.pumpAndSettle();
@@ -223,13 +259,13 @@ void main() {
         AgApp(
           initialRoute: '/',
           routes: [
-            AgRoute(name: '/', page: () => const _HomePage()),
+            AgRoute(path: '/', page: () => const _HomePage()),
             AgRoute(
-              name: '/detail',
+              path: '/detail/:id',
               page: () => const _DetailPage(),
               binding: _DetailBinding(),
             ),
-            AgRoute(name: '/other', page: () => const _HomePage()),
+            AgRoute(path: '/other', page: () => const _HomePage()),
           ],
         ),
       );
@@ -252,4 +288,118 @@ void main() {
       expect(() => AgLocator.find<_Marker>(), throwsStateError);
     },
   );
+
+  group('binding teardown timing', () {
+    // A NavigatorObserver's didPop fires when the pop *begins*. The
+    // outgoing page stays mounted and keeps reading its controller for
+    // the whole exit transition, so disposing there pulls the controller
+    // out from under a live widget. Teardown is driven by the route's
+    // own dispose instead, which runs once the route is genuinely gone.
+    testWidgets('a controller outlives the pop transition of its page', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        AgApp(
+          initialRoute: '/',
+          routes: [
+            AgRoute(path: '/', page: () => const _HomePage()),
+            AgRoute(
+              path: '/tracked',
+              page: () => const _TrackedPage(),
+              binding: _TrackedBinding(),
+            ),
+          ],
+        ),
+      );
+
+      unawaited(AgNavigator.toNamed<void>('/tracked'));
+      await tester.pumpAndSettle();
+      final controller = AgLocator.find<_TrackedController>();
+      expect(controller.disposeCallCount, 0);
+
+      AgNavigator.back<void>();
+      await tester.pump(); // the pop has started; the page is still up
+      expect(
+        controller.disposeCallCount,
+        0,
+        reason:
+            'the page is still on screen and still reading this '
+            'controller for the length of the exit transition',
+      );
+      expect(find.text('tracked'), findsOneWidget);
+
+      await tester.pumpAndSettle(); // transition finishes, route disposed
+      expect(controller.disposeCallCount, 1);
+    });
+
+    testWidgets('repeated push/pop cycles leave nothing registered', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        AgApp(
+          initialRoute: '/',
+          routes: [
+            AgRoute(path: '/', page: () => const _HomePage()),
+            AgRoute(
+              path: '/tracked',
+              page: () => const _TrackedPage(),
+              binding: _TrackedBinding(),
+            ),
+          ],
+        ),
+      );
+
+      final seen = <_TrackedController>[];
+      for (var i = 0; i < 5; i++) {
+        unawaited(AgNavigator.toNamed<void>('/tracked'));
+        await tester.pumpAndSettle();
+        seen.add(AgLocator.find<_TrackedController>());
+        AgNavigator.back<void>();
+        await tester.pumpAndSettle();
+      }
+
+      expect(
+        seen.toSet(),
+        hasLength(5),
+        reason: 'each push must get its own controller, never a stale one',
+      );
+      for (final controller in seen) {
+        expect(controller.disposeCallCount, 1);
+      }
+      expect(AgLocator.find<_TrackedController>, throwsStateError);
+    });
+
+    testWidgets("tearing down the app disposes a live route's controller", (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        AgApp(
+          initialRoute: '/',
+          routes: [
+            AgRoute(path: '/', page: () => const _HomePage()),
+            AgRoute(
+              path: '/tracked',
+              page: () => const _TrackedPage(),
+              binding: _TrackedBinding(),
+            ),
+          ],
+        ),
+      );
+      unawaited(AgNavigator.toNamed<void>('/tracked'));
+      await tester.pumpAndSettle();
+      final controller = AgLocator.find<_TrackedController>();
+
+      // The app goes away with the route still on the stack.
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpAndSettle();
+
+      expect(
+        controller.disposeCallCount,
+        1,
+        reason:
+            'an app torn down mid-stack must still release what its '
+            'live routes registered',
+      );
+    });
+  });
 }

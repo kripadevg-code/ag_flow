@@ -2,6 +2,98 @@
 
 ## Unreleased
 
+- **Routing now runs on `go_router`.** AG keeps owning the API — `AgApp`,
+  `AgRoute`, `AgBinding`, `AgNavigator`, `AgGuard` are unchanged in
+  spirit, and go_router appears in no consuming app's pubspec and in no
+  generated file — but the engine underneath is the Flutter team's own
+  package rather than a hand-rolled `onGenerateRoute`. That reintroduces
+  a dependency, though not the one that motivated dropping GetX: this one
+  is maintained in `flutter/packages`.
+  - **Routes are real URLs.** `AgRoute.name` became `AgRoute.path`, and a
+    path may declare parameters: `/product/details/:id`. The path is
+    registered as go_router's `path` *and* `name`, so there is still
+    exactly one `AppRoutes` constant per module.
+  - **Detail pages are deep-linkable.** A detail module's argument is now
+    built from the route's path parameters via
+    `AgDetailController.argumentsFromPath`, so the page opens correctly
+    from a notification, a shared link, or a reloaded web URL — not only
+    from an in-app push. `AgNavigator.extra` still carries a payload that
+    genuinely cannot be expressed in a URL, and is documented as not
+    deep-link safe.
+  - **`AgShellRoute`** wraps a group of routes in persistent chrome (a
+    bottom bar, a rail) whose own state survives navigation between them.
+    Its binding is scoped to the shell's lifetime, not to any one route.
+  - **`AgGuard` now maps onto go_router's `redirect`** — guards still run
+    in order with the first non-null path winning, but a blocked route is
+    never built at all, so its binding never registers.
+  - **`AgNavigator`** gains `pathParameters`/`queryParameters`, `canPop`,
+    `location`, and `toLocation` for raw inbound links. `offNamed` uses
+    `pushReplacement`, never go_router's `replace` — `replace` reuses the
+    outgoing page's key, which would leave the binding lifecycle unrun
+    and the route rendering the previous page's content.
+  - **Unmatched locations** land on `AgApp.errorBuilder` instead of
+    silently doing nothing.
+  - The binding lifecycle is unchanged and still reference-counted, still
+    driven by the route's own `dispose` — it survived the migration
+    because go_router lets a `Page` decide which `Route` to create.
+
+### Known limitation (pre-existing, not introduced here)
+
+`AgLocator` is keyed by type, so two live instances of the same route
+share one controller: pushing `/product/7` then `/product/9` shows the
+first product's data on both. This was equally true of the old
+argument-object mechanism; path parameters only make it easy to see.
+Fixing it properly needs per-route scoping in `AgLocator`.
+
+- **Six production defects fixed in the state, DI, and routing
+  primitives** — each one found by writing a test that reproduced it
+  first, not by reading the code and guessing. All six have permanent
+  regression tests.
+  - **`AgLocator.put` leaked the instance it replaced.** Registering over
+    an existing type dropped the previous instance without disposing it,
+    so anything still listening to it leaked for the rest of the app run.
+    It is now disposed as it is replaced (unless it is literally the same
+    instance).
+  - **Out-of-order responses let stale data win.** Two loads overlapping
+    is ordinary use — tapping retry twice, or pulling to refresh while
+    the first load is still running — and nothing orders the responses.
+    The *slower* request used to win and silently overwrite fresh data
+    with stale data; an abandoned request failing could also blank out an
+    already-loaded screen. `AgBaseController` now stamps each load with a
+    request token and discards anything superseded.
+  - **A refresh during an in-flight `loadMore` spliced stale rows into
+    the fresh list.** The in-flight page belonged to the list as it was
+    *before* the refresh. It is now dropped, and it no longer leaves a
+    load-more spinner stuck on screen.
+  - **Controllers were disposed mid-pop-transition.** Binding teardown
+    ran from a `NavigatorObserver`'s `didPop`, which fires when the pop
+    *begins* — the outgoing page is still mounted and still reading its
+    controller for the whole exit animation. Teardown now runs from the
+    route's own `dispose`, once the route is genuinely gone. This also
+    covers a case the observer never did: an app torn down with routes
+    still on the stack.
+  - **A nested scrollable paged the list it was sitting inside.** A
+    horizontal carousel inside a row bubbled its own scroll metrics up to
+    the outer list, and a short inner list always reads as "near the
+    bottom" — so scrolling the carousel loaded page after page of the
+    outer list. Only the list's own scrollable is considered now.
+  - **A failed page retried itself on every scroll frame.** After a
+    load-more failure, continuing to scroll re-issued the same failing
+    request ~60 times a second. The error is latched; recovery is the
+    deliberate `retryLoadMore()` from the error slot.
+- **Refreshing no longer throws a scrolled list back to the top.**
+  `AgPage` used to wrap the success content in a `Stack` only while
+  refreshing, which changed the widget type at that slot and re-inflated
+  the whole subtree — losing the `ScrollPosition` on every single
+  refresh, and laying the content out under different constraints
+  mid-refresh. The `Stack` is now unconditional with
+  `StackFit.passthrough`, so the element stays put and the constraints
+  are identical to being a direct child.
+- **`AgApp` is simpler as a result of the teardown fix**, not just
+  more correct: one release path via a `PageRouteBuilder` subclass
+  replaces three `NavigatorObserver` callbacks and the `Route`-keyed map
+  that existed only to correlate them back to bindings.
+
 - **Services are declarative now — backend differences are values, not
   code.** Previously `AgCrudService` had no `getPage`, so the moment a
   backend paginated, a module fell out of the declarative shape and
@@ -152,8 +244,70 @@
 
 ## 0.1.0
 
-- Initial runtime framework: `AgPageState`, `AgBaseController`,
-  `AgListController`/`AgPaginationMixin`, `AgDetailController`,
-  `AgBasePage`, `AgPage`, `AgListBuilder`, `AgLoading`/`AgError`/`AgEmpty`,
-  `AgBaseRepo`, `AgBaseService`/`AgCrudService`, `AgEndpoint`/`AgRequest`/
-  `AgPathResolver`, `ApiProvider`, `AgArguments`.
+Initial release.
+
+**Runtime primitives**
+
+- `AgBasePage` / `AgPage` — state-rendering scaffold with four independent
+  override slots (`loadingBuilder`, `errorBuilder`, `emptyBuilder`,
+  `buildSuccess`) and optional pull-to-refresh.
+- `AgBaseController<T>` — sealed `AgPageState` machine (`initial` → `loading`
+  → `success` / `empty` / `error`); `emit()` is no-op after dispose, so an
+  in-flight fetch completing after a route is popped never throws.
+- `AgListController<Item, Key>` + `AgPaginationMixin` — paginated list
+  controller with reference-counted load-more, `updateItems` optimistic
+  mutation, and a separate pagination notifier so list-position changes never
+  re-trigger the full page-state switch.
+- `AgDetailController<T, A>` — resolves a typed navigation argument from
+  `AgNavigator.pathParameters` once (lazily); throws a named
+  `AgArgumentError` on a missing or wrong-type argument.
+- `AgListBuilder` — `SliverList`-based widget driving `AgListController`;
+  emits loading/error/empty/no-more-items slots independent of page state.
+
+**DI**
+
+- `AgLocator` — type-keyed service locator (`put`, `lazyPut`, `find`,
+  `delete`); disposes `ChangeNotifier` instances on removal; realizes
+  `AgInitializable` immediately on registration.
+- `AgBinding` — route-scoped DI registration; `disposeAll` called
+  automatically when the last live instance of the route is gone.
+
+**Routing (go\_router-backed)**
+
+- `AgApp` — `MaterialApp.router` wrapper; builds a `GoRouter` from
+  `List<AgRouteBase>`; `initialBinding` registered once before the first
+  frame for app-wide singletons.
+- `AgRoute` — path + page builder + binding + transition + guards.
+- `AgShellRoute` — persistent chrome (bottom nav, side rail) wrapping a group
+  of routes; shell binding scoped to the shell's lifetime.
+- `AgGuard` — single `redirect(path) → String?` contract; guards run
+  in-order, first non-null wins; blocking route is never built so its binding
+  never registers.
+- `AgNavigator` — context-less navigation (`toNamed`, `offNamed`,
+  `offAllNamed`, `back`, `toLocation`); exposes `pathParameters`, `extra`,
+  `canPop`, `location`.
+- `AgTransition` — `rightToLeft`, `fade`, `none`.
+
+**Networking**
+
+- `ApiProvider` — single Dio wrapper; interceptor-based auth/retry/logging;
+  `AgCancelToken` keeps Dio types behind the framework boundary.
+- `AgEndpoint` / `AgRequest` / `AgPathResolver` — declarative endpoint
+  definitions; `AgUnsupportedMethodException` on method/endpoint mismatch.
+- `AgBaseService` — `fetchList` / `fetchItem` with `AgEnvelope` unwrapping;
+  `decodeListPayload` / `decodeItemPayload` for custom decode paths.
+- `AgCrudService<T, ID>` — `getAll` / `getById` / `add` / `update` / `delete`
+  from two endpoint declarations plus `fromJson` / `toJson`.
+- `AgPagedService<T, K>` — `getPage` from `pageStrategy` + `envelope` +
+  `fromJson`; composes with `AgCrudService`.
+- `AgPageStrategy<K>` — paging dialect as a value: `AgPageNumberStrategy`,
+  `AgOffsetStrategy`, `AgCursorStrategy`, `AgSinglePageStrategy`.
+- `AgEnvelope` — payload location in a response body (`raw`, `.key`,
+  `.path`, `.custom`).
+- `AgStateService` — base class for reactive state-only services (no
+  `ApiProvider`); extends `ChangeNotifier`.
+
+**Auth guard helpers**
+
+- `AgGuard` abstract class — the single contract for route-level access
+  control; return `null` to allow, return a path to redirect.

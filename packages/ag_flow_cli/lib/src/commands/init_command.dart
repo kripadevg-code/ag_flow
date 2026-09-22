@@ -41,10 +41,12 @@ class InitCommand extends Command<int> {
       logger.info('\nNothing to do — this project is already initialized.');
     } else {
       logger
-        ..success('\nInitialized $written file(s) under lib/core/.')
+        ..success('\nInitialized $written file(s).')
         ..info('\nNext steps:')
         ..info(
-          "  1. Add ag_flow as a dependency in pubspec.yaml, if you haven't already.",
+          '  1. In pubspec.yaml: ag_flow under dependencies, and '
+          'ag_flow_cli under dev_dependencies (the architecture gate '
+          'runs it via "dart run ag_flow_cli:ag").',
         )
         ..info(
           '  2. Set a real API base URL in lib/core/bindings/initial_binding.dart.',
@@ -55,7 +57,18 @@ class InitCommand extends Command<int> {
         ..info('         initialBinding: InitialBinding(),')
         ..info('         routes: AppPages.pages,')
         ..info('       )')
-        ..info('  4. Run "ag g m <module>" to generate your first module.');
+        ..info('  4. Run "ag g m <module>" to generate your first module.')
+        ..info(
+          '  5. Enable the local architecture gate (optional, recommended):',
+        )
+        ..info('       git config core.hooksPath .githooks')
+        ..info(
+          "\nAGENTS.md now documents this project's architecture standard. "
+          'Coding agents read it automatically, so they use "ag g m" and the '
+          "framework's patterns instead of inventing their own. "
+          '.github/workflows/ag.yaml runs "ag analyze" on every push, so '
+          'code that breaks the architecture cannot merge.',
+        );
     }
     return ExitCode.success.code;
   }

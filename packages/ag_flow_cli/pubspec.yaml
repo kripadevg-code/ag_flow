@@ -1,10 +1,12 @@
 name: ag_flow_cli
 description: >-
-  The `ag` CLI — generates and wires AG Flow feature modules (page, controller,
-  repo, service, binding) against the ag_flow runtime framework. One command,
-  fully wired module.
+  The `ag` CLI for ag_flow — one command generates a fully-wired feature
+  module (page, controller, repo, service, binding, component) and wires
+  its route, argument, and navigation method automatically.
 version: 0.1.0
-publish_to: none
+repository: https://github.com/kripadevg-code/ag_flow
+homepage: https://github.com/kripadevg-code/ag_flow
+issue_tracker: https://github.com/kripadevg-code/ag_flow/issues
 resolution: workspace
 
 environment:

@@ -8,6 +8,6 @@ abstract class AppRoutes {
 abstract class _Routes {
   static const String initial = '/';
   static const String post = '/post';
-  static const String postDetails = '/post/details';
-  static const String postDetailsComments = '/post/details/comments';
+  static const String postDetails = '/post/details/:id';
+  static const String postDetailsComments = '/post/details/comments/:id';
 }

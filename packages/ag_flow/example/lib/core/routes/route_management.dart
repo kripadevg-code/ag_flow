@@ -4,11 +4,21 @@ import 'package:ag_flow_example/core/arguments/arguments.dart';
 import 'app_routes.dart';
 
 abstract class RouteManagement {
-  static void goToProductsPage() {
-    AgNavigator.toNamed<dynamic>(AppRoutes.product);
-  }
+  // Auth
+  static void goToLoginPage() => AgNavigator.toNamed<dynamic>(AppRoutes.login);
 
-  static void goToProductDetailsPage(ProductDetailsPageArgument argument) {
-    AgNavigator.toNamed<dynamic>(AppRoutes.productDetails, arguments: argument);
-  }
+  static void goToHomePage() => AgNavigator.toNamed<dynamic>(AppRoutes.home);
+
+  static void goToAdminPanelPage() =>
+      AgNavigator.toNamed<dynamic>(AppRoutes.adminPanel);
+
+  // Products
+  static void goToProductsPage() =>
+      AgNavigator.toNamed<dynamic>(AppRoutes.product);
+
+  static void goToProductDetailsPage(ProductDetailsPageArgument argument) =>
+      AgNavigator.toNamed<dynamic>(
+        AppRoutes.productDetails,
+        pathParameters: argument.toPathParameters(),
+      );
 }

@@ -1776,7 +1776,7 @@ core/routes/route_management.dart
 It must automatically create:
 
 - Route constant
-- `GetPage`
+- `AgRoute`
 - Binding registration
 - Page registration
 - Navigation method
@@ -1920,8 +1920,8 @@ Developers should not need to know internal AG implementation details just to im
 
 The framework should hide:
 
-- GetX registration
-- GetX lookup
+- DI registration (`AgLocator`)
+- DI lookup (`AgLocator`)
 - Dependency graph creation
 - Route registration
 - Argument extraction

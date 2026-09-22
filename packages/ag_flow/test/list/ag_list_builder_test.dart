@@ -10,9 +10,13 @@ class _TestListController extends AgListController<int, int> {
 
   final Future<AgListPage<int, int>> Function(int pageKey) _fetchPage;
   int retryLoadMoreCallCount = 0;
+  int fetchPageCallCount = 0;
 
   @override
-  Future<AgListPage<int, int>> fetchPage(int pageKey) => _fetchPage(pageKey);
+  Future<AgListPage<int, int>> fetchPage(int pageKey) {
+    fetchPageCallCount++;
+    return _fetchPage(pageKey);
+  }
 
   @override
   Future<void> retryLoadMore() {
@@ -234,6 +238,113 @@ void main() {
       );
 
       expect(find.text('the-end'), findsOneWidget);
+    });
+  });
+
+  group('scroll-driven load-more', () {
+    // 30 rows of 100px in a 300px viewport: far from the bottom, so
+    // nothing should load until the user actually scrolls down there.
+    Future<AgListPage<int, int>> longPage(int pageKey) async => AgListPage(
+      items: List<int>.generate(30, (i) => pageKey * 100 + i),
+      hasMore: true,
+      nextPageKey: pageKey + 1,
+    );
+
+    testWidgets('a nested scrollable does not load pages of the outer list', (
+      tester,
+    ) async {
+      final controller = _TestListController(longPage);
+      await controller.loadInitial();
+
+      await tester.pumpWidget(
+        _wrap(
+          SizedBox(
+            height: 300,
+            child: AgListBuilder<int, int>(
+              controller: controller,
+              itemBuilder: (context, item, index) => SizedBox(
+                height: 100,
+                // A horizontal carousel inside a row — its own metrics
+                // always read as "near the bottom", and they bubble up
+                // to the outer list's NotificationListener.
+                child: ListView(
+                  key: ValueKey('inner-$index'),
+                  scrollDirection: Axis.horizontal,
+                  children: List<Widget>.generate(
+                    2,
+                    (i) => const SizedBox(width: 420, height: 100),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      final fetchesBefore = controller.fetchPageCallCount;
+
+      await tester.drag(
+        find.byKey(const ValueKey('inner-0')),
+        const Offset(-30, 0),
+      );
+      await tester.pumpAndSettle();
+
+      expect(controller.fetchPageCallCount, fetchesBefore);
+      controller.dispose();
+    });
+
+    testWidgets('a failed page is not retried by continued scrolling', (
+      tester,
+    ) async {
+      var calls = 0;
+      final controller = _TestListController((pageKey) async {
+        calls++;
+        if (pageKey == 1) {
+          return AgListPage(
+            items: List<int>.generate(30, (i) => i),
+            hasMore: true,
+            nextPageKey: 2,
+          );
+        }
+        throw Exception('backend is down');
+      });
+      await controller.loadInitial();
+
+      await tester.pumpWidget(
+        _wrap(
+          SizedBox(
+            height: 300,
+            child: AgListBuilder<int, int>(
+              controller: controller,
+              itemBuilder: (context, item, index) =>
+                  SizedBox(height: 100, child: Text('item-$item')),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Scroll to the bottom so load-more fires and fails.
+      await tester.drag(find.byType(Scrollable).first, const Offset(0, -3000));
+      await tester.pumpAndSettle();
+      expect(controller.pagination.loadMoreError, isNotNull);
+      final callsAfterFailure = calls;
+
+      // Keep scrolling around at the bottom. Every frame of this would
+      // re-issue the failed request if the error were not latched.
+      for (var i = 0; i < 3; i++) {
+        await tester.drag(find.byType(Scrollable).first, const Offset(0, -200));
+        await tester.pumpAndSettle();
+      }
+
+      expect(
+        calls,
+        callsAfterFailure,
+        reason:
+            'a backend that is already failing must not be retried once '
+            'per scroll frame — recovery is the deliberate retryLoadMore()',
+      );
+      controller.dispose();
     });
   });
 }

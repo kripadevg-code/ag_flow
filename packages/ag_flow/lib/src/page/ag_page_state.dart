@@ -59,9 +59,9 @@ class AgPageLoading<T> extends AgPageState<T> {
   String toString() => 'AgPageState<$T>.loading()';
 }
 
-/// Data loaded successfully. [isRefreshing] is true while a [refresh] is
-/// in flight, so previously loaded [data] can stay on screen instead of
-/// being replaced by a loading indicator.
+/// Data loaded successfully. [isRefreshing] is true while an
+/// `AgBaseController.refresh` is in flight, so previously loaded [data]
+/// can stay on screen instead of being replaced by a loading indicator.
 class AgPageSuccess<T> extends AgPageState<T> {
   const AgPageSuccess(this.data, {this.isRefreshing = false});
 

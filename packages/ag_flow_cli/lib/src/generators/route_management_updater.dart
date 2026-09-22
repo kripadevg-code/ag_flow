@@ -47,9 +47,15 @@ AggregatorUpdateResult updateRouteManagement(
   final insertOffset = body.members.isEmpty
       ? body.beginToken.end
       : body.members.last.end;
+  // A detail route carries its argument in the URL path, not as an
+  // opaque payload — that is what makes the destination reachable from a
+  // deep link, a notification, or a reloaded web URL.
   final snippet = spec.isDetail
       ? '\n\n  static void ${spec.navMethod}(${spec.argumentClass} argument) {\n'
-            '    AgNavigator.toNamed<dynamic>(AppRoutes.${spec.routeConstant}, arguments: argument);\n'
+            '    AgNavigator.toNamed<dynamic>(\n'
+            '      AppRoutes.${spec.routeConstant},\n'
+            '      pathParameters: argument.toPathParameters(),\n'
+            '    );\n'
             '  }'
       : '\n\n  static void ${spec.navMethod}() {\n'
             '    AgNavigator.toNamed<dynamic>(AppRoutes.${spec.routeConstant});\n'

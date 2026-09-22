@@ -53,7 +53,7 @@ AggregatorUpdateResult updateAppPages(
             invocation.methodName.name == 'AgRoute' &&
             invocation.argumentList.arguments.whereType<NamedExpression>().any(
               (arg) =>
-                  arg.name.label.name == 'name' &&
+                  arg.name.label.name == 'path' &&
                   arg.expression.toSource() == routeConstantExpr,
             ),
       );
@@ -73,7 +73,7 @@ AggregatorUpdateResult updateAppPages(
     Patch.insertion(
       pagesList.rightBracket.offset,
       '\n    AgRoute(\n'
-      '      name: AppRoutes.${spec.routeConstant},\n'
+      '      path: AppRoutes.${spec.routeConstant},\n'
       '      page: ${spec.pageClass}.new,\n'
       '      binding: ${spec.bindingClass}(),\n'
       '      transition: AppPages.defaultTransition,\n'

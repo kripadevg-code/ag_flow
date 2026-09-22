@@ -2,7 +2,7 @@ import 'package:ag_flow/src/di/ag_locator.dart';
 import 'package:meta/meta.dart';
 
 /// Registers a module's dependencies (Service → Repo → Controller) with
-/// [AgLocator] — AG's own replacement for GetX's `Bindings`.
+/// [AgLocator], scoped to the lifetime of the route that runs it.
 ///
 /// Override [dependencies] to call [put]/[lazyPut]. Every registration
 /// made through *this* binding (not [AgLocator] directly) is tracked and

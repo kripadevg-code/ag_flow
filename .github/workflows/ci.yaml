@@ -1,9 +1,11 @@
 name: CI
 
 on:
-  push:
-    branches: [main]
+  # Pushes to main are verified by the Release workflow, which calls this
+  # same workflow before it tags — so the checks live in exactly one place
+  # and cannot drift between "what CI runs" and "what gates a release".
   pull_request:
+  workflow_call:
 
 jobs:
   analyze-and-test:

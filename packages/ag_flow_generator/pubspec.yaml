@@ -1,0 +1,23 @@
+name: ag_flow_generator
+description: >-
+  build_runner code generator for ag_flow — emits static `find` and
+  `instance` accessors on controllers and services from the @AgInject()
+  annotation, so AgLocator.find<T>() never appears at a call site.
+version: 0.1.0
+repository: https://github.com/kripadevg-code/ag_flow
+homepage: https://github.com/kripadevg-code/ag_flow
+issue_tracker: https://github.com/kripadevg-code/ag_flow/issues
+resolution: workspace
+
+environment:
+  sdk: ^3.11.0
+
+dependencies:
+  ag_flow: ^0.1.0
+  analyzer: ">=7.0.0 <13.0.0"
+  build: ">=3.0.2 <5.0.0"
+  source_gen: ^4.2.3
+
+dev_dependencies:
+  test: ^1.25.0
+  very_good_analysis: ^10.3.0

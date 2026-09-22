@@ -1,0 +1,24 @@
+# Declares the builder that build_runner discovers and runs.
+#
+# Key decisions:
+#   • build_extensions: every input file ending in .dart that carries
+#     @AgInject() produces a sibling .g.dart part file.
+#   • auto_apply: dependents — runs automatically for every package that
+#     lists ag_flow_generator as a dev_dependency, with no extra config.
+#   • build_to: source — writes .g.dart files next to the source so they
+#     can be committed and inspected (same convention as json_serializable,
+#     freezed, injectable).
+#   • runs_before: [source_gen|combining_builder] — lets source_gen's
+#     CombiningBuilder merge multiple generators' output into one .g.dart
+#     per input file, the standard source_gen pattern.
+
+builders:
+  ag_inject_builder:
+    target: ":ag_flow_generator"
+    import: "package:ag_flow_generator/ag_flow_generator.dart"
+    builder_factories: ["agInjectBuilder"]
+    build_extensions: {".dart": [".g.dart"]}
+    auto_apply: dependents
+    build_to: source
+    runs_before: ["source_gen|combining_builder"]
+    applies_builders: ["source_gen|combining_builder"]

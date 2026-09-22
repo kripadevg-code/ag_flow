@@ -52,36 +52,58 @@ Use [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`,
 `ag_flow_cli` independently via `melos version --scope=<package>`, which
 relies on commit messages to generate changelogs.
 
-## Cutting a release
+## Releasing
 
-Both packages are versioned and tagged independently — a change to one
-doesn't force a version bump on the other:
+**Releases are fully automated. Nobody runs a release command.**
 
-```bash
-melos version --scope=ag_flow          # or --scope=ag_flow_cli
-```
+Merging to `main` runs `.github/workflows/release.yaml`, which:
 
-This bumps the package's `pubspec.yaml` version (via Conventional Commits
-since its last tag), updates its `CHANGELOG.md`, commits, and creates a
-`<package>-v<version>` git tag (e.g. `ag_flow-v0.2.0`) — the same tag
-format consuming apps pin to in their `git:` dependency `ref:`. Push the
-tag once you're ready for consumers to pick it up:
+1. Runs the full CI suite (format, analyze, bundle freshness, all tests)
+   and the end-to-end generator integration proof.
+2. Reads each releasable package's `version:` from its `pubspec.yaml`.
+3. For any whose `<package>-v<version>` tag does not exist yet: creates
+   the tag, pushes it, and publishes a GitHub Release using that
+   version's `CHANGELOG.md` section as the notes.
 
-```bash
-git push --follow-tags
-```
+If every version is already tagged the workflow is a clean no-op, so
+ordinary merges never cut accidental releases.
 
-Pushing a `ag_flow-v*`/`ag_flow_cli-v*` tag triggers
-`.github/workflows/release.yaml`, which verifies the tag's version
-matches `pubspec.yaml`, runs that package's tests, and creates a GitHub
-release with that version's `CHANGELOG.md` section as its notes — a
-mismatched version (a tag cut without actually running `melos version`
-first, for instance) fails the workflow loudly rather than publishing a
-release with the wrong notes.
+### What you do to ship a change
 
-Neither package is published to pub.dev yet (`publish_to: none` everywhere)
-— the tag itself, on GitHub, is the release artifact. Publishing to pub.dev
-is tracked as a future improvement once the package names are confirmed.
+In the same PR as your change:
+
+- bump `version:` in that package's `pubspec.yaml`
+- add a `## <version>` section to its `CHANGELOG.md`
+
+That's it. Merge, and the release happens. **A version bump with no
+matching `## <version>` changelog section fails the workflow** rather than
+publishing an empty release — release notes are part of the change, not an
+afterthought.
+
+Both packages version independently; a change to one doesn't force a bump
+on the other. `<package>-v<version>` is the same tag format consuming apps
+pin to in their `git:` dependency `ref:`.
+
+### Why not `melos version`
+
+`melos version` infers versions from Conventional Commits, and it was
+tried and rejected for this repo for reasons that were measured, not
+assumed:
+
+- it versions and tags `ag_flow_example` and both showcase apps, which are
+  demos rather than release artifacts;
+- for a pre-1.0 package it bumps `0.1.0 → 0.1.1` on a `feat:` even when the
+  change is breaking, which understates the change;
+- it rewrites `CHANGELOG.md` in its own format — prepending its section
+  *above* the `# Changelog` heading (leaving the title stranded mid-file)
+  and replacing hand-written notes with commit subjects.
+
+It remains useful locally for inspecting what conventional commits imply
+(`melos version --all --yes` in a scratch clone), but it is not in the
+release path.
+
+Neither package is published to pub.dev (`publish_to: none` everywhere) —
+the GitHub tag and release are the artifact.
 
 ## Adding a new module type / AG widget
 

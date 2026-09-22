@@ -11,14 +11,14 @@ abstract class AppPages {
 
   static final List<AgRoute> pages = [
     AgRoute(
-      name: AppRoutes.product,
+      path: AppRoutes.product,
       page: ProductsPage.new,
       binding: ProductsBinding(),
       transition: AppPages.defaultTransition,
     ),
 
     AgRoute(
-      name: AppRoutes.productDetails,
+      path: AppRoutes.productDetails,
       page: ProductDetailsPage.new,
       binding: ProductDetailsBinding(),
       transition: AppPages.defaultTransition,

@@ -9,6 +9,9 @@ abstract class RouteManagement {
   }
 
   static void goToProductDetailsPage(ProductDetailsPageArgument argument) {
-    AgNavigator.toNamed<dynamic>(AppRoutes.productDetails, arguments: argument);
+    AgNavigator.toNamed<dynamic>(
+      AppRoutes.productDetails,
+      pathParameters: argument.toPathParameters(),
+    );
   }
 }

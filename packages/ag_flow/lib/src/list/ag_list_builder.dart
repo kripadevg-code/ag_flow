@@ -51,19 +51,46 @@ class AgListBuilder<ItemType, PageKeyType extends Object>
   /// the list is exhausted). Null = AG default (nothing).
   final WidgetBuilder? noMoreItemsBuilder;
 
-  /// How close to the bottom (in pixels) triggers [AgListController
-  /// .loadMore].
+  /// How close to the bottom (in pixels) triggers a load of the next
+  /// page via [AgListController.loadMore].
   final double loadMoreThreshold;
 
   final EdgeInsetsGeometry? padding;
   final ScrollPhysics? physics;
 
   bool _onScrollNotification(ScrollNotification notification) {
-    final metrics = notification.metrics;
-    final remaining = metrics.maxScrollExtent - metrics.pixels;
-    if (remaining <= loadMoreThreshold) {
-      unawaited(controller.loadMore());
+    // Only this list's own scrollable. A nested scrollable (a horizontal
+    // carousel inside a row, say) bubbles *its* metrics up to this
+    // listener, and a short inner list always reads as "near the
+    // bottom" — which would load page after page of the outer list
+    // while the user scrolls something else entirely.
+    if (notification.depth != 0) return false;
+
+    // Scroll position only changes on these; start//end-of-drag and
+    // user-scroll notifications carry no new offset to act on.
+    if (notification is! ScrollUpdateNotification &&
+        notification is! OverscrollNotification) {
+      return false;
     }
+
+    // Checked here, synchronously, rather than relying on loadMore()'s
+    // own guard: this runs on every scroll frame, and an async call
+    // allocates a Future each time even when it returns immediately.
+    final pagination = controller.pagination;
+    if (!pagination.hasNextPage || pagination.isLoadingMore) return false;
+
+    // A failed page must not retry itself. Without this, a backend that
+    // is erroring gets hammered once per scroll frame for as long as the
+    // user keeps moving; recovery is `retryLoadMore()`, from the
+    // load-more error slot, which is a deliberate user action.
+    if (pagination.loadMoreError != null) return false;
+
+    final metrics = notification.metrics;
+    if (metrics.maxScrollExtent - metrics.pixels > loadMoreThreshold) {
+      return false;
+    }
+
+    unawaited(controller.loadMore());
     return false;
   }
 

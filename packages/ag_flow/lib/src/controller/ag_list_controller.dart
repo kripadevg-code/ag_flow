@@ -46,7 +46,9 @@ mixin AgPaginationMixin<ItemType, PageKeyType extends Object>
 
   @override
   Future<List<ItemType>> fetch() async {
+    final token = currentRequestToken;
     final page = await fetchPage(initialPageKey);
+    if (!isCurrentRequest(token)) return page.items;
     _setPagination(
       AgPaginationState<ItemType, PageKeyType>(
         items: page.items,
@@ -72,8 +74,14 @@ mixin AgPaginationMixin<ItemType, PageKeyType extends Object>
     _setPagination(
       current.copyWith(isLoadingMore: true, clearLoadMoreError: true),
     );
+    // Captured, not started: a load-more continues the current load
+    // rather than replacing it. If a refresh() starts while this page is
+    // in flight, the token goes stale and this page is dropped instead
+    // of being appended onto the refreshed list.
+    final token = currentRequestToken;
     try {
       final page = await fetchPage(pageKey);
+      if (!isCurrentRequest(token)) return;
       _setPagination(
         pagination.copyWith(
           items: [...pagination.items, ...page.items],
@@ -87,6 +95,7 @@ mixin AgPaginationMixin<ItemType, PageKeyType extends Object>
       // AgBaseController — captured as loadMoreError, never re-thrown.
       // ignore: avoid_catches_without_on_clauses
     } catch (error) {
+      if (!isCurrentRequest(token)) return;
       _setPagination(
         pagination.copyWith(isLoadingMore: false, loadMoreError: error),
       );

@@ -20,22 +20,31 @@ enum FileOpKind {
 /// `--dry-run`, only reports. This also makes generators trivially
 /// unit-testable without a filesystem.
 class FileOp {
-  const FileOp.create({required this.path, required String content})
-    : kind = FileOpKind.create,
-      _content = content;
+  const FileOp.create({
+    required this.path,
+    required String content,
+    this.executable = false,
+  }) : kind = FileOpKind.create,
+       _content = content;
 
   const FileOp.update({required this.path, required String content})
     : kind = FileOpKind.update,
+      executable = false,
       _content = content;
 
   const FileOp.skipExisting({required this.path})
     : kind = FileOpKind.skipExisting,
+      executable = false,
       _content = null;
 
   /// The absolute path this operation targets.
   final String path;
 
   final FileOpKind kind;
+
+  /// Whether the written file needs the executable bit — a git hook is
+  /// ignored by git without it.
+  final bool executable;
 
   final String? _content;
 

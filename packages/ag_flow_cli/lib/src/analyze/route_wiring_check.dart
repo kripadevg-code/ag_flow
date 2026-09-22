@@ -57,9 +57,18 @@ List<AnalyzeIssue> checkRouteWiring(Project project, List<RouteEntry> routes) {
   for (final route in routes) {
     if (route.name == 'initial') continue;
 
+    // A registered path may declare parameters (`/product/details/:id`).
+    // Those are addressing, not module structure — strip them before
+    // re-deriving the spec, so the path still round-trips through
+    // ModulePath.parse exactly as ModuleSpec.routePath produced it.
+    final structuralPath = route.path
+        .split('/')
+        .where((segment) => segment.isNotEmpty && !segment.startsWith(':'))
+        .join('/');
+
     final ModulePath modulePath;
     try {
-      modulePath = ModulePath.parse(route.path.replaceFirst('/', ''));
+      modulePath = ModulePath.parse(structuralPath);
     } on FormatException {
       issues.add(
         AnalyzeIssue(
@@ -190,7 +199,7 @@ bool _hasAgRouteEntry(CompilationUnit appPagesUnit, String routeConstant) {
         invocation.methodName.name == 'AgRoute' &&
         invocation.argumentList.arguments.whereType<NamedExpression>().any(
           (arg) =>
-              arg.name.label.name == 'name' &&
+              arg.name.label.name == 'path' &&
               arg.expression.toSource() == routeConstantExpr,
         ),
   );

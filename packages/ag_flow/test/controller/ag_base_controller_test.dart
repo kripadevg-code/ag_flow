@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:ag_flow/ag_flow.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -127,6 +129,58 @@ void main() {
       await controller.loadInitial();
       await controller.retry();
       expect(controller.fetchCallCount, 2);
+    });
+  });
+
+  group('overlapping loads', () {
+    // Two loads overlapping is ordinary use — tapping retry twice, or
+    // pulling to refresh while the first load is still running — and
+    // nothing guarantees the responses come back in the order they were
+    // sent. Without a request token the *slower* request wins and
+    // silently replaces fresh data with stale data.
+    test('a slow earlier load never overwrites a faster later one', () async {
+      final pending = <Completer<List<int>>>[];
+      final controller = _FakeController(() {
+        final completer = Completer<List<int>>();
+        pending.add(completer);
+        return completer.future;
+      }, autoLoadOnInit: false);
+
+      unawaited(controller.loadInitial());
+      unawaited(controller.refresh());
+      expect(pending, hasLength(2));
+
+      pending[1].complete([2]); // the newer request answers first
+      await Future<void>.delayed(Duration.zero);
+      pending[0].complete([1]); // the older one straggles in behind it
+      await Future<void>.delayed(Duration.zero);
+
+      expect(controller.state.dataOrNull, [2]);
+      controller.dispose();
+    });
+
+    test('a superseded load that fails does not surface an error', () async {
+      final pending = <Completer<List<int>>>[];
+      final controller = _FakeController(() {
+        final completer = Completer<List<int>>();
+        pending.add(completer);
+        return completer.future;
+      }, autoLoadOnInit: false);
+
+      unawaited(controller.loadInitial());
+      unawaited(controller.refresh());
+
+      pending[1].complete([7]);
+      await Future<void>.delayed(Duration.zero);
+      pending[0].completeError(Exception('stale failure'));
+      await Future<void>.delayed(Duration.zero);
+
+      expect(
+        controller.state,
+        isA<AgPageSuccess<List<int>>>(),
+        reason: 'an abandoned request failing must not blank out the screen',
+      );
+      controller.dispose();
     });
   });
 }

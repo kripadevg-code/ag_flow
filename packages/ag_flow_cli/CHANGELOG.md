@@ -2,6 +2,60 @@
 
 ## Unreleased
 
+- **`ag init` now scaffolds the architecture standard, not just code.**
+  The goal is that a developer *or a coding agent* picking up a project
+  already knows the rules, instead of being told them again every session.
+  - **`AGENTS.md`** at the project root — the layer contract, the folder
+    structure, the generator commands to run instead of writing files,
+    and an explicit "you must not" list. `AGENTS.md` is the cross-tool
+    convention coding agents read automatically; **`CLAUDE.md`** is a
+    pointer to it rather than a second copy to drift.
+  - **`.github/workflows/ag.yaml`** — runs `ag analyze`, formatting,
+    static analysis and tests on every push. Instructions are advisory;
+    this is the gate, and it is free on public repositories.
+  - **`.githooks/pre-commit`** (opt-in via
+    `git config core.hooksPath .githooks`) — the same check locally, so a
+    violation is caught before CI. Written with the executable bit, which
+    git silently requires.
+  - All four are `skipExisting` like every other generated file, so
+    re-running `ag init` never overwrites an edited standard.
+  - The hook resolves the CLI through the project's own `ag_flow_cli`
+    dev_dependency **before** anything on `PATH`. A global `ag` may be a
+    different version — or, since the name is short, a different tool
+    entirely; found the hard way when a globally-activated unrelated
+    `ag` shadowed it and its missing `analyze` command was reported as an
+    architecture violation.
+- **`ag --version` / `ag -v`.** Works with no sub-command, as every CLI
+  should — and as any script probing for the tool will try first.
+
+- **Typed models: `ag g m product --from-json=sample.json`.** Paste a real
+  API response and the generated module compiles against your data — the
+  model class is generated and its type threaded through the Service,
+  Repo, Controller, Page and item component. Previously a fresh module
+  handed back 17 `dynamic` placeholders across 5 files to replace by
+  hand, which is the opposite of what a generator is for.
+  - `--model=Product` alone names the type without inferring fields.
+  - Inference handles nested objects (as nested classes), lists of
+    objects and of scalars, `snake_case`/`camelCase`/`kebab-case` keys
+    (keeping the original JSON key for encoding), Dart keyword
+    collisions, and reads doubles through `num` so a whole-number payload
+    doesn't throw. A `null` sample value becomes `Object?` rather than a
+    guess.
+  - A list response and a single-key envelope (`{"data": [...]}`) are
+    both understood, so a real response body works unedited. Only known
+    envelope keys are looked through — `{"rating": {...}}` is a one-field
+    model, not an envelope.
+  - A detail module reuses its root's model (`product/details` gets
+    `Product`), and its `idOf` is generated with the path-parameter
+    conversion already written (`int.parse(argument.id)`).
+  - Generated models are plain data classes: no `build_runner`, no
+    annotations, no part file. The file is skipped if it already exists,
+    so edits survive regeneration.
+  - Entirely additive: without `--model`/`--from-json` the output is
+    unchanged.
+- The CLI's own description no longer says "Flutter/GetX" — the GetX
+  dependency was removed some releases ago.
+
 - **Generated Services are now pure declaration — no stub bodies at all.**
   A generated collection Service is `with AgCrudService<..>,
   AgPagedService<..>` plus five declared values (two endpoints, a
@@ -158,10 +212,54 @@
 
 ## 0.1.0
 
-- `ag generate module <path>` (aliased `ag g m <path>`): generates the
-  page/controller/repo/service/binding/component files for a new
-  collection (root) or detail (child) module, via Mason bricks bundled as
-  committed Dart sources.
+Initial release.
+
+**Commands**
+
+- `ag init` — bootstraps `lib/core/` skeleton (`arguments.dart`,
+  `endpoints.dart`, `routes/{app_routes,app_pages,route_management}.dart`,
+  `bindings/initial_binding.dart`). Idempotent — safe to re-run; existing
+  files are never overwritten.
+- `ag g m <path>` (`ag generate module`) — generates the complete module
+  for a collection (root) or detail (child) path:
+  - Five architectural-layer files: page, controller, repo, service, binding.
+  - Per-row item component and four override-slot components (appbar,
+    loading, error, empty).
+  - Idempotent wiring into `app_routes.dart`, `app_pages.dart`,
+    `route_management.dart`, and (for detail modules) `arguments.dart`.
+  - `--model=Name` / `--from-json=sample.json` — generates a typed model
+    class and threads it through all five layers; handles nested objects,
+    lists, `snake_case` / `camelCase` / `kebab-case` keys, Dart keyword
+    collisions, and `null` sample values.
+  - `--plural=override` — overrides the default pluralisation for the
+    collection-layer class and file names.
+  - `--dry-run` — prints what would be written without touching the
+    filesystem.
+- `ag analyze` — validates a project against AG's structural rules:
+  - Missing architectural-layer files.
+  - Routes missing navigation wiring, argument class, or nav method.
+  - Duplicate route paths.
+  - Hard-coded `AgNavigator.toNamed('/literal')` calls outside
+    `route_management.dart`.
+  - (Resolved-model) Dependency-direction violations: Page→Repo,
+    Page→Service, Controller→Service, Repo→ApiProvider.
+  - (Resolved-model) Detail controller whose inherited `arguments` getter
+    is never used.
+- `ag --version` — prints the CLI version.
+
+**Generator quality**
+
+- All output goes through the same `FileOp`/`Executor` boundary — dry-run
+  mode is not an afterthought.
+- Aggregator file updates are offset-splice AST edits (syntax-only
+  `package:analyzer`) — an existing hand-customised navigation method
+  survives regeneration byte-for-byte.
+- `RouteConflictException` — a route constant pointing at a different path
+  than this module would derive is reported as a distinct error, never
+  silently overwritten.
+- Parent-existence validation for child/detail modules — partial writes
+  never happen on failure.
+- Golden fixtures regenerated from real tool output, not hand-transcribed.
 - Fully cumulative naming derivation (`ModulePath`/`ModuleSpec`), with
   root-module layer pluralization handled separately from (never-
   pluralized) component naming.

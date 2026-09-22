@@ -253,6 +253,52 @@ ag g m product --methods=add,delete     # only these two
 ag g m product --methods=none           # read-only
 ```
 
+### Give the module its real type
+
+By default every layer is typed `dynamic` — the generator doesn't know
+your data, so it leaves a placeholder. You can skip all of that by
+handing it a real API response:
+
+```bash
+curl https://api.example.com/products > product.json
+ag g m product --from-json=product.json
+```
+
+That generates `lib/modules/product/models/product.dart` and threads
+`Product` through the Service, Repo, Controller, Page and item component,
+so the module compiles against your data immediately:
+
+```dart
+class ProductsService extends AgBaseService
+    with AgCrudService<Product, int>, AgPagedService<Product, int> {
+  @override
+  Product fromJson(Map<String, dynamic> json) => Product.fromJson(json);
+
+  @override
+  Map<String, dynamic> toJson(Product item) => item.toJson();
+}
+```
+
+Paste the response as it actually comes back — a list, or an envelope
+like `{"data": [...]}`, are both understood. Nested objects become nested
+classes, `snake_case` keys become `camelCase` fields (keeping the real
+JSON key for encoding), and a `null` in the sample becomes `Object?`
+rather than a guess the next payload contradicts.
+
+The generated model is a plain Dart class — no `build_runner`, no
+annotations, no part file to keep in sync. It's yours from the moment it
+lands, and regenerating the module won't overwrite it.
+
+`ag g m product --model=Product` names the type without inferring
+fields, when you'd rather write them yourself.
+
+For a detail module, the id travels in the URL as a string, so `idOf` is
+generated with the conversion already written:
+
+```dart
+int idOf(ProductDetailsPageArgument argument) => int.parse(argument.id);
+```
+
 Delete whichever stubs a module doesn't need — they're not a mixin, not
 framework-owned, just ordinary generated code. All three are named the
 same across Service, Repo, and Controller, so a change reads the same at
@@ -327,36 +373,53 @@ sense as a child of something. Try it on a module that doesn't exist and
 
 Two things a detail module has that a collection module doesn't:
 
-**A navigation argument.** `ag g m` added this to
-`lib/core/arguments/arguments.dart`:
+**A real URL.** The detail route is registered with a path parameter, so
+the page has an address:
+
+```dart
+static const String productDetails = '/product/details/:id';
+```
+
+**A navigation argument** that travels *in* that URL. `ag g m` added this
+to `lib/core/arguments/arguments.dart`:
 
 ```dart
 class ProductDetailsPageArgument {
-  const ProductDetailsPageArgument();
+  const ProductDetailsPageArgument({required this.id});
+
+  factory ProductDetailsPageArgument.fromPathParameters(
+    Map<String, String> pathParameters,
+  ) { /* ... reads pathParameters['id'] ... */ }
+
+  final String id;
+
+  Map<String, String> toPathParameters() => {'id': id};
 }
 ```
 
-It's generated *empty* — add whatever fields the detail page needs to
-know which item to fetch (an id, usually):
+Path parameters are always strings. If your module's id is an `int`, do
+the conversion here — this class is the one place that knows the type:
 
 ```dart
-class ProductDetailsPageArgument {
-  const ProductDetailsPageArgument({required this.productId});
-  final String productId;
-}
+factory ProductDetailsPageArgument.fromPathParameters(
+  Map<String, String> pathParameters,
+) => ProductDetailsPageArgument(productId: int.parse(pathParameters['id']!));
 ```
 
-**A generated navigation method**, already updated to match:
+**A generated navigation method**, already wired to it:
 
 ```dart
 static void goToProductDetailsPage(ProductDetailsPageArgument argument) {
-  AgNavigator.toNamed<dynamic>(AppRoutes.productDetails, arguments: argument);
+  AgNavigator.toNamed<dynamic>(
+    AppRoutes.productDetails,
+    pathParameters: argument.toPathParameters(),
+  );
 }
 ```
 
 Call it from anywhere — `RouteManagement.goToProductDetailsPage(
-ProductDetailsPageArgument(productId: product.id))` — and the argument
-arrives at the controller already typed and validated:
+ProductDetailsPageArgument(id: product.id))` — and the argument arrives
+at the controller already typed:
 
 ```dart
 class ProductDetailsController extends AgDetailController<Product, ProductDetailsPageArgument> {
@@ -364,15 +427,26 @@ class ProductDetailsController extends AgDetailController<Product, ProductDetail
   final ProductDetailsRepo _repo;
 
   @override
+  ProductDetailsPageArgument? argumentsFromPath(
+    Map<String, String> pathParameters,
+  ) => ProductDetailsPageArgument.fromPathParameters(pathParameters);
+
+  @override
   Future<Product> fetch() => _repo.getByArgument(arguments);
 }
 ```
 
-`arguments` here isn't `Get.arguments as ProductDetailsPageArgument` — a
-bare cast that fails with a useless stack trace if you forgot to pass
-one. It's resolved through `AgArguments.resolve<A>()`, which throws a
-named error telling you exactly what was expected, what arrived instead,
-and which `goToXPage(...)` call you probably meant to make.
+That `argumentsFromPath` override is what makes the page **deep-linkable**.
+Because the id lives in the URL rather than in an in-memory payload,
+`/product/details/42` opens the right product whether the user tapped a
+list row, followed a push notification, scanned a QR code, or reloaded
+the browser tab. An argument object passed in memory can't survive any of
+those — there is nothing to pass when the app starts cold at that screen.
+
+If you genuinely need to hand over something a URL can't express, pass it
+as `extra:` and read it via `AgArguments.resolve<A>()` — but know that it
+is null on a cold open, so it must never be the only way the page can
+work.
 
 There's no "empty" `_view.dart`/`_list.dart` split for the detail page's
 actual content either — `buildSuccess` is inline, same as collection
@@ -406,7 +480,7 @@ Nothing to do — product already exists.
 Every file, and every routes/pages/nav-method entry, is checked *by
 name* before writing — never overwritten, never duplicated. If you've
 hand-customized a navigation method (added a parameter, added a
-`Get.delete<...>()` side effect on the way out), it survives every future
+`AgLocator.delete<...>()` side effect on the way out), it survives every future
 regeneration byte-for-byte, no matter what else you generate afterward.
 
 The one case that's a hard stop, not a silent no-op: if a route constant

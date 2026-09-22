@@ -7,6 +7,13 @@ page-state handling, pagination, and networking primitives, so the
 [`ag_flow_cli`](../ag_flow_cli) generator (and hand-written modules) build
 on a single, consistent contract.
 
+State and DI are AG's own. **Routing is AG's API over
+[`go_router`](https://pub.dev/packages/go_router)**, the Flutter team's own
+package — so every route is a real URL, every detail page is deep-linkable,
+and the system back button behaves correctly, without AG maintaining a
+router. go_router stays an implementation detail: it is not in your
+pubspec and it appears in no generated file.
+
 ## Install
 
 ```yaml

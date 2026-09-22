@@ -2,12 +2,12 @@
 
 ## 1. Purpose
 
-The AG routing system must provide a centralized, predictable, and automatically generated routing architecture using GetX.
+The AG routing system must provide a centralized, predictable, and automatically generated routing architecture. Routing is AG's own API (`AgApp`/`AgRoute`/`AgNavigator`) over `go_router`; consuming apps never import `go_router` directly.
 
 The developer should not manually create or maintain standard:
 
 * Route constants
-* `GetPage` registrations
+* `AgRoute` registrations
 * Binding registrations
 * Navigation methods
 * Navigation argument handling
@@ -233,7 +233,7 @@ must be generated automatically.
 
 # 7. AppPages Responsibility
 
-`AppPages` is responsible for registering all `GetPage` definitions.
+`AppPages` is responsible for registering all `AgRoute` definitions.
 
 Example:
 
@@ -247,9 +247,9 @@ abstract class AppPages {
     milliseconds: 600,
   );
 
-  static final List<GetPage> pages = [
-    GetPage(
-      name: AppRoutes.splash,
+  static final List<AgRoute> pages = [
+    AgRoute(
+      path: AppRoutes.splash,
       page: SplashPage.new,
       binding: InitialBinding(),
       transition: defaultTransition,
@@ -262,9 +262,9 @@ Every generated route must automatically be added to `AppPages.pages`.
 
 ---
 
-# 8. GetPage Generation Rule
+# 8. AgRoute Generation Rule
 
-For every generated page, the CLI must generate a `GetPage`.
+For every generated page, the CLI must generate an `AgRoute`.
 
 Example:
 
@@ -275,8 +275,8 @@ ag g m product
 must generate:
 
 ```dart
-GetPage(
-  name: AppRoutes.product,
+AgRoute(
+  path: AppRoutes.product,
   page: ProductsPage.new,
   binding: ProductsBinding(),
   transition: AppPages.defaultTransition,
@@ -292,8 +292,8 @@ ag g m product/details
 the CLI must generate:
 
 ```dart
-GetPage(
-  name: AppRoutes.productDetails,
+AgRoute(
+  path: AppRoutes.productDetails,
   page: ProductDetailsPage.new,
   binding: ProductDetailsBinding(),
   transition: AppPages.defaultTransition,
@@ -323,8 +323,8 @@ Controller
 Example:
 
 ```dart
-GetPage(
-  name: AppRoutes.product,
+AgRoute(
+  path: AppRoutes.product,
   page: ProductsPage.new,
   binding: ProductsBinding(),
 ),
@@ -347,7 +347,7 @@ RouteManagement.goToProductPage();
 instead of:
 
 ```dart
-Get.toNamed(AppRoutes.product);
+AgNavigator.toNamed(AppRoutes.product);
 ```
 
 This centralizes navigation behavior.
@@ -362,7 +362,7 @@ For a normal page:
 
 ```dart
 static void goToProductPage() {
-  Get.toNamed(
+  AgNavigator.toNamed(
     AppRoutes.product,
   );
 }
@@ -374,7 +374,7 @@ For a detail page:
 static void goToProductDetailsPage(
   ProductDetailsPageArgument argument,
 ) {
-  Get.toNamed(
+  AgNavigator.toNamed(
     AppRoutes.productDetails,
     arguments: argument,
   );
@@ -451,26 +451,27 @@ There must never be multiple argument files.
 
 # 14. Detail Controller Argument Rule
 
-The generated detail controller should retrieve its argument from GetX.
+The generated detail controller builds its argument from the route's **path parameters**, so the page is reachable from a deep link and not only from an in-app push.
 
 Example:
 
 ```dart
-class ProductDetailsController extends AgBaseController {
+class ProductDetailsController
+    extends AgDetailController<Product, ProductDetailsPageArgument> {
   ProductDetailsController(this.productDetailsRepo);
 
   final ProductDetailsRepo productDetailsRepo;
 
-  late final ProductDetailsPageArgument argument;
-
   @override
-  void onInit() {
-    super.onInit();
-
-    argument = Get.arguments as ProductDetailsPageArgument;
-  }
+  ProductDetailsPageArgument? argumentsFromPath(
+    Map<String, String> pathParameters,
+  ) => ProductDetailsPageArgument.fromPathParameters(pathParameters);
 }
 ```
+
+`arguments` is then available on the controller, already typed. A missing
+or malformed parameter throws a named `AgArgumentError` naming what was
+expected and what arrived — never a bare cast failure.
 
 The CLI should automatically generate the appropriate import:
 
@@ -617,7 +618,7 @@ file.
 ### Push
 
 ```dart
-Get.toNamed(...)
+AgNavigator.toNamed(...)
 ```
 
 ### Replace
@@ -664,7 +665,7 @@ static void goToLoginPage({
       arguments: model,
     );
   } else {
-    Get.toNamed(
+    AgNavigator.toNamed(
       AppRoutes.login,
       arguments: model,
     );
@@ -724,7 +725,7 @@ AppRoutes.productDetails
 or duplicate:
 
 ```dart
-GetPage(...)
+AgRoute(...)
 ```
 
 ---
@@ -819,7 +820,7 @@ to validate the routing architecture.
 It should detect:
 
 * Missing route constants
-* Missing `GetPage`
+* Missing `AgRoute`
 * Missing binding
 * Missing navigation method
 * Duplicate routes
@@ -843,13 +844,13 @@ ERROR: ProductDetails route requires ProductDetailsPageArgument.
 Feature code must not contain:
 
 ```dart
-Get.toNamed('/product');
+AgNavigator.toNamed('/product');
 ```
 
 or:
 
 ```dart
-Get.toNamed('/product/details');
+AgNavigator.toNamed('/product/details');
 ```
 
 The preferred approach is:
@@ -939,7 +940,7 @@ Contains all route constants.
 
 ### `app_pages.dart`
 
-Contains all `GetPage` registrations.
+Contains all `AgRoute` registrations.
 
 ### `route_management.dart`
 
@@ -955,7 +956,7 @@ The AG CLI routing system must enforce these rules:
 2. **`arguments.dart`**** is located under ****`core/arguments`****.**
 3. **`AppRoutes`**** is the only source for route constants.**
 4. **Hard-coded route strings are prohibited in feature code.**
-5. **Every generated page must have a ****`GetPage`****.**
+5. **Every generated page must have a ****`AgRoute`****.**
 6. **Every generated route must have its corresponding binding.**
 7. **Every generated route must have a navigation method.**
 8. **Child/detail routes require an argument by default.**
@@ -968,7 +969,7 @@ The AG CLI routing system must enforce these rules:
 15. **The CLI automatically manages imports.**
 16. **The CLI automatically formats generated Dart files.**
 17. **The CLI should validate routing consistency.**
-18. **Developers should use ****`RouteManagement`**** instead of direct ****`Get.toNamed()`**** calls.**
+18. **Developers should use ****`RouteManagement`**** instead of direct ****`AgNavigator.toNamed()`**** calls.**
 19. **The CLI owns standard route registration and navigation boilerplate.**
 20. **The module path is the source of truth for route generation.**
 
@@ -1032,7 +1033,7 @@ The argument class is added to:
 core/arguments/arguments.dart
 ```
 
-The `GetPage` is added to:
+The `AgRoute` is added to:
 
 ```text
 core/routes/app_pages.dart

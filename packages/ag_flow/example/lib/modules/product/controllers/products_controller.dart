@@ -4,6 +4,12 @@ import 'package:ag_flow_example/modules/product/repos/products_repo.dart';
 class ProductsController extends AgListController<dynamic, int> {
   ProductsController(this._repo) : super(initialPageKey: 1);
 
+  /// Resolves this controller from [AgLocator] — no generics at call sites:
+  /// ```dart
+  /// final controller = ProductsController.find;
+  /// ```
+  static ProductsController get find => AgLocator.find<ProductsController>();
+
   final ProductsRepo _repo;
 
   @override

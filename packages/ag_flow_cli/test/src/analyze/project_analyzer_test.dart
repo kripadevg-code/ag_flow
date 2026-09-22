@@ -192,7 +192,7 @@ void main() {
           'pages = [',
           'pages = [\n'
               '    AgRoute(\n'
-              '      name: AppRoutes.productAlias,\n'
+              '      path: AppRoutes.productAlias,\n'
               '      page: ProductsPage.new,\n'
               '      binding: ProductsBinding(),\n'
               '      transition: AppPages.defaultTransition,\n'
@@ -284,7 +284,7 @@ class RogueNavigator {
   );
 
   test(
-    'never flags a literal-looking Get.toNamed(AppRoutes.x) call — only a '
+    'never flags a literal-looking AgNavigator.toNamed(AppRoutes.x) call — only a '
     'raw string literal argument counts',
     () async {
       appDir = await _buildCleanProject();

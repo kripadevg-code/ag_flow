@@ -1,11 +1,13 @@
 name: ag_flow
 description: >-
-  An opinionated Flutter framework: standardized page/controller/
-  repo/service layers, page-state handling, pagination, DI/routing
-  (no third-party state-management dependency), and a centralized
-  networking layer. Built to boost developer productivity.
+  An opinionated Flutter framework: typed page-state, paginated list
+  controllers, a type-keyed DI locator, guard-based routing over
+  go_router, and a centralized networking layer — zero third-party
+  state-management dependency.
 version: 0.1.0
-publish_to: none
+repository: https://github.com/kripadevg-code/ag_flow
+homepage: https://github.com/kripadevg-code/ag_flow
+issue_tracker: https://github.com/kripadevg-code/ag_flow/issues
 resolution: workspace
 
 environment:
@@ -17,6 +19,7 @@ dependencies:
   dio: ^5.11.0
   flutter:
     sdk: flutter
+  go_router: ^17.2.1
   meta: ^1.16.0
 
 dev_dependencies:
