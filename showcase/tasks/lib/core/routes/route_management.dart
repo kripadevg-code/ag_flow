@@ -10,21 +10,16 @@ import 'app_routes.dart';
 /// crash. Navigation methods live here, not scattered across pages.
 abstract class RouteManagement {
   // Auth
-  static void goToLoginPage() =>
-      AgNavigator.offAllNamed(AppRoutes.login);
+  static void goToLoginPage() => AgNavigator.offAllNamed(AppRoutes.login);
 
-  static void goToRegisterPage() =>
-      AgNavigator.toNamed(AppRoutes.register);
+  static void goToRegisterPage() => AgNavigator.toNamed(AppRoutes.register);
 
   // Shell tabs — use offAllNamed so the tab becomes the new root
-  static void goToTasksPage() =>
-      AgNavigator.offAllNamed(AppRoutes.tasks);
+  static void goToTasksPage() => AgNavigator.offAllNamed(AppRoutes.tasks);
 
-  static void goToProjectsPage() =>
-      AgNavigator.offAllNamed(AppRoutes.projects);
+  static void goToProjectsPage() => AgNavigator.offAllNamed(AppRoutes.projects);
 
-  static void goToProfilePage() =>
-      AgNavigator.offAllNamed(AppRoutes.profile);
+  static void goToProfilePage() => AgNavigator.offAllNamed(AppRoutes.profile);
 
   // Tasks
   static void goToTaskDetailsPage(TaskDetailsPageArgument argument) =>

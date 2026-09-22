@@ -24,16 +24,22 @@ class TasksController extends AgListController<Task, int> {
   Future<void> toggleCompleted(Task task) async {
     final toggled = task.copyWith(completed: !task.completed);
     // Reflect immediately in the UI — optimistic update.
-    updateItems((items) => [
-      for (final t in items) if (t.id == task.id) toggled else t,
-    ]);
+    updateItems(
+      (items) => [
+        for (final t in items)
+          if (t.id == task.id) toggled else t,
+      ],
+    );
     try {
       await _repo.update(task.id, toggled);
     } catch (_) {
       // Roll back on error.
-      updateItems((items) => [
-        for (final t in items) if (t.id == toggled.id) task else t,
-      ]);
+      updateItems(
+        (items) => [
+          for (final t in items)
+            if (t.id == toggled.id) task else t,
+        ],
+      );
     }
   }
 

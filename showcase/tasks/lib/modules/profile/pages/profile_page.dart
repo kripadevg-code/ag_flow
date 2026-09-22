@@ -26,8 +26,9 @@ class ProfilePage extends StatelessWidget {
               Center(
                 child: CircleAvatar(
                   radius: 48,
-                  backgroundColor:
-                      Theme.of(context).colorScheme.primaryContainer,
+                  backgroundColor: Theme.of(
+                    context,
+                  ).colorScheme.primaryContainer,
                   child: Text(
                     controller.displayName.isNotEmpty
                         ? controller.displayName[0].toUpperCase()
@@ -96,11 +97,8 @@ class ProfilePage extends StatelessWidget {
                 onPressed: controller.signOut,
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 14),
-                  foregroundColor:
-                      Theme.of(context).colorScheme.error,
-                  side: BorderSide(
-                    color: Theme.of(context).colorScheme.error,
-                  ),
+                  foregroundColor: Theme.of(context).colorScheme.error,
+                  side: BorderSide(color: Theme.of(context).colorScheme.error),
                 ),
               ),
             ],

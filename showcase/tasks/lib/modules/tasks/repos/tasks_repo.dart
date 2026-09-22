@@ -12,8 +12,7 @@ class TasksRepo extends AgBaseRepo {
 
   final TasksService _service;
 
-  Future<AgListPage<Task, int>> getPage(int offset) =>
-      _service.getPage(offset);
+  Future<AgListPage<Task, int>> getPage(int offset) => _service.getPage(offset);
 
   Future<Task> add(Task item) => _service.add(item);
 

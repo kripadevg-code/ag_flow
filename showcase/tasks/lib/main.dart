@@ -34,9 +34,7 @@ class TasksShowcaseApp extends StatelessWidget {
       initialBinding: InitialBinding(),
       routes: AppPages.pages,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF5B6EF5),
-        ),
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF5B6EF5)),
         useMaterial3: true,
       ),
       darkTheme: ThemeData(

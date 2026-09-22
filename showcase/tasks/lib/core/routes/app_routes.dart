@@ -11,18 +11,18 @@ abstract class AppRoutes {
   static const String shell = '/';
 
   // ── Tab 1 — Tasks ─────────────────────────────────────────────────────
-  static const String tasks   = '/tasks';
+  static const String tasks = '/tasks';
   static const String taskDetails = '/tasks/:id';
 
   // ── Tab 2 — Projects ──────────────────────────────────────────────────
-  static const String projects        = '/projects';
-  static const String projectDetails  = '/projects/:id';
-  static const String projectTasks    = '/projects/:id/tasks';
+  static const String projects = '/projects';
+  static const String projectDetails = '/projects/:id';
+  static const String projectTasks = '/projects/:id/tasks';
 
   // ── Tab 3 — Profile ───────────────────────────────────────────────────
   static const String profile = '/profile';
 
   // ── Auth (outside the shell) ──────────────────────────────────────────
-  static const String login    = '/login';
+  static const String login = '/login';
   static const String register = '/register';
 }

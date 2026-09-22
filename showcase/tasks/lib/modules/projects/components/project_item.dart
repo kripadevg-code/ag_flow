@@ -20,8 +20,7 @@ class ProjectItem extends StatelessWidget {
       child: ListTile(
         onTap: onTap,
         leading: CircleAvatar(
-          backgroundColor:
-              Theme.of(context).colorScheme.primaryContainer,
+          backgroundColor: Theme.of(context).colorScheme.primaryContainer,
           child: Text(
             project.title.substring(0, 1).toUpperCase(),
             style: TextStyle(

@@ -6,9 +6,8 @@ class TaskDetailsPage extends AgBasePage<TaskDetailsController> {
   const TaskDetailsPage({super.key});
 
   @override
-  PreferredSizeWidget? appBar(BuildContext context) => AppBar(
-    title: const Text('Task detail'),
-  );
+  PreferredSizeWidget? appBar(BuildContext context) =>
+      AppBar(title: const Text('Task detail'));
 
   @override
   Widget buildSuccess(BuildContext context) {
@@ -39,10 +38,13 @@ class TaskDetailsPage extends AgBasePage<TaskDetailsController> {
           const SizedBox(height: 20),
 
           // ── Title ────────────────────────────────────────────────────
-          Text('Title', style: theme.textTheme.labelSmall?.copyWith(
-            color: theme.colorScheme.outline,
-            letterSpacing: 1.2,
-          )),
+          Text(
+            'Title',
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: theme.colorScheme.outline,
+              letterSpacing: 1.2,
+            ),
+          ),
           const SizedBox(height: 4),
           Text(task.title, style: theme.textTheme.titleLarge),
           const SizedBox(height: 20),
@@ -54,11 +56,7 @@ class TaskDetailsPage extends AgBasePage<TaskDetailsController> {
             value: 'User ${task.userId}',
           ),
           const SizedBox(height: 8),
-          _MetaTile(
-            icon: Icons.tag,
-            label: 'Task ID',
-            value: '#${task.id}',
-          ),
+          _MetaTile(icon: Icons.tag, label: 'Task ID', value: '#${task.id}'),
           const Spacer(),
 
           // ── Toggle button ─────────────────────────────────────────────
@@ -102,9 +100,12 @@ class _MetaTile extends StatelessWidget {
         Icon(icon, size: 18, color: theme.colorScheme.outline),
         const SizedBox(width: 8),
         Text('$label: ', style: theme.textTheme.bodySmall),
-        Text(value, style: theme.textTheme.bodyMedium?.copyWith(
-          fontWeight: FontWeight.w500,
-        )),
+        Text(
+          value,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            fontWeight: FontWeight.w500,
+          ),
+        ),
       ],
     );
   }

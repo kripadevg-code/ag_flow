@@ -37,9 +37,7 @@ class TaskItem extends StatelessWidget {
         overflow: TextOverflow.ellipsis,
         style: TextStyle(
           decoration: task.completed ? TextDecoration.lineThrough : null,
-          color: task.completed
-              ? Theme.of(context).colorScheme.outline
-              : null,
+          color: task.completed ? Theme.of(context).colorScheme.outline : null,
         ),
       ),
       trailing: IconButton(

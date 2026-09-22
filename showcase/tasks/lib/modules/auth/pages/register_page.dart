@@ -10,8 +10,8 @@ class RegisterPage extends StatefulWidget {
 }
 
 class _RegisterPageState extends State<RegisterPage> {
-  final _nameController     = TextEditingController();
-  final _emailController    = TextEditingController();
+  final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
@@ -53,8 +53,9 @@ class _RegisterPageState extends State<RegisterPage> {
                             prefixIcon: Icon(Icons.person_outline),
                             border: OutlineInputBorder(),
                           ),
-                          validator: (v) =>
-                              (v == null || v.isEmpty) ? 'Enter your name' : null,
+                          validator: (v) => (v == null || v.isEmpty)
+                              ? 'Enter your name'
+                              : null,
                         ),
                         const SizedBox(height: 16),
                         TextFormField(
@@ -66,8 +67,9 @@ class _RegisterPageState extends State<RegisterPage> {
                             prefixIcon: Icon(Icons.email_outlined),
                             border: OutlineInputBorder(),
                           ),
-                          validator: (v) =>
-                              (v == null || v.isEmpty) ? 'Enter your email' : null,
+                          validator: (v) => (v == null || v.isEmpty)
+                              ? 'Enter your email'
+                              : null,
                         ),
                         const SizedBox(height: 16),
                         TextFormField(
@@ -88,15 +90,17 @@ class _RegisterPageState extends State<RegisterPage> {
                           Container(
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: Theme.of(context).colorScheme.errorContainer,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.errorContainer,
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
                               error,
                               style: TextStyle(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onErrorContainer,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onErrorContainer,
                               ),
                             ),
                           ),

@@ -28,9 +28,12 @@ class ProjectDetailsPage extends AgBasePage<ProjectDetailsController> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(project.title, style: theme.textTheme.headlineSmall?.copyWith(
-            fontWeight: FontWeight.bold,
-          )),
+          Text(
+            project.title,
+            style: theme.textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
           const SizedBox(height: 12),
           Text(project.description, style: theme.textTheme.bodyLarge),
           const SizedBox(height: 24),

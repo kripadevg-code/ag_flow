@@ -6,8 +6,7 @@ class ProjectsRepo extends AgBaseRepo {
   const ProjectsRepo(this._service);
   final ProjectsService _service;
 
-  Future<AgListPage<Project, int>> getPage(int page) =>
-      _service.getPage(page);
+  Future<AgListPage<Project, int>> getPage(int page) => _service.getPage(page);
   Future<Project> add(Project item) => _service.add(item);
   Future<void> delete(int id) => _service.delete(id);
 }

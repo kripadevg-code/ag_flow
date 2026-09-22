@@ -30,10 +30,7 @@ class AuthService extends AgStateService {
   /// Simulates a successful login. In production this would verify
   /// credentials against your API, store a JWT in secure storage, and set
   /// [_isLoggedIn] from the stored token.
-  Future<void> login({
-    required String email,
-    required String password,
-  }) async {
+  Future<void> login({required String email, required String password}) async {
     // Simulate network latency.
     await Future<void>.delayed(const Duration(milliseconds: 600));
 

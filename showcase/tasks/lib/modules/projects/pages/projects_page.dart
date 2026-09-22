@@ -72,12 +72,14 @@ class ProjectsPage extends AgBasePage<ProjectsController> {
           FilledButton(
             onPressed: () {
               if (titleController.text.trim().isEmpty) return;
-              controller.add(Project(
-                id: 0,
-                userId: 1,
-                title: titleController.text.trim(),
-                description: descController.text.trim(),
-              ));
+              controller.add(
+                Project(
+                  id: 0,
+                  userId: 1,
+                  title: titleController.text.trim(),
+                  description: descController.text.trim(),
+                ),
+              );
               Navigator.of(ctx).pop();
             },
             child: const Text('Create'),

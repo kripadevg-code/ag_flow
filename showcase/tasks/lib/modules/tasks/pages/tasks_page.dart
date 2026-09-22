@@ -67,7 +67,9 @@ class TasksPage extends AgBasePage<TasksController> {
 
   void _addTask(BuildContext ctx, String title) {
     if (title.trim().isEmpty) return;
-    controller.add(Task(id: 0, userId: 1, title: title.trim(), completed: false));
+    controller.add(
+      Task(id: 0, userId: 1, title: title.trim(), completed: false),
+    );
     Navigator.of(ctx).pop();
   }
 }

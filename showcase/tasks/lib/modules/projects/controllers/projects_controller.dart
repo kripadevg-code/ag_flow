@@ -10,8 +10,7 @@ class ProjectsController extends AgListController<Project, int> {
   final ProjectsRepo _repo;
 
   @override
-  Future<AgListPage<Project, int>> fetchPage(int page) =>
-      _repo.getPage(page);
+  Future<AgListPage<Project, int>> fetchPage(int page) => _repo.getPage(page);
 
   Future<void> add(Project item) async {
     final created = await _repo.add(item);

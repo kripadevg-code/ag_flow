@@ -21,10 +21,7 @@ class AuthController extends AgBaseController<void> {
   @override
   Future<void> fetch() async {}
 
-  Future<void> login({
-    required String email,
-    required String password,
-  }) async {
+  Future<void> login({required String email, required String password}) async {
     _errorMessage = null;
     emit(AgPageState.loading());
     try {
