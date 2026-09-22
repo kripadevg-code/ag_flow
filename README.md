@@ -234,13 +234,3 @@ melos run test
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the full contributor workflow
 including how to cut a release.
-
-See [GETTING_STARTED.md](GETTING_STARTED.md) for a hands-on walkthrough
-of every feature, written for a developer who has never touched this
-framework before.
-
-The binding specification lives in [requirments/](requirments/):
-
-- [ag_framework.md](requirments/ag_framework.md) — module structure, architectural layers, contracts
-- [routes.md](requirments/routes.md) — routing, navigation, and argument generation rules
-- [ag_endpoint_rules.md](requirments/ag_endpoint_rules.md) — centralised API endpoint rules

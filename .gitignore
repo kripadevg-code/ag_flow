@@ -30,3 +30,7 @@ coverage/
 
 # Internal design specs — not for public distribution
 requirments/
+
+# AI agent instruction files — internal, not for public distribution
+CLAUDE.md
+AGENTS.md
