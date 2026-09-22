@@ -54,6 +54,15 @@ jobs:
           channel: stable
           cache: true
 
+      # setup-dart is what actually wires pub's OIDC trusted publishing:
+      # with `id-token: write` it exchanges the GitHub OIDC token for a
+      # temporary pub.dev token and writes it to the shared pub
+      # credentials file. Both `dart pub publish` and `flutter pub
+      # publish` then read that file. subosito/flutter-action alone does
+      # NOT do this, which is why publishing fell back to interactive
+      # login and hung.
+      - uses: dart-lang/setup-dart@v1
+
       - name: Resolve package directory from the tag
         id: pkg
         run: |
@@ -78,11 +87,7 @@ jobs:
 
       - name: Publish to pub.dev
         working-directory: ${{ steps.pkg.outputs.dir }}
-        run: |
-          set -euo pipefail
-          # ag_flow is a Flutter package; the CLI and generator are pure Dart.
-          if [ "${{ steps.pkg.outputs.name }}" = "ag_flow" ]; then
-            flutter pub publish --force
-          else
-            dart pub publish --force
-          fi
+        # Always use `dart pub publish` (from setup-dart) — it performs the
+        # OIDC token exchange. flutter-action set FLUTTER_ROOT, so pub can
+        # still resolve ag_flow's `sdk: flutter` dependency during publish.
+        run: dart pub publish --force
