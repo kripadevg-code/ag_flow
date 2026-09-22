@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.0
+
+- Automated release pipeline verification — no CLI behavior changes.
+
 ## 0.2.0
 
 - **`ag init` now scaffolds the architecture standard, not just code.**

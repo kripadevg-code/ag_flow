@@ -3,7 +3,7 @@ description: >-
   The `ag` CLI for ag_flow — one command generates a fully-wired feature
   module (page, controller, repo, service, binding, component) and wires
   its route, argument, and navigation method automatically.
-version: 0.2.0
+version: 0.3.0
 repository: https://github.com/kripadevg-code/ag_flow
 homepage: https://github.com/kripadevg-code/ag_flow
 issue_tracker: https://github.com/kripadevg-code/ag_flow/issues

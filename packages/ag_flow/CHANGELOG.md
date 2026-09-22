@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.0
+
+- Automated release pipeline verification — no runtime code changes.
+  This release confirms the tag-triggered pub.dev publishing flow works
+  end-to-end via OIDC trusted publishing.
+
 ## 0.2.0
 
 - **Routing now runs on `go_router`.** AG keeps owning the API — `AgApp`,

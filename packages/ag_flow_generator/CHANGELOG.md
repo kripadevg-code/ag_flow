@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.0
+
+- `ag_flow` dependency updated to `^0.3.0`.
+
 ## 0.2.0
 
 - `ag_flow` dependency updated to `^0.2.0`.
