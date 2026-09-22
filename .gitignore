@@ -27,3 +27,6 @@ melos_*.iml
 
 # Coverage
 coverage/
+
+# Internal design specs — not for public distribution
+requirments/

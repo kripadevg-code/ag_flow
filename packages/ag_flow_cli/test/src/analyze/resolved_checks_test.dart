@@ -13,6 +13,25 @@ import 'package:test/test.dart';
 
 final _quietLogger = Logger(level: Level.quiet);
 
+/// Returns the absolute path to `packages/ag_flow` — resolved by searching
+/// upward from [Directory.current] for the workspace root that contains
+/// both `packages/ag_flow_cli` and `packages/ag_flow`, so it works
+/// regardless of the working directory (workspace root in CI or Melos,
+/// package root when run directly via `dart test`).
+String _agFlowPackagePath() {
+  var dir = Directory.current;
+  while (true) {
+    final candidate = Directory(p.join(dir.path, 'packages', 'ag_flow'));
+    if (candidate.existsSync()) return candidate.path;
+    final parent = dir.parent;
+    if (parent.path == dir.path) break;
+    dir = parent;
+  }
+  // Fallback: one level up from the package root (works when CWD is the
+  // ag_flow_cli package directory).
+  return p.join(Directory.current.parent.path, 'ag_flow');
+}
+
 /// The two resolved-model checks ([AnalyzeCategory.dependencyDirection],
 /// [AnalyzeCategory.unusedDetailArgument]) need `ag_flow`'s own types to
 /// actually resolve — unlike every other check in `project_analyzer_test
@@ -61,7 +80,7 @@ environment:
   sdk: ^3.11.0
 dependencies:
   ag_flow:
-    path: ${p.join(p.dirname(Directory.current.path), 'ag_flow')}
+    path: ${_agFlowPackagePath()}
 ''');
 
     final project = Project(_baseProjectDir);

@@ -148,10 +148,44 @@ String _pluralizeRootForTest(String rootSegment) => '${rootSegment}s';
 String _coreFile(Directory appDir, String relativePath) =>
     File(p.join(appDir.path, 'lib', 'core', relativePath)).readAsStringSync();
 
+/// Finds the root directory of the named Dart package by walking up from
+/// [Directory.current] — works whether invoked from the package root or
+/// the workspace root.
+Directory _findPackageRoot(String packageName) {
+  var dir = Directory.current;
+  while (true) {
+    final candidate = File(p.join(dir.path, 'pubspec.yaml'));
+    if (candidate.existsSync() &&
+        candidate.readAsStringSync().contains('name: $packageName')) {
+      return dir;
+    }
+    // Search up to 2 levels of subdirectories (handles workspace-root
+    // invocation where packages live at packages/foo/).
+    for (final entry1 in dir.listSync().whereType<Directory>()) {
+      final sub1 = File(p.join(entry1.path, 'pubspec.yaml'));
+      if (sub1.existsSync() &&
+          sub1.readAsStringSync().contains('name: $packageName')) {
+        return entry1;
+      }
+      for (final entry2 in entry1.listSync().whereType<Directory>()) {
+        final sub2 = File(p.join(entry2.path, 'pubspec.yaml'));
+        if (sub2.existsSync() &&
+            sub2.readAsStringSync().contains('name: $packageName')) {
+          return entry2;
+        }
+      }
+    }
+    final parent = dir.parent;
+    if (parent.path == dir.path) break;
+    dir = parent;
+  }
+  throw StateError('Cannot find package root for $packageName');
+}
+
 void main() {
   final quietLogger = Logger(level: Level.quiet);
   final goldensDir = Directory(
-    p.join(Directory.current.path, 'test', 'goldens'),
+    p.join(_findPackageRoot('ag_flow_cli').path, 'test', 'goldens'),
   );
 
   late Directory appDir;
