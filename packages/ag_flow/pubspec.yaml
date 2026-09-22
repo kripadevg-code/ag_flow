@@ -4,7 +4,7 @@ description: >-
   controllers, a type-keyed DI locator, guard-based routing over
   go_router, and a centralized networking layer — zero third-party
   state-management dependency.
-version: 0.1.0
+version: 0.2.0
 repository: https://github.com/kripadevg-code/ag_flow
 homepage: https://github.com/kripadevg-code/ag_flow
 issue_tracker: https://github.com/kripadevg-code/ag_flow/issues

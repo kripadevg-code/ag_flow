@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.2.0
 
 - **Routing now runs on `go_router`.** AG keeps owning the API — `AgApp`,
   `AgRoute`, `AgBinding`, `AgNavigator`, `AgGuard` are unchanged in

@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.2.0
 
 - **`ag init` now scaffolds the architecture standard, not just code.**
   The goal is that a developer *or a coding agent* picking up a project
