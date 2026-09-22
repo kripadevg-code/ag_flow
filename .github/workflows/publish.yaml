@@ -15,7 +15,18 @@ name: Publish to pub.dev
 #   Tag pattern:  <package>-v{{version}}
 #   Environment:  pub-publish
 
+# Triggered two ways, both of which run on the *tag* ref so the OIDC
+# token's ref claim matches pub.dev's tag pattern:
+#
+#   • workflow_dispatch — how release.yaml fires it (`gh workflow run
+#     publish.yaml --ref <tag>`). This is the primary path: a tag pushed
+#     by the default GITHUB_TOKEN does NOT trigger a `push` event
+#     (GitHub's recursion guard), but workflow_dispatch is an explicit
+#     exception that always runs.
+#   • push tags — a fallback for a tag pushed by a human or a PAT, which
+#     does fire the push event normally.
 on:
+  workflow_dispatch:
   push:
     tags:
       - "ag_flow-v[0-9]+.[0-9]+.[0-9]+"

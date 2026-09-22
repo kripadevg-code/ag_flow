@@ -34,6 +34,8 @@ concurrency:
 
 permissions:
   contents: write
+  # Needed for `gh workflow run` to dispatch publish.yaml after tagging.
+  actions: write
 
 jobs:
   verify:
@@ -118,10 +120,14 @@ jobs:
             gh release create "$tag" \
               --title "$name $version" \
               --notes-file "$notes"
-          done
 
-          # Pushing each tag above fires .github/workflows/publish.yaml,
-          # which does the actual pub.dev publish via OIDC — that workflow
-          # runs on the tag ref, so it matches pub.dev's tag-pattern
-          # trusted-publishing check (this job runs on the main branch ref,
-          # which never can).
+            # Dispatch publish.yaml AT THE TAG REF. A tag pushed by the
+            # default GITHUB_TOKEN does not fire publish.yaml's `push`
+            # trigger (GitHub's workflow-recursion guard), but
+            # workflow_dispatch is the documented exception that always
+            # runs. Running with --ref "$tag" makes publish.yaml's OIDC
+            # token carry the tag ref, which is what pub.dev's tag-pattern
+            # trusted-publishing check requires.
+            echo "Dispatching publish.yaml for $tag"
+            gh workflow run publish.yaml --ref "$tag"
+          done
