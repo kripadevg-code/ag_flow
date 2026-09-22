@@ -1,0 +1,4 @@
+# Golden fixtures contain imports of flutter, ag_flow, and the generated
+# sample_app package — none of which are in ag_flow_cli's own pubspec.
+# They are test-only reference files and must not be scanned by pub.
+test/goldens/
