@@ -28,9 +28,8 @@ melos_*.iml
 # Coverage
 coverage/
 
-# Internal design specs — not for public distribution
+# Internal design specs and dev guides — local only, not for public distribution
 requirments/
-
-# AI agent instruction files — internal, not for public distribution
 CLAUDE.md
 AGENTS.md
+GETTING_STARTED.md
