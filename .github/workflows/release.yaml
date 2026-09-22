@@ -2,7 +2,14 @@ name: Release
 
 # Fully automated: merging to main verifies the workspace and, for any
 # releasable package whose pubspec version has no matching tag yet, cuts
-# the git tag, publishes the GitHub Release, and publishes to pub.dev.
+# the git tag and publishes the GitHub Release. Pushing each tag then
+# fires publish.yaml, which does the actual pub.dev publish via OIDC.
+#
+# The publish is split into a tag-triggered workflow on purpose: pub.dev
+# trusted publishing verifies the OIDC token's ref against the tag pattern
+# configured in the package admin panel (e.g. `ag_flow-v{{version}}`). A
+# job running on the `main` branch ref can never match a tag pattern, so
+# publishing must run on the tag ref itself. See publish.yaml.
 #
 # Deliberately driven by the pubspec version rather than by
 # `melos version`'s conventional-commit inference. That was tried and
@@ -15,12 +22,6 @@ name: Release
 # So the version and the release notes are authored (in the same PR as the
 # change), and everything after that is automatic. No human ever runs a
 # release command.
-#
-# pub.dev publishing uses OIDC (trusted publishing) — no stored token.
-# Set it up once in the pub.dev package admin panel:
-#   Repository:  kripadevg-code/ag_flow
-#   Workflow:    release.yaml
-#   Environment: pub-publish
 
 on:
   push:
@@ -33,8 +34,6 @@ concurrency:
 
 permissions:
   contents: write
-  # Required for OIDC pub.dev trusted publishing.
-  id-token: write
 
 jobs:
   verify:
@@ -46,21 +45,15 @@ jobs:
     uses: ./.github/workflows/generator-integration.yaml
 
   release:
-    name: Tag, release, and publish
+    name: Tag and release
     needs: [verify, integration]
     runs-on: ubuntu-latest
-    environment: pub-publish
     steps:
       - uses: actions/checkout@v4
         with:
           # Full history + tags so the workflow can tell what is already
           # released.
           fetch-depth: 0
-
-      - uses: subosito/flutter-action@v2
-        with:
-          channel: stable
-          cache: true
 
       - name: Fetch tags
         run: git fetch --tags --force
@@ -127,18 +120,8 @@ jobs:
               --notes-file "$notes"
           done
 
-      - name: Publish to pub.dev (OIDC trusted publishing)
-        if: steps.pending.outputs.dirs != ''
-        run: |
-          set -euo pipefail
-          for dir in ${{ steps.pending.outputs.dirs }}; do
-            name=$(grep -m1 '^name:' "$dir/pubspec.yaml" | sed 's/^name: *//')
-            echo "Publishing $name from $dir"
-
-            # ag_flow is a Flutter package; everything else is pure Dart.
-            if [ "$name" = "ag_flow" ]; then
-              (cd "$dir" && flutter pub publish --force)
-            else
-              (cd "$dir" && dart pub publish --force)
-            fi
-          done
+          # Pushing each tag above fires .github/workflows/publish.yaml,
+          # which does the actual pub.dev publish via OIDC — that workflow
+          # runs on the tag ref, so it matches pub.dev's tag-pattern
+          # trusted-publishing check (this job runs on the main branch ref,
+          # which never can).

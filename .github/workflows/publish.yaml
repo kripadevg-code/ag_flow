@@ -1,0 +1,74 @@
+name: Publish to pub.dev
+
+# Fires when release.yaml pushes a release tag (e.g. `ag_flow-v0.2.0`).
+#
+# Runs on the *tag* ref, so the OIDC token's ref claim
+# (`refs/tags/ag_flow-v0.2.0`) matches the tag pattern configured in each
+# package's pub.dev trusted-publishing settings
+# (`ag_flow-v{{version}}` / `ag_flow_cli-v{{version}}` /
+# `ag_flow_generator-v{{version}}`). A branch-triggered job never can,
+# which is why publishing is split out of release.yaml.
+#
+# One-time setup per package in the pub.dev admin panel → Automated
+# publishing → Enable publishing from GitHub Actions:
+#   Repository:   kripadevg-code/ag_flow
+#   Tag pattern:  <package>-v{{version}}
+#   Environment:  pub-publish
+
+on:
+  push:
+    tags:
+      - "ag_flow-v[0-9]+.[0-9]+.[0-9]+"
+      - "ag_flow_cli-v[0-9]+.[0-9]+.[0-9]+"
+      - "ag_flow_generator-v[0-9]+.[0-9]+.[0-9]+"
+
+# OIDC token for pub.dev trusted publishing — no stored credentials.
+permissions:
+  id-token: write
+
+jobs:
+  publish:
+    name: Publish ${{ github.ref_name }}
+    runs-on: ubuntu-latest
+    # Must match the environment configured on pub.dev for each package.
+    environment: pub-publish
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Resolve package directory from the tag
+        id: pkg
+        run: |
+          set -euo pipefail
+          tag="${GITHUB_REF_NAME}"
+          # Strip the trailing -v<version> to get the package name.
+          name="${tag%-v*}"
+          case "$name" in
+            ag_flow)           dir="packages/ag_flow" ;;
+            ag_flow_cli)       dir="packages/ag_flow_cli" ;;
+            ag_flow_generator) dir="packages/ag_flow_generator" ;;
+            *)
+              echo "::error::Unrecognized package name '$name' from tag '$tag'."
+              exit 1
+              ;;
+          esac
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+          echo "dir=$dir"   >> "$GITHUB_OUTPUT"
+
+      - name: Resolve workspace dependencies
+        run: flutter pub get
+
+      - name: Publish to pub.dev
+        working-directory: ${{ steps.pkg.outputs.dir }}
+        run: |
+          set -euo pipefail
+          # ag_flow is a Flutter package; the CLI and generator are pure Dart.
+          if [ "${{ steps.pkg.outputs.name }}" = "ag_flow" ]; then
+            flutter pub publish --force
+          else
+            dart pub publish --force
+          fi
