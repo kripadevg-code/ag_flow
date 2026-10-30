@@ -34,7 +34,7 @@ melos:
       run: >-
         dart format --output=none --set-exit-if-changed
         packages/ag_flow/lib packages/ag_flow/test
-        packages/ag_flow/example/lib
+        packages/ag_flow/example/lib packages/ag_flow/example/test
         packages/ag_flow_cli/bin packages/ag_flow_cli/lib
         packages/ag_flow_cli/test packages/ag_flow_cli/tool
         packages/ag_flow_generator/lib
@@ -63,11 +63,15 @@ melos:
         scope: ag_flow_cli
 
     test:apps:
-      description: Run the showcase apps' offline smoke tests (Flutter).
+      description: >-
+        Run the showcase apps' offline smoke tests and the example app's
+        generated starter tests (Flutter).
       exec:
         command: flutter test
       packageFilters:
-        scope: ag_showcase_*
+        scope:
+          - ag_showcase_*
+          - ag_flow_example
 
     test:
       description: Run every package's and app's tests.

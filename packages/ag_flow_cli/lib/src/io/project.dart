@@ -40,4 +40,8 @@ class Project {
   /// segment — no matter how deeply nested — places its files here, flat
   /// by layer (see requirments/ag_framework.md §6/§72).
   String moduleRootDir(String rootSegment) => p.join(modulesDir.path, rootSegment);
+
+  /// Where a root module's generated tests go, mirroring [moduleRootDir]
+  /// under `test/`, e.g. `<root>/test/modules/product`.
+  String moduleTestDir(String rootSegment) => p.join(root.path, 'test', 'modules', rootSegment);
 }

@@ -312,6 +312,19 @@ void main() {
           contains('list() => _repo.list()'),
         ),
       );
+
+      // Each starter test's fake Service must override `list` with the
+      // Service's own signature, or the app's test file doesn't compile.
+      String readTest(String root, String file) =>
+          File(p.join(appDir.path, 'test', 'modules', root, file)).readAsStringSync();
+      expect(
+        readTest('product', 'products_test.dart'),
+        contains('Future<List<dynamic>> list({int page = 1}) async'),
+      );
+      expect(
+        readTest('order', 'orders_test.dart'),
+        contains('Future<List<dynamic>> list() async'),
+      );
     },
   );
 }

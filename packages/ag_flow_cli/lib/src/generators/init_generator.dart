@@ -191,6 +191,14 @@ detail route carries its id in the path (`/product/details/:id`) so the
 page is deep-linkable. Guards are `AgGuard`s run from a route's `redirect:`
 via `AgGuard.check`.
 
+## Tests
+
+`ag g m` writes each module's starter test to
+`test/modules/<root>/<module>_test.dart`; add cases there. Use
+`package:ag_flow/testing.dart`: `AgFakeApiProvider` answers per endpoint
+so the real Service, Repo and Controller run without a network, and
+`setUp(resetAgFlow)` clears `AgLocator` between tests.
+
 ## You MUST NOT
 
 - hand-write a module's layer files instead of running `ag g m`
