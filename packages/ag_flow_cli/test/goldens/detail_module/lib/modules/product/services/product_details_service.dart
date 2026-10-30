@@ -2,8 +2,8 @@ import 'package:ag_flow/ag_flow.dart';
 
 /// Each mixin is a typed contract for one backend action, and this
 /// Service lists only the actions its backend supports. The bodies below
-/// are yours: a starting point written with `send`, so change any of them
-/// freely when the backend does something unusual.
+/// are yours: a starting point written with `get` / `put` / `delete`, so
+/// change any of them freely when the backend does something unusual.
 ///
 /// Replace `dynamic` with your real model type.
 class ProductDetailsService extends AgBaseService
@@ -25,36 +25,21 @@ class ProductDetailsService extends AgBaseService
       throw UnimplementedError('ProductDetailsService.toJson');
 
   @override
-  Future<dynamic> retrieve(Object id) async {
-    final response = await send<dynamic>(
-      AgRequest(endpoint: resourceEndpoint, pathParams: {'id': id}),
-      decode: (json) => fromJson(json! as Map<String, dynamic>),
-    );
-    return response.data;
-  }
+  Future<dynamic> retrieve(Object id) => get(
+    resourceEndpoint,
+    pathParams: {'id': id},
+    decode: (json) => fromJson(json! as Map<String, dynamic>),
+  );
 
   @override
-  Future<dynamic> update(Object id, dynamic item) async {
-    final response = await send<dynamic>(
-      AgRequest(
-        endpoint: resourceEndpoint,
-        method: AgHttpMethod.put,
-        pathParams: {'id': id},
-        body: toJson(item),
-      ),
-      decode: (json) => fromJson(json! as Map<String, dynamic>),
-    );
-    return response.data;
-  }
+  Future<dynamic> update(Object id, dynamic item) => put(
+    resourceEndpoint,
+    pathParams: {'id': id},
+    body: toJson(item),
+    decode: (json) => fromJson(json! as Map<String, dynamic>),
+  );
 
   @override
-  Future<void> destroy(Object id) async {
-    await send<void>(
-      AgRequest(
-        endpoint: resourceEndpoint,
-        method: AgHttpMethod.delete,
-        pathParams: {'id': id},
-      ),
-    );
-  }
+  Future<void> destroy(Object id) =>
+      delete(resourceEndpoint, pathParams: {'id': id});
 }

@@ -21,64 +21,38 @@ class ProjectsService extends AgBaseService
   );
 
   @override
-  Future<List<Project>> list({int page = 1}) async {
-    final response = await send<List<Project>>(
-      AgRequest(
-        endpoint: ProjectEndpoints.projects,
-        queryParams: pagination.query(page),
-      ),
-      decode: (json) => [
-        for (final item in json! as List<Object?>)
-          Project.fromJson(item! as Map<String, dynamic>),
-      ],
-    );
-    return response.data;
-  }
+  Future<List<Project>> list({int page = 1}) => get(
+    ProjectEndpoints.projects,
+    queryParams: pagination.query(page),
+    decode: (json) => [
+      for (final item in json! as List<Object?>)
+        Project.fromJson(item! as Map<String, dynamic>),
+    ],
+  );
 
   @override
-  Future<Project> create(Project item) async {
-    final response = await send<Project>(
-      AgRequest(
-        endpoint: ProjectEndpoints.projects,
-        method: AgHttpMethod.post,
-        body: item.toJson(),
-      ),
-      decode: (json) => Project.fromJson(json! as Map<String, dynamic>),
-    );
-    return response.data;
-  }
+  Future<Project> create(Project item) => post(
+    ProjectEndpoints.projects,
+    body: item.toJson(),
+    decode: (json) => Project.fromJson(json! as Map<String, dynamic>),
+  );
 
   @override
-  Future<Project> retrieve(int id) async {
-    final response = await send<Project>(
-      AgRequest(endpoint: ProjectEndpoints.projectById, pathParams: {'id': id}),
-      decode: (json) => Project.fromJson(json! as Map<String, dynamic>),
-    );
-    return response.data;
-  }
+  Future<Project> retrieve(int id) => get(
+    ProjectEndpoints.projectById,
+    pathParams: {'id': id},
+    decode: (json) => Project.fromJson(json! as Map<String, dynamic>),
+  );
 
   @override
-  Future<Project> update(int id, Project item) async {
-    final response = await send<Project>(
-      AgRequest(
-        endpoint: ProjectEndpoints.projectById,
-        method: AgHttpMethod.put,
-        pathParams: {'id': id},
-        body: item.toJson(),
-      ),
-      decode: (json) => Project.fromJson(json! as Map<String, dynamic>),
-    );
-    return response.data;
-  }
+  Future<Project> update(int id, Project item) => put(
+    ProjectEndpoints.projectById,
+    pathParams: {'id': id},
+    body: item.toJson(),
+    decode: (json) => Project.fromJson(json! as Map<String, dynamic>),
+  );
 
   @override
-  Future<void> destroy(int id) async {
-    await send<void>(
-      AgRequest(
-        endpoint: ProjectEndpoints.projectById,
-        method: AgHttpMethod.delete,
-        pathParams: {'id': id},
-      ),
-    );
-  }
+  Future<void> destroy(int id) =>
+      delete(ProjectEndpoints.projectById, pathParams: {'id': id});
 }

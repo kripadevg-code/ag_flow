@@ -20,58 +20,35 @@ class ProductsService extends AgBaseService
 
   @override
   Future<List<Product>> list() =>
-      _products(AgRequest(endpoint: ProductEndpoints.products));
+      get(ProductEndpoints.products, decode: _products);
 
   @override
-  Future<Product> create(Product item) async {
-    final response = await send<Product>(
-      AgRequest(
-        endpoint: ProductEndpoints.products,
-        method: AgHttpMethod.post,
-        body: item.toJson(),
-      ),
-      decode: (json) => Product.fromJson(json! as Map<String, dynamic>),
-    );
-    return response.data;
-  }
+  Future<Product> create(Product item) => post(
+    ProductEndpoints.products,
+    body: item.toJson(),
+    decode: (json) => Product.fromJson(json! as Map<String, dynamic>),
+  );
 
   @override
-  Future<void> destroy(int id) async {
-    await send<void>(
-      AgRequest(
-        endpoint: ProductEndpoints.productById,
-        method: AgHttpMethod.delete,
-        pathParams: {'id': id},
-      ),
-    );
-  }
+  Future<void> destroy(int id) =>
+      delete(ProductEndpoints.productById, pathParams: {'id': id});
 
   // Feature-specific reads sit alongside the mixed-in actions, written
-  // with the same `send` as every action body.
-  Future<List<Product>> listByCategory(String category) => _products(
-    AgRequest(
-      endpoint: ProductEndpoints.productsByCategory,
-      pathParams: {'category': category},
-    ),
+  // with the same verb methods as every action body.
+  Future<List<Product>> listByCategory(String category) => get(
+    ProductEndpoints.productsByCategory,
+    pathParams: {'category': category},
+    decode: _products,
   );
 
   /// An array of bare strings rather than objects.
-  Future<List<String>> categories() async {
-    final response = await send<List<String>>(
-      AgRequest(endpoint: ProductEndpoints.categories),
-      decode: (json) => (json! as List<Object?>).cast<String>(),
-    );
-    return response.data;
-  }
+  Future<List<String>> categories() => get(
+    ProductEndpoints.categories,
+    decode: (json) => (json! as List<Object?>).cast<String>(),
+  );
 
-  Future<List<Product>> _products(AgRequest request) async {
-    final response = await send<List<Product>>(
-      request,
-      decode: (json) => [
-        for (final item in json! as List<Object?>)
-          Product.fromJson(item! as Map<String, dynamic>),
-      ],
-    );
-    return response.data;
-  }
+  static List<Product> _products(Object? json) => [
+    for (final item in json! as List<Object?>)
+      Product.fromJson(item! as Map<String, dynamic>),
+  ];
 }

@@ -3,8 +3,9 @@ import 'package:ag_flow/ag_flow.dart';
 {{/has_model}}
 /// Each mixin is a typed contract for one backend action, and this
 /// Service lists only the actions its backend supports. The bodies below
-/// are yours: a starting point written with `send`, so change any of them
-/// freely when the backend does something unusual.
+/// are yours: a starting point written with `get` / `post` / `put` /
+/// `delete`, so change any of them freely when the backend does something
+/// unusual.
 {{^has_model}}///
 /// Replace `dynamic` with your real model type.
 {{/has_model}}class {{module_class_prefix}}Service extends AgBaseService
@@ -46,55 +47,34 @@ import 'package:ag_flow/ag_flow.dart';
 {{/needs_to_json}}{{/has_model}}
 
   @override
-  Future<List<{{model_class}}>> list({{#paginate}}{int page = 1}{{/paginate}}) async {
-    final response = await send<List<{{model_class}}>>(
-      AgRequest(endpoint: collectionEndpoint{{#paginate}}, queryParams: pagination.query(page){{/paginate}}),
-      decode: (json) => [
-        for (final item in json! as List<Object?>)
-          fromJson(item! as Map<String, dynamic>),
-      ],
-    );
-    return response.data;
-  }
+  Future<List<{{model_class}}>> list({{#paginate}}{int page = 1}{{/paginate}}) => get(
+    collectionEndpoint,{{#paginate}}
+    queryParams: pagination.query(page),{{/paginate}}
+    decode: (json) => [
+      for (final item in json! as List<Object?>)
+        fromJson(item! as Map<String, dynamic>),
+    ],
+  );
 {{#generate_create}}
 
   @override
-  Future<{{model_class}}> create({{model_class}} item) async {
-    final response = await send<{{model_class}}>(
-      AgRequest(
-        endpoint: collectionEndpoint,
-        method: AgHttpMethod.post,
-        body: toJson(item),
-      ),
-      decode: (json) => fromJson(json! as Map<String, dynamic>),
-    );
-    return response.data;
-  }
+  Future<{{model_class}}> create({{model_class}} item) => post(
+    collectionEndpoint,
+    body: toJson(item),
+    decode: (json) => fromJson(json! as Map<String, dynamic>),
+  );
 {{/generate_create}}{{#generate_update}}
 
   @override
-  Future<{{model_class}}> update({{id_type}} id, {{model_class}} item) async {
-    final response = await send<{{model_class}}>(
-      AgRequest(
-        endpoint: resourceEndpoint,
-        method: AgHttpMethod.put,
-        pathParams: {'id': id},
-        body: toJson(item),
-      ),
-      decode: (json) => fromJson(json! as Map<String, dynamic>),
-    );
-    return response.data;
-  }
+  Future<{{model_class}}> update({{id_type}} id, {{model_class}} item) => put(
+    resourceEndpoint,
+    pathParams: {'id': id},
+    body: toJson(item),
+    decode: (json) => fromJson(json! as Map<String, dynamic>),
+  );
 {{/generate_update}}{{#generate_destroy}}
 
   @override
-  Future<void> destroy({{id_type}} id) async {
-    await send<void>(
-      AgRequest(
-        endpoint: resourceEndpoint,
-        method: AgHttpMethod.delete,
-        pathParams: {'id': id},
-      ),
-    );
-  }
+  Future<void> destroy({{id_type}} id) =>
+      delete(resourceEndpoint, pathParams: {'id': id});
 {{/generate_destroy}}}

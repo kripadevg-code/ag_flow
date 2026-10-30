@@ -12,6 +12,13 @@
     `AgRetrieveMixin<T, ID>` (`retrieve`), `AgUpdateMixin<T, ID>` (`update`),
     `AgDestroyMixin<ID>` (`destroy`). They replace `AgCrudService`.
     Feature methods (`filterProducts`, `search`) are ordinary methods.
+  - **New HTTP verb methods on `AgBaseService`:** `get`, `post`, `put`,
+    `patch` and `delete` take an `AgEndpoint` plus `pathParams` /
+    `queryParams` / `headers` / `body` / `decode` and return the decoded
+    data, so an action body is one call:
+    `Future<Task> retrieve(int id) => get(TaskEndpoints.taskById, pathParams: {'id': id}, decode: ...)`.
+    `send` stays for the full `AgResponse` (status code, headers) or form
+    data.
   - **Removed:** `AgListController`, `AgPaginationMixin`, `AgListPage`,
     `AgPaginationState`, `AgListBuilder`, `AgDetailController`,
     `AgPagedService`, the `AgPageStrategy` family, `AgEnvelope`,

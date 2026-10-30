@@ -1,3 +1,5 @@
+import 'package:ag_flow/src/network/ag_endpoint.dart';
+import 'package:ag_flow/src/network/ag_http_method.dart';
 import 'package:ag_flow/src/network/ag_request.dart';
 import 'package:ag_flow/src/network/ag_response.dart';
 import 'package:ag_flow/src/network/api_provider.dart';
@@ -60,17 +62,141 @@ abstract class AgBaseService {
   /// AgPagination? get pagination => const AgPageNumberPagination();
   ///
   /// @override
-  /// Future<List<Post>> list({int page = 1}) async {
-  ///   final request = AgRequest(
-  ///     endpoint: PostEndpoints.posts,
-  ///     queryParams: pagination!.query(page),
-  ///   );
-  ///   // ...
-  /// }
+  /// Future<List<Post>> list({int page = 1}) => get(
+  ///   PostEndpoints.posts,
+  ///   queryParams: pagination!.query(page),
+  ///   decode: (json) => [
+  ///     for (final item in json! as List<Object?>)
+  ///       Post.fromJson(item! as Map<String, dynamic>),
+  ///   ],
+  /// );
   /// ```
   AgPagination? get pagination => null;
 
-  /// Sends [request] through the shared [ApiProvider].
+  /// Sends a GET to [endpoint] and returns the decoded body.
+  ///
+  /// The five verb methods are how an action body talks to the backend:
+  /// each builds the `AgRequest`, sends it through [apiProvider] and
+  /// returns only the data. [decode] turns the JSON body into [D] — unwrap
+  /// an enveloped response there. Use [send] when you need the full
+  /// response (status code, headers) or form data.
+  @protected
+  Future<D> get<D>(
+    AgEndpoint endpoint, {
+    Map<String, dynamic> pathParams = const {},
+    Map<String, dynamic> queryParams = const {},
+    Map<String, String> headers = const {},
+    D Function(Object? json)? decode,
+  }) => _data(
+    AgHttpMethod.get,
+    endpoint,
+    pathParams: pathParams,
+    queryParams: queryParams,
+    headers: headers,
+    decode: decode,
+  );
+
+  /// Sends a POST of [body] to [endpoint] and returns the decoded body.
+  @protected
+  Future<D> post<D>(
+    AgEndpoint endpoint, {
+    Object? body,
+    Map<String, dynamic> pathParams = const {},
+    Map<String, dynamic> queryParams = const {},
+    Map<String, String> headers = const {},
+    D Function(Object? json)? decode,
+  }) => _data(
+    AgHttpMethod.post,
+    endpoint,
+    body: body,
+    pathParams: pathParams,
+    queryParams: queryParams,
+    headers: headers,
+    decode: decode,
+  );
+
+  /// Sends a PUT of [body] to [endpoint] and returns the decoded body.
+  @protected
+  Future<D> put<D>(
+    AgEndpoint endpoint, {
+    Object? body,
+    Map<String, dynamic> pathParams = const {},
+    Map<String, dynamic> queryParams = const {},
+    Map<String, String> headers = const {},
+    D Function(Object? json)? decode,
+  }) => _data(
+    AgHttpMethod.put,
+    endpoint,
+    body: body,
+    pathParams: pathParams,
+    queryParams: queryParams,
+    headers: headers,
+    decode: decode,
+  );
+
+  /// Sends a PATCH of [body] to [endpoint] and returns the decoded body.
+  @protected
+  Future<D> patch<D>(
+    AgEndpoint endpoint, {
+    Object? body,
+    Map<String, dynamic> pathParams = const {},
+    Map<String, dynamic> queryParams = const {},
+    Map<String, String> headers = const {},
+    D Function(Object? json)? decode,
+  }) => _data(
+    AgHttpMethod.patch,
+    endpoint,
+    body: body,
+    pathParams: pathParams,
+    queryParams: queryParams,
+    headers: headers,
+    decode: decode,
+  );
+
+  /// Sends a DELETE to [endpoint] and returns the decoded body, if any.
+  @protected
+  Future<D> delete<D>(
+    AgEndpoint endpoint, {
+    Object? body,
+    Map<String, dynamic> pathParams = const {},
+    Map<String, dynamic> queryParams = const {},
+    Map<String, String> headers = const {},
+    D Function(Object? json)? decode,
+  }) => _data(
+    AgHttpMethod.delete,
+    endpoint,
+    body: body,
+    pathParams: pathParams,
+    queryParams: queryParams,
+    headers: headers,
+    decode: decode,
+  );
+
+  Future<D> _data<D>(
+    AgHttpMethod method,
+    AgEndpoint endpoint, {
+    required Map<String, dynamic> pathParams,
+    required Map<String, dynamic> queryParams,
+    required Map<String, String> headers,
+    required D Function(Object? json)? decode,
+    Object? body,
+  }) async {
+    final response = await send<D>(
+      AgRequest(
+        endpoint: endpoint,
+        method: method,
+        pathParams: pathParams,
+        queryParams: queryParams,
+        headers: headers,
+        body: body,
+      ),
+      decode: decode,
+    );
+    return response.data;
+  }
+
+  /// Sends [request] through the shared [ApiProvider] and returns the
+  /// full response — for when the data alone is not enough.
   @protected
   Future<AgResponse<D>> send<D>(
     AgRequest request, {
