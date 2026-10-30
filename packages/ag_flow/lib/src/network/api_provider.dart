@@ -111,8 +111,7 @@ class DioApiProvider implements ApiProvider {
 
   /// Adds an app-level interceptor (e.g. an auth-refresh interceptor)
   /// after construction.
-  void addInterceptor(Interceptor interceptor) =>
-      _dio.interceptors.add(interceptor);
+  void addInterceptor(Interceptor interceptor) => _dio.interceptors.add(interceptor);
 
   @override
   Future<AgResponse<D>> send<D>(
@@ -133,9 +132,7 @@ class DioApiProvider implements ApiProvider {
           : '$baseUrlOverride${request.resolvePath()}';
       final response = await _dio.request<Object?>(
         path,
-        data: request.isMultipart
-            ? await _buildFormData(request)
-            : request.body,
+        data: request.isMultipart ? await _buildFormData(request) : request.body,
         queryParameters: request.queryParams,
         options: Options(method: request.method.name, headers: request.headers),
         cancelToken: cancelToken?.dioToken,
@@ -177,9 +174,7 @@ class DioApiProvider implements ApiProvider {
             await MultipartFile.fromFile(
               file.filePath,
               filename: file.fileName,
-              contentType: file.contentType == null
-                  ? null
-                  : DioMediaType.parse(file.contentType!),
+              contentType: file.contentType == null ? null : DioMediaType.parse(file.contentType!),
             ),
           ),
         );

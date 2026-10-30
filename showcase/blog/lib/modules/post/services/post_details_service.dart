@@ -5,10 +5,7 @@ import 'package:ag_showcase_blog/modules/post/models/post.dart';
 /// The same declarative shape as every other Service. Which post to load
 /// is the controller's `lookupId`, not this file's concern.
 class PostDetailsService extends AgBaseService
-    with
-        AgRetrieveMixin<Post, int>,
-        AgUpdateMixin<Post, int>,
-        AgDestroyMixin<int> {
+    with AgRetrieveMixin<Post, int>, AgUpdateMixin<Post, int>, AgDestroyMixin<int> {
   PostDetailsService(super.apiProvider);
 
   @override
@@ -27,6 +24,5 @@ class PostDetailsService extends AgBaseService
   );
 
   @override
-  Future<void> destroy(int id) =>
-      delete(PostEndpoints.postById, pathParams: {'id': id});
+  Future<void> destroy(int id) => delete(PostEndpoints.postById, pathParams: {'id': id});
 }

@@ -9,16 +9,14 @@ class ProductsRepo extends AgBaseRepo {
 
   final ProductsService _service;
 
-  Future<List<dynamic>> list({int page = 1}) =>
-      guard(() => _service.list(page: page));
+  Future<List<dynamic>> list({int page = 1}) => guard(() => _service.list(page: page));
 
   /// Whether [items] was the backend's last page.
   bool isLastPage(List<dynamic> items) => _service.pagination.isLastPage(items);
 
   Future<dynamic> create(dynamic item) => guard(() => _service.create(item));
 
-  Future<dynamic> update(Object id, dynamic item) =>
-      guard(() => _service.update(id, item));
+  Future<dynamic> update(Object id, dynamic item) => guard(() => _service.update(id, item));
 
   Future<void> destroy(Object id) => guard(() => _service.destroy(id));
 }

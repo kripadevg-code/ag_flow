@@ -122,8 +122,7 @@ List<AnalyzeIssue> checkRouteWiring(Project project, List<RouteEntry> routes) {
       );
     }
 
-    if (routeManagementUnit != null &&
-        !_hasNavMethod(routeManagementUnit, spec.navMethod)) {
+    if (routeManagementUnit != null && !_hasNavMethod(routeManagementUnit, spec.navMethod)) {
       issues.add(
         AnalyzeIssue(
           category: AnalyzeCategory.missingRouteWiring,

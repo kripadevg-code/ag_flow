@@ -11,8 +11,7 @@ class _SlowController extends AgBaseController<List<int>> with AgList<int> {
   }
 }
 
-class _SlowListController extends AgBaseController<List<int>>
-    with AgLoadMore<int> {
+class _SlowListController extends AgBaseController<List<int>> with AgLoadMore<int> {
   _SlowListController() : super(autoLoadOnInit: false);
 
   @override

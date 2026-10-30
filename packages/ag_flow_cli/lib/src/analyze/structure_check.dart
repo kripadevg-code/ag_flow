@@ -26,9 +26,7 @@ List<AnalyzeIssue> checkStructure(Project project) {
 
     for (final child in entity.listSync(recursive: true)) {
       if (child is Directory) continue;
-      final relativeToModule = p
-          .relative(child.path, from: entity.path)
-          .split(p.separator);
+      final relativeToModule = p.relative(child.path, from: entity.path).split(p.separator);
 
       if (_architecturalLayers.contains(relativeToModule.first)) {
         if (relativeToModule.length > 2) {
@@ -45,8 +43,7 @@ List<AnalyzeIssue> checkStructure(Project project) {
         continue;
       }
 
-      if (relativeToModule.first == 'components' &&
-          relativeToModule.length > 3) {
+      if (relativeToModule.first == 'components' && relativeToModule.length > 3) {
         issues.add(
           AnalyzeIssue(
             category: AnalyzeCategory.nestedFolder,

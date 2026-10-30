@@ -15,12 +15,9 @@ class _Api implements ApiProvider {
     void Function(int, int)? onReceiveProgress,
   }) async {
     final path = request.resolvePath();
-    final query = request.queryParams.entries
-        .map((e) => '${e.key}=${e.value}')
-        .join('&');
+    final query = request.queryParams.entries.map((e) => '${e.key}=${e.value}').join('&');
     calls.add('${request.method.name} $path${query.isEmpty ? '' : '?$query'}');
-    final json =
-        request.method == AgHttpMethod.get && !path.contains(RegExp(r'/\d'))
+    final json = request.method == AgHttpMethod.get && !path.contains(RegExp(r'/\d'))
         ? [
             {'id': 1},
           ]
@@ -67,8 +64,7 @@ class _ItemsService extends AgBaseService
   Future<_M> create(_M item) => post(_collection, body: item, decode: _one);
 
   @override
-  Future<_M> retrieve(int id) =>
-      get(_resource, pathParams: {'id': id}, decode: _one);
+  Future<_M> retrieve(int id) => get(_resource, pathParams: {'id': id}, decode: _one);
 
   @override
   Future<_M> update(int id, _M item) =>
@@ -78,8 +74,7 @@ class _ItemsService extends AgBaseService
   Future<void> destroy(int id) => delete(_resource, pathParams: {'id': id});
 
   /// Feature methods — ordinary methods, no contract needed.
-  Future<List<_M>> search(String term) =>
-      get(_collection, queryParams: {'q': term}, decode: _many);
+  Future<List<_M>> search(String term) => get(_collection, queryParams: {'q': term}, decode: _many);
 
   Future<_M> rename(int id, String name) => patch(
     _resource,
@@ -89,8 +84,7 @@ class _ItemsService extends AgBaseService
   );
 
   /// A large body decoded off the UI thread — `decode` may be async.
-  Future<List<_M>> listInBackground() =>
-      get(_collection, decode: (json) => compute(_many, json));
+  Future<List<_M>> listInBackground() => get(_collection, decode: (json) => compute(_many, json));
 
   /// The full response, for when the data alone is not enough.
   Future<int> statusOf(int id) async => (await send<_M>(
@@ -101,8 +95,7 @@ class _ItemsService extends AgBaseService
 
 /// A composite lookup — the contract's `ID` is any type, the Service maps
 /// it onto the URL however its backend wants.
-class _OrgItemsService extends AgBaseService
-    with AgRetrieveMixin<_M, ({String org, int id})> {
+class _OrgItemsService extends AgBaseService with AgRetrieveMixin<_M, ({String org, int id})> {
   _OrgItemsService(super.apiProvider);
 
   @override

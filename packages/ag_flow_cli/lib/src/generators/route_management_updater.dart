@@ -18,20 +18,16 @@ AggregatorUpdateResult updateRouteManagement(
 }) {
   final unit = parseString(content: source, throwIfDiagnostics: false).unit;
 
-  final routeManagement = unit.declarations
-      .whereType<ClassDeclaration>()
-      .firstWhere(
-        (c) => c.namePart.typeName.lexeme == 'RouteManagement',
-        orElse: () => throw StateError(
-          'route_management.dart does not declare a RouteManagement class — run "ag init" first.',
-        ),
-      );
+  final routeManagement = unit.declarations.whereType<ClassDeclaration>().firstWhere(
+    (c) => c.namePart.typeName.lexeme == 'RouteManagement',
+    orElse: () => throw StateError(
+      'route_management.dart does not declare a RouteManagement class — run "ag init" first.',
+    ),
+  );
 
-  final alreadyExists = routeManagement.body.members
-      .whereType<MethodDeclaration>()
-      .any(
-        (m) => m.name.lexeme == spec.navMethod,
-      );
+  final alreadyExists = routeManagement.body.members.whereType<MethodDeclaration>().any(
+    (m) => m.name.lexeme == spec.navMethod,
+  );
   if (alreadyExists) return AggregatorUpdateResult.unchanged(source);
 
   // Navigation goes through the app's own router, declared in
@@ -49,9 +45,7 @@ AggregatorUpdateResult updateRouteManagement(
   }
 
   final body = routeManagement.body;
-  final insertOffset = body.members.isEmpty
-      ? body.beginToken.end
-      : body.members.last.end;
+  final insertOffset = body.members.isEmpty ? body.beginToken.end : body.members.last.end;
   // A detail route carries its argument in the URL path, not as an
   // opaque payload — that is what makes the destination reachable from a
   // deep link, a notification, or a reloaded web URL. `pushNamed`, not

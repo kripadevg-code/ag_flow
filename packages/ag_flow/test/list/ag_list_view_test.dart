@@ -27,8 +27,7 @@ class _Paged extends AgBaseController<List<int>> with AgLoadMore<int> {
 Widget _host(AgBaseController<List<int>> controller, {Widget? header}) {
   final list = AgListView<int>(
     controller: controller,
-    itemBuilder: (context, item, index) =>
-        SizedBox(height: 50, child: Text('item $item')),
+    itemBuilder: (context, item, index) => SizedBox(height: 50, child: Text('item $item')),
   );
   return MaterialApp(
     home: Scaffold(
@@ -85,8 +84,7 @@ void main() {
         key: const Key('carousel'),
         scrollDirection: Axis.horizontal,
         children: [
-          for (var i = 0; i < 5; i++)
-            SizedBox(width: 300, child: Text('chip $i')),
+          for (var i = 0; i < 5; i++) SizedBox(width: 300, child: Text('chip $i')),
         ],
       ),
     );
@@ -95,9 +93,8 @@ void main() {
         home: Scaffold(
           body: AgListView<int>(
             controller: c,
-            itemBuilder: (context, item, index) => index == 0
-                ? carousel
-                : SizedBox(height: 50, child: Text('$item')),
+            itemBuilder: (context, item, index) =>
+                index == 0 ? carousel : SizedBox(height: 50, child: Text('$item')),
           ),
         ),
       ),

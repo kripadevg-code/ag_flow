@@ -9,19 +9,18 @@ class _Repo extends AgBaseRepo {
   Future<R> run<R>(Future<R> Function() action) => guard(action);
 }
 
-AgApiException _dio(DioExceptionType type, [int? status]) =>
-    AgApiException.fromDioException(
-      DioException(
-        requestOptions: RequestOptions(),
-        type: type,
-        response: status == null
-            ? null
-            : Response<Object?>(
-                requestOptions: RequestOptions(),
-                statusCode: status,
-              ),
-      ),
-    );
+AgApiException _dio(DioExceptionType type, [int? status]) => AgApiException.fromDioException(
+  DioException(
+    requestOptions: RequestOptions(),
+    type: type,
+    response: status == null
+        ? null
+        : Response<Object?>(
+            requestOptions: RequestOptions(),
+            statusCode: status,
+          ),
+  ),
+);
 
 Future<AgRepoException> _guarded(Object error) async {
   try {
@@ -61,8 +60,7 @@ void main() {
   });
 
   test('guard classifies status codes', () async {
-    Future<AgRepoErrorKind> status(int code) =>
-        _kindOf(_dio(DioExceptionType.badResponse, code));
+    Future<AgRepoErrorKind> status(int code) => _kindOf(_dio(DioExceptionType.badResponse, code));
     expect(await status(401), AgRepoErrorKind.unauthorized);
     expect(await status(403), AgRepoErrorKind.unauthorized);
     expect(await status(404), AgRepoErrorKind.notFound);

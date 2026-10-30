@@ -11,8 +11,7 @@ class ProductDetailsRepo extends AgBaseRepo {
 
   Future<dynamic> retrieve(Object id) => guard(() => _service.retrieve(id));
 
-  Future<dynamic> update(Object id, dynamic item) =>
-      guard(() => _service.update(id, item));
+  Future<dynamic> update(Object id, dynamic item) => guard(() => _service.update(id, item));
 
   Future<void> destroy(Object id) => guard(() => _service.destroy(id));
 }

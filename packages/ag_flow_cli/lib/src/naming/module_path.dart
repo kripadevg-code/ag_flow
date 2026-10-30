@@ -60,9 +60,7 @@ class ModulePath {
 
   @override
   bool operator ==(Object other) =>
-      other is ModulePath &&
-      other.segments.length == segments.length &&
-      other.asString == asString;
+      other is ModulePath && other.segments.length == segments.length && other.asString == asString;
 
   @override
   int get hashCode => asString.hashCode;

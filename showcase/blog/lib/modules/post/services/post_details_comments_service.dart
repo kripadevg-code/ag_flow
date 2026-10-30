@@ -9,13 +9,11 @@ import 'package:ag_showcase_blog/modules/post/models/comment.dart';
 class PostDetailsCommentsService extends AgBaseService {
   const PostDetailsCommentsService(super.apiProvider);
 
-  Future<List<Comment>> listFor(PostDetailsCommentsPageArgument argument) =>
-      get(
-        PostEndpoints.postComments,
-        pathParams: {'id': '${argument.postId}'},
-        decode: (json) => [
-          for (final item in json! as List<Object?>)
-            Comment.fromJson(item! as Map<String, dynamic>),
-        ],
-      );
+  Future<List<Comment>> listFor(PostDetailsCommentsPageArgument argument) => get(
+    PostEndpoints.postComments,
+    pathParams: {'id': '${argument.postId}'},
+    decode: (json) => [
+      for (final item in json! as List<Object?>) Comment.fromJson(item! as Map<String, dynamic>),
+    ],
+  );
 }

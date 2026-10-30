@@ -5,8 +5,7 @@ import 'package:ag_showcase_tasks/modules/tasks/repos/tasks_repo.dart';
 
 /// Nested tasks for a project — a detail-shaped module whose data is a
 /// list, reading a collection filtered by a parent argument.
-class ProjectTasksController extends AgBaseController<List<Task>>
-    with AgList<Task> {
+class ProjectTasksController extends AgBaseController<List<Task>> with AgList<Task> {
   ProjectTasksController(this._repo)
     : argument = ProjectTasksPageArgument.fromPathParameters(
         AgRouteData.pathParameters,
@@ -14,8 +13,7 @@ class ProjectTasksController extends AgBaseController<List<Task>>
 
   final ProjectTasksPageArgument argument;
 
-  static ProjectTasksController get find =>
-      AgLocator.find<ProjectTasksController>();
+  static ProjectTasksController get find => AgLocator.find<ProjectTasksController>();
 
   final TasksRepo _repo;
 

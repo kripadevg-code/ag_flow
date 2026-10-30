@@ -46,12 +46,9 @@ class ModuleSpec {
     final segments = modulePath.segments;
 
     final routePath = '/${segments.join('/')}';
-    final routeConstant =
-        camelCase(segments.first) + segments.skip(1).map(pascalCase).join();
+    final routeConstant = camelCase(segments.first) + segments.skip(1).map(pascalCase).join();
     final componentClassPrefix = segments.map(pascalCase).join();
-    final classPrefix = modulePath.isRoot
-        ? pluralizer(componentClassPrefix)
-        : componentClassPrefix;
+    final classPrefix = modulePath.isRoot ? pluralizer(componentClassPrefix) : componentClassPrefix;
     final fileBase = segments.join('_');
 
     return ModuleSpec._(
@@ -125,8 +122,7 @@ class ModuleSpec {
   /// Kept separate from [routePath], which stays parameter-free: that is
   /// the form `ag analyze` re-derives a spec from, and it must round-trip
   /// through `ModulePath.parse` losslessly.
-  String get registeredRoutePath =>
-      isDetail ? '$routePath/:$pathParameterName' : routePath;
+  String get registeredRoutePath => isDetail ? '$routePath/:$pathParameterName' : routePath;
 
   String get navMethod => 'goTo${classPrefix}Page';
 

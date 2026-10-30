@@ -37,8 +37,7 @@ class _CountingBinding extends AgBinding {
   }
 }
 
-class _TrackedController extends AgBaseController<String>
-    with AgRetrieve<String> {
+class _TrackedController extends AgBaseController<String> with AgRetrieve<String> {
   int disposeCalls = 0;
 
   @override
@@ -63,8 +62,7 @@ class _TrackedPage extends AgBasePage<_TrackedController> {
   Widget buildSuccess(BuildContext context) => const Text('tracked');
 }
 
-class _ProductController extends AgBaseController<String>
-    with AgRetrieve<String> {
+class _ProductController extends AgBaseController<String> with AgRetrieve<String> {
   _ProductController() : id = AgRouteData.pathParameters['id']!;
 
   final String id;
@@ -133,9 +131,7 @@ GoRoute _route(
   return GoRoute(
     path: path,
     name: path,
-    redirect: guards.isEmpty
-        ? null
-        : (context, state) => AgGuard.check(guards, state.fullPath!),
+    redirect: guards.isEmpty ? null : (context, state) => AgGuard.check(guards, state.fullPath!),
     pageBuilder: (context, state) => AgRoutePage<void>(
       key: state.pageKey,
       pathParameters: state.pathParameters,

@@ -50,9 +50,7 @@ class _GoRouteFinder extends RecursiveAstVisitor<void> {
 
   void _check(ArgumentList arguments) {
     if (arguments.arguments.whereType<NamedArgument>().any(
-      (arg) =>
-          arg.name.lexeme == 'path' &&
-          arg.argumentExpression.toSource() == pathExpression,
+      (arg) => arg.name.lexeme == 'path' && arg.argumentExpression.toSource() == pathExpression,
     )) {
       found = true;
     }

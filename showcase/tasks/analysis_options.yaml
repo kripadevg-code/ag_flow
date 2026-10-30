@@ -9,3 +9,8 @@ linter:
     discarded_futures: false
     # Generated navigation methods use untyped generics by convention
     always_specify_types: false
+
+# Project rule: 100 columns, so short expressions stay on one line.
+formatter:
+  page_width: 100
+  trailing_commas: preserve

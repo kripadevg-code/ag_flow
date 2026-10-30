@@ -68,5 +68,4 @@ void _writeClass(StringBuffer buffer, ModelSpec spec) {
 }
 
 /// A type that is already nullable must not gain a second `?`.
-String _nullable(String dartType) =>
-    dartType.endsWith('?') ? dartType : '$dartType?';
+String _nullable(String dartType) => dartType.endsWith('?') ? dartType : '$dartType?';

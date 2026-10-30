@@ -1,0 +1,10 @@
+# The goldens are what `ag g m` writes into an app that uses dart format's
+# default 80 columns, and are compared byte for byte — so they keep 80
+# rather than this workspace's 100.
+analyzer:
+  exclude:
+    - "**"
+
+formatter:
+  page_width: 80
+  trailing_commas: preserve

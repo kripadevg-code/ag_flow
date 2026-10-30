@@ -5,8 +5,7 @@ import 'package:ag_showcase_store/modules/product/repos/product_details_repo.dar
 
 /// Loads the product named by the route; [update] shows what the backend
 /// returned.
-class ProductDetailsController extends AgBaseController<Product>
-    with AgRetrieve<Product> {
+class ProductDetailsController extends AgBaseController<Product> with AgRetrieve<Product> {
   ProductDetailsController(this._repo)
     : argument = ProductDetailsPageArgument.fromPathParameters(
         AgRouteData.pathParameters,

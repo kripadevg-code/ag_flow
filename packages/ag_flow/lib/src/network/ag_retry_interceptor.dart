@@ -41,8 +41,7 @@ class AgRetryInterceptor extends Interceptor {
     final attempt = (err.requestOptions.extra[_attemptKey] as int?) ?? 0;
     final shouldRetry =
         attempt < policy.maxAttempts &&
-        (_isRetryableStatus(err) ||
-            (policy.retryOnConnectionError && _isConnectionError(err)));
+        (_isRetryableStatus(err) || (policy.retryOnConnectionError && _isConnectionError(err)));
 
     if (!shouldRetry) {
       handler.next(err);

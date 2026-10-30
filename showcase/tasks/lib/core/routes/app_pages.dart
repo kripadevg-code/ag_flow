@@ -59,8 +59,7 @@ abstract class AppPages {
     GoRoute(
       path: AppRoutes.login,
       name: AppRoutes.login,
-      redirect: (context, state) =>
-          AgGuard.check(const [GuestGuard()], state.fullPath!),
+      redirect: (context, state) => AgGuard.check(const [GuestGuard()], state.fullPath!),
       pageBuilder: (context, state) => AgRoutePage<void>(
         key: state.pageKey,
         pathParameters: state.pathParameters,
@@ -73,8 +72,7 @@ abstract class AppPages {
     GoRoute(
       path: AppRoutes.register,
       name: AppRoutes.register,
-      redirect: (context, state) =>
-          AgGuard.check(const [GuestGuard()], state.fullPath!),
+      redirect: (context, state) => AgGuard.check(const [GuestGuard()], state.fullPath!),
       pageBuilder: (context, state) => AgRoutePage<void>(
         key: state.pageKey,
         pathParameters: state.pathParameters,
@@ -92,15 +90,13 @@ abstract class AppPages {
     // between tabs never rebuilds the shell — the bottom bar and any
     // shell-level state survive tab switches.
     ShellRoute(
-      builder: (context, state, child) =>
-          ShellPage(location: state.uri.path, child: child),
+      builder: (context, state, child) => ShellPage(location: state.uri.path, child: child),
       routes: [
         // Tab 1 — Tasks list + detail
         GoRoute(
           path: AppRoutes.tasks,
           name: AppRoutes.tasks,
-          redirect: (context, state) =>
-              AgGuard.check(const [AuthGuard()], state.fullPath!),
+          redirect: (context, state) => AgGuard.check(const [AuthGuard()], state.fullPath!),
           pageBuilder: (context, state) => AgRoutePage<void>(
             key: state.pageKey,
             pathParameters: state.pathParameters,
@@ -113,8 +109,7 @@ abstract class AppPages {
         GoRoute(
           path: AppRoutes.taskDetails,
           name: AppRoutes.taskDetails,
-          redirect: (context, state) =>
-              AgGuard.check(const [AuthGuard()], state.fullPath!),
+          redirect: (context, state) => AgGuard.check(const [AuthGuard()], state.fullPath!),
           pageBuilder: (context, state) => AgRoutePage<void>(
             key: state.pageKey,
             pathParameters: state.pathParameters,
@@ -129,8 +124,7 @@ abstract class AppPages {
         GoRoute(
           path: AppRoutes.projects,
           name: AppRoutes.projects,
-          redirect: (context, state) =>
-              AgGuard.check(const [AuthGuard()], state.fullPath!),
+          redirect: (context, state) => AgGuard.check(const [AuthGuard()], state.fullPath!),
           pageBuilder: (context, state) => AgRoutePage<void>(
             key: state.pageKey,
             pathParameters: state.pathParameters,
@@ -143,8 +137,7 @@ abstract class AppPages {
         GoRoute(
           path: AppRoutes.projectDetails,
           name: AppRoutes.projectDetails,
-          redirect: (context, state) =>
-              AgGuard.check(const [AuthGuard()], state.fullPath!),
+          redirect: (context, state) => AgGuard.check(const [AuthGuard()], state.fullPath!),
           pageBuilder: (context, state) => AgRoutePage<void>(
             key: state.pageKey,
             pathParameters: state.pathParameters,
@@ -157,8 +150,7 @@ abstract class AppPages {
         GoRoute(
           path: AppRoutes.projectTasks,
           name: AppRoutes.projectTasks,
-          redirect: (context, state) =>
-              AgGuard.check(const [AuthGuard()], state.fullPath!),
+          redirect: (context, state) => AgGuard.check(const [AuthGuard()], state.fullPath!),
           pageBuilder: (context, state) => AgRoutePage<void>(
             key: state.pageKey,
             pathParameters: state.pathParameters,
@@ -173,8 +165,7 @@ abstract class AppPages {
         GoRoute(
           path: AppRoutes.profile,
           name: AppRoutes.profile,
-          redirect: (context, state) =>
-              AgGuard.check(const [AuthGuard()], state.fullPath!),
+          redirect: (context, state) => AgGuard.check(const [AuthGuard()], state.fullPath!),
           pageBuilder: (context, state) => AgRoutePage<void>(
             key: state.pageKey,
             pathParameters: state.pathParameters,

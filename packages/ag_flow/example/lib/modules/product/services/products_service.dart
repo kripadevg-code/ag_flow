@@ -19,8 +19,7 @@ class ProductsService extends AgBaseService
   AgEndpoint get collectionEndpoint =>
       throw UnimplementedError('ProductsService.collectionEndpoint');
 
-  AgEndpoint get resourceEndpoint =>
-      throw UnimplementedError('ProductsService.resourceEndpoint');
+  AgEndpoint get resourceEndpoint => throw UnimplementedError('ProductsService.resourceEndpoint');
 
   /// How this backend pages: `?page=1&limit=20`. Use
   /// [AgLimitOffsetPagination] for `?offset=0&limit=20`, or subclass
@@ -32,16 +31,14 @@ class ProductsService extends AgBaseService
   dynamic fromJson(Map<String, dynamic> json) =>
       throw UnimplementedError('ProductsService.fromJson');
 
-  Map<String, dynamic> toJson(dynamic item) =>
-      throw UnimplementedError('ProductsService.toJson');
+  Map<String, dynamic> toJson(dynamic item) => throw UnimplementedError('ProductsService.toJson');
 
   @override
   Future<List<dynamic>> list({int page = 1}) => get(
     collectionEndpoint,
     queryParams: pagination.query(page),
     decode: (json) => [
-      for (final item in json! as List<Object?>)
-        fromJson(item! as Map<String, dynamic>),
+      for (final item in json! as List<Object?>) fromJson(item! as Map<String, dynamic>),
     ],
   );
 
@@ -61,6 +58,5 @@ class ProductsService extends AgBaseService
   );
 
   @override
-  Future<void> destroy(Object id) =>
-      delete(resourceEndpoint, pathParams: {'id': id});
+  Future<void> destroy(Object id) => delete(resourceEndpoint, pathParams: {'id': id});
 }

@@ -22,3 +22,8 @@ linter:
     # deliberately not imported (pure prose mentions in dartdoc) — prefer
     # backtick-quoted names for those instead of chasing this rule.
     comment_references: false
+
+# Project rule: 100 columns, so short expressions stay on one line.
+formatter:
+  page_width: 100
+  trailing_commas: preserve

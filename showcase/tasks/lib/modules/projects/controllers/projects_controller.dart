@@ -8,8 +8,7 @@ import 'package:ag_showcase_tasks/modules/projects/repos/projects_repo.dart';
 /// [AgLoadMore]. jsonplaceholder doesn't persist writes, so a refresh
 /// would undo them; each write reflects the mutation in the shown list
 /// instead, as [TasksController] does.
-class ProjectsController extends AgBaseController<List<Project>>
-    with AgLoadMore<Project> {
+class ProjectsController extends AgBaseController<List<Project>> with AgLoadMore<Project> {
   ProjectsController(this._repo);
 
   final ProjectsRepo _repo;

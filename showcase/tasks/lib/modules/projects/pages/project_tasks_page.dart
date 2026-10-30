@@ -13,8 +13,7 @@ class ProjectTasksPage extends AgBasePage<ProjectTasksController> {
   const ProjectTasksPage({super.key});
 
   @override
-  PreferredSizeWidget? appBar(BuildContext context) =>
-      AppBar(title: const Text('Project tasks'));
+  PreferredSizeWidget? appBar(BuildContext context) => AppBar(title: const Text('Project tasks'));
 
   @override
   Widget buildSuccess(BuildContext context) {

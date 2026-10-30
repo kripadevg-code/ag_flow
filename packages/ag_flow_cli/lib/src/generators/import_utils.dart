@@ -46,8 +46,7 @@ String sortImports(String source) {
   ];
   if (importLineIndices.isEmpty) return source;
 
-  final sortedImportLines = [for (final i in importLineIndices) lines[i]]
-    ..sort(_compareImports);
+  final sortedImportLines = [for (final i in importLineIndices) lines[i]]..sort(_compareImports);
 
   final rebuiltImportBlock = <String>[];
   String? previousGroup;

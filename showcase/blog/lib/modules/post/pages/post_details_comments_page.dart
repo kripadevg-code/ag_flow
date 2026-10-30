@@ -6,23 +6,19 @@ import 'package:ag_showcase_blog/modules/post/components/comments/post_details_c
 import 'package:ag_showcase_blog/modules/post/controllers/post_details_comments_controller.dart';
 import 'package:flutter/material.dart';
 
-class PostDetailsCommentsPage
-    extends AgBasePage<PostDetailsCommentsController> {
+class PostDetailsCommentsPage extends AgBasePage<PostDetailsCommentsController> {
   const PostDetailsCommentsPage({super.key});
 
   @override
-  PreferredSizeWidget? appBar(BuildContext context) =>
-      PostDetailsCommentsAppBar();
+  PreferredSizeWidget? appBar(BuildContext context) => PostDetailsCommentsAppBar();
 
   @override
   WidgetBuilder? get loadingBuilder =>
       (context) => const PostDetailsCommentsLoading();
 
   @override
-  Widget Function(BuildContext, Object, StackTrace?, VoidCallback)?
-  get errorBuilder =>
-      (context, error, stackTrace, retry) =>
-          PostDetailsCommentsError(error: error, onRetry: retry);
+  Widget Function(BuildContext, Object, StackTrace?, VoidCallback)? get errorBuilder =>
+      (context, error, stackTrace, retry) => PostDetailsCommentsError(error: error, onRetry: retry);
 
   @override
   WidgetBuilder? get emptyBuilder =>

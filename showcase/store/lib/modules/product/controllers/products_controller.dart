@@ -9,8 +9,7 @@ import 'package:ag_showcase_store/modules/product/repos/products_repo.dart';
 /// persists a write, so a refresh would immediately undo what the user
 /// just did. [create]/[destroy] reflect the mutation in the shown list
 /// instead.
-class ProductsController extends AgBaseController<List<Product>>
-    with AgList<Product> {
+class ProductsController extends AgBaseController<List<Product>> with AgList<Product> {
   ProductsController(this._repo);
 
   final ProductsRepo _repo;

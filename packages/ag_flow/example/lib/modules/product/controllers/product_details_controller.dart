@@ -4,8 +4,7 @@ import 'package:ag_flow_example/modules/product/repos/product_details_repo.dart'
 
 /// Loads one resource through the Repo; each write goes to the same
 /// resource and shows the result.
-class ProductDetailsController extends AgBaseController<dynamic>
-    with AgRetrieve<dynamic> {
+class ProductDetailsController extends AgBaseController<dynamic> with AgRetrieve<dynamic> {
   ProductDetailsController(this._repo)
     : argument = ProductDetailsPageArgument.fromPathParameters(
         AgRouteData.pathParameters,

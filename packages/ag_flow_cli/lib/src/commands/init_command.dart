@@ -18,8 +18,7 @@ class InitCommand extends Command<int> {
   final name = 'init';
 
   @override
-  final description =
-      'Bootstrap this project for AG: creates the lib/core/ skeleton.';
+  final description = 'Bootstrap this project for AG: creates the lib/core/ skeleton.';
 
   @override
   Future<int> run() async {

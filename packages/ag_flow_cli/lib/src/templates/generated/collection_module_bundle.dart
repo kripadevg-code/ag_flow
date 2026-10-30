@@ -64,12 +64,12 @@ final collectionModuleBundle = MasonBundle.fromJson(<String, dynamic>{
   "vars": {
     "app_package_name": {
       "type": "string",
-      "description":
-          "The consuming app's own package name (from its pubspec.yaml).",
+      "description": "The consuming app's own package name (from its pubspec.yaml).",
     },
     "module_import_path": {
       "type": "string",
-      "description": "The modules/ + root path segment used for package imports, e.g. modules/product.",
+      "description":
+          "The modules/ + root path segment used for package imports, e.g. modules/product.",
     },
     "module_class_prefix": {
       "type": "string",
@@ -77,8 +77,7 @@ final collectionModuleBundle = MasonBundle.fromJson(<String, dynamic>{
     },
     "module_file_base": {
       "type": "string",
-      "description":
-          "snake_case file-name base for layer files, e.g. products.",
+      "description": "snake_case file-name base for layer files, e.g. products.",
     },
     "component_class_prefix": {
       "type": "string",
@@ -86,17 +85,16 @@ final collectionModuleBundle = MasonBundle.fromJson(<String, dynamic>{
     },
     "component_file_base": {
       "type": "string",
-      "description": "Raw, never-pluralized snake_case file-name base for components, e.g. product.",
+      "description":
+          "Raw, never-pluralized snake_case file-name base for components, e.g. product.",
     },
     "component_namespace": {
       "type": "string",
-      "description":
-          "Bare last path segment, used as the component folder name.",
+      "description": "Bare last path segment, used as the component folder name.",
     },
     "generate_create": {
       "type": "boolean",
-      "description":
-          "Whether to generate a create() stub across Service/Repo/Controller.",
+      "description": "Whether to generate a create() stub across Service/Repo/Controller.",
       "default": true,
     },
     "model_class": {
@@ -111,7 +109,8 @@ final collectionModuleBundle = MasonBundle.fromJson(<String, dynamic>{
     },
     "id_type": {
       "type": "string",
-      "description": "The model's id type, used as the ID type argument of the Service's action mixins.",
+      "description":
+          "The model's id type, used as the ID type argument of the Service's action mixins.",
       "default": "Object",
     },
     "has_model": {
@@ -131,18 +130,19 @@ final collectionModuleBundle = MasonBundle.fromJson(<String, dynamic>{
     },
     "needs_resource_endpoint": {
       "type": "boolean",
-      "description": "Whether any listed action mixin (retrieve/update/destroy) needs resourceEndpoint.",
+      "description":
+          "Whether any listed action mixin (retrieve/update/destroy) needs resourceEndpoint.",
       "default": true,
     },
     "needs_to_json": {
       "type": "boolean",
-      "description":
-          "Whether any listed action mixin (create/update) needs toJson.",
+      "description": "Whether any listed action mixin (create/update) needs toJson.",
       "default": true,
     },
     "paginate": {
       "type": "boolean",
-      "description": "Whether the list pages (AgPagination in the Service, AgLoadMore in the Controller).",
+      "description":
+          "Whether the list pages (AgPagination in the Service, AgLoadMore in the Controller).",
       "default": false,
     },
   },

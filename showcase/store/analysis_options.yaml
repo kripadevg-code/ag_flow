@@ -31,3 +31,8 @@ linter:
 
 # Additional information about this file can be found at
 # https://dart.dev/guides/language/analysis-options
+
+# Project rule: 100 columns, so short expressions stay on one line.
+formatter:
+  page_width: 100
+  trailing_commas: preserve

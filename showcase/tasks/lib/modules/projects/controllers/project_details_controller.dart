@@ -6,8 +6,7 @@ import 'package:ag_showcase_tasks/modules/projects/repos/project_details_repo.da
 
 /// Detail controller for a single project: loads it, updates it, and
 /// deletes it.
-class ProjectDetailsController extends AgBaseController<Project>
-    with AgRetrieve<Project> {
+class ProjectDetailsController extends AgBaseController<Project> with AgRetrieve<Project> {
   ProjectDetailsController(this._repo)
     : argument = ProjectDetailsPageArgument.fromPathParameters(
         AgRouteData.pathParameters,
@@ -17,8 +16,7 @@ class ProjectDetailsController extends AgBaseController<Project>
 
   final ProjectDetailsPageArgument argument;
 
-  static ProjectDetailsController get find =>
-      AgLocator.find<ProjectDetailsController>();
+  static ProjectDetailsController get find => AgLocator.find<ProjectDetailsController>();
 
   int get lookupId => argument.projectId;
 

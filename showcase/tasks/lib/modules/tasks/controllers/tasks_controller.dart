@@ -8,8 +8,7 @@ import 'package:ag_showcase_tasks/modules/tasks/repos/tasks_repo.dart';
 /// [AgLoadMore]. This app's backend (jsonplaceholder) doesn't persist
 /// writes, and a refresh would also jump the list back to the top, so each
 /// write reflects the mutation directly in the shown list.
-class TasksController extends AgBaseController<List<Task>>
-    with AgLoadMore<Task> {
+class TasksController extends AgBaseController<List<Task>> with AgLoadMore<Task> {
   TasksController(this._repo);
 
   final TasksRepo _repo;

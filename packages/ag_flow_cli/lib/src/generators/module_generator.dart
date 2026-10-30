@@ -136,12 +136,8 @@ class ModuleGenerator {
       // declares `resourceEndpoint`/`toJson` at all. Declaring one that no
       // generated method uses would hand the developer dead code.
       'needs_resource_endpoint':
-          spec.isDetail ||
-          methods.contains('update') ||
-          methods.contains('destroy'),
-      'needs_to_json':
-          methods.contains('update') ||
-          (!spec.isDetail && methods.contains('create')),
+          spec.isDetail || methods.contains('update') || methods.contains('destroy'),
+      'needs_to_json': methods.contains('update') || (!spec.isDetail && methods.contains('create')),
     };
 
     final target = _RecordingGeneratorTarget();

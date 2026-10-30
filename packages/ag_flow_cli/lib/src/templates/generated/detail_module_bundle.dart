@@ -59,12 +59,12 @@ final detailModuleBundle = MasonBundle.fromJson(<String, dynamic>{
   "vars": {
     "app_package_name": {
       "type": "string",
-      "description":
-          "The consuming app's own package name (from its pubspec.yaml).",
+      "description": "The consuming app's own package name (from its pubspec.yaml).",
     },
     "module_import_path": {
       "type": "string",
-      "description": "The modules/ + root path segment used for package imports, e.g. modules/product.",
+      "description":
+          "The modules/ + root path segment used for package imports, e.g. modules/product.",
     },
     "module_class_prefix": {
       "type": "string",
@@ -72,21 +72,21 @@ final detailModuleBundle = MasonBundle.fromJson(<String, dynamic>{
     },
     "module_file_base": {
       "type": "string",
-      "description":
-          "snake_case file-name base for layer files, e.g. product_details.",
+      "description": "snake_case file-name base for layer files, e.g. product_details.",
     },
     "component_class_prefix": {
       "type": "string",
-      "description": "Cumulative, never-pluralized PascalCase prefix for components, e.g. ProductDetails.",
+      "description":
+          "Cumulative, never-pluralized PascalCase prefix for components, e.g. ProductDetails.",
     },
     "component_file_base": {
       "type": "string",
-      "description": "Raw, never-pluralized snake_case file-name base for components, e.g. product_details.",
+      "description":
+          "Raw, never-pluralized snake_case file-name base for components, e.g. product_details.",
     },
     "component_namespace": {
       "type": "string",
-      "description":
-          "Bare last path segment, used as the component folder name.",
+      "description": "Bare last path segment, used as the component folder name.",
     },
     "model_class": {
       "type": "string",
@@ -100,7 +100,8 @@ final detailModuleBundle = MasonBundle.fromJson(<String, dynamic>{
     },
     "id_type": {
       "type": "string",
-      "description": "The model's id type, used as the ID type argument of the Service's action mixins.",
+      "description":
+          "The model's id type, used as the ID type argument of the Service's action mixins.",
       "default": "Object",
     },
     "has_model": {
@@ -120,13 +121,13 @@ final detailModuleBundle = MasonBundle.fromJson(<String, dynamic>{
     },
     "needs_to_json": {
       "type": "boolean",
-      "description":
-          "Whether any listed action mixin (create/update) needs toJson.",
+      "description": "Whether any listed action mixin (create/update) needs toJson.",
       "default": true,
     },
     "lookup_id_expression": {
       "type": "string",
-      "description": "How the Controller derives lookupId from its argument, e.g. int.parse(argument.id).",
+      "description":
+          "How the Controller derives lookupId from its argument, e.g. int.parse(argument.id).",
       "default": "argument.id",
     },
   },
