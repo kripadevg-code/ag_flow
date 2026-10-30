@@ -650,7 +650,8 @@ to every module; how each method works is up to you.
 `ag g m` writes a starter test for every module to
 `test/modules/<root>/<module>_test.dart`. It tests the Repo and the
 Controller against a fake Service, so it passes as soon as it is
-generated; add cases to it as the module grows.
+generated; add cases to it as the module grows. Pass `--no-test` to skip
+it.
 
 The helpers live in `package:ag_flow/testing.dart` — import it from tests
 only. `AgFakeApiProvider` stands in for the network: set up a reply per

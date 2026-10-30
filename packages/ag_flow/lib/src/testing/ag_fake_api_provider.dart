@@ -37,7 +37,9 @@ class AgFakeApiProvider implements ApiProvider {
   final List<AgRequest> requests = [];
 
   /// Answers [method] requests to [endpoint] with [json], decoded by the
-  /// caller's `decode` exactly as a real response body would be.
+  /// caller's `decode` exactly as a real response body would be. A
+  /// [statusCode] outside 2xx throws an [AgApiException] carrying [json]
+  /// as its `responseBody`, as the real provider does.
   void reply(
     AgEndpoint endpoint, {
     AgHttpMethod method = AgHttpMethod.get,
@@ -99,6 +101,16 @@ class AgFakeApiProvider implements ApiProvider {
     if (reply.error case final error?) throw error;
 
     final json = reply.json!(request);
+    // The real provider rejects a non-2xx status (dio's default
+    // validateStatus), so a `reply(statusCode: 404)` must fail here too.
+    if (reply.statusCode < 200 || reply.statusCode > 299) {
+      throw AgApiException(
+        statusCode: reply.statusCode,
+        message: 'Request failed with status ${reply.statusCode}',
+        responseBody: json,
+        type: AgApiErrorType.response,
+      );
+    }
     return AgResponse<D>(
       statusCode: reply.statusCode,
       data: decode != null ? decode(json) : json as D,

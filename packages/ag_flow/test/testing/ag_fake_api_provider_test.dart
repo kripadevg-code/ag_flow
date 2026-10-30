@@ -107,6 +107,20 @@ void main() {
       expect(api.requests, hasLength(1));
     });
 
+    test('a non-2xx reply throws like the real provider', () async {
+      api.reply(_item, json: {'detail': 'Not found.'}, statusCode: 404);
+
+      await expectLater(
+        service.retrieve(1),
+        throwsA(
+          isA<AgApiException>()
+              .having((e) => e.statusCode, 'statusCode', 404)
+              .having((e) => e.type, 'type', AgApiErrorType.response)
+              .having((e) => e.responseBody, 'responseBody', {'detail': 'Not found.'}),
+        ),
+      );
+    });
+
     test('a request with no reply throws a StateError naming it', () async {
       await expectLater(
         service.retrieve(1),
