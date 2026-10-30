@@ -18,41 +18,23 @@ class PostsService extends AgBaseService
   );
 
   @override
-  Future<List<Post>> list({int page = 1}) async {
-    final response = await send<List<Post>>(
-      AgRequest(
-        endpoint: PostEndpoints.posts,
-        queryParams: pagination.query(page),
-      ),
-      decode: (json) => [
-        for (final item in json! as List<Object?>)
-          Post.fromJson(item! as Map<String, dynamic>),
-      ],
-    );
-    return response.data;
-  }
+  Future<List<Post>> list({int page = 1}) => get(
+    PostEndpoints.posts,
+    queryParams: pagination.query(page),
+    decode: (json) => [
+      for (final item in json! as List<Object?>)
+        Post.fromJson(item! as Map<String, dynamic>),
+    ],
+  );
 
   @override
-  Future<Post> create(Post item) async {
-    final response = await send<Post>(
-      AgRequest(
-        endpoint: PostEndpoints.posts,
-        method: AgHttpMethod.post,
-        body: item.toJson(),
-      ),
-      decode: (json) => Post.fromJson(json! as Map<String, dynamic>),
-    );
-    return response.data;
-  }
+  Future<Post> create(Post item) => post(
+    PostEndpoints.posts,
+    body: item.toJson(),
+    decode: (json) => Post.fromJson(json! as Map<String, dynamic>),
+  );
 
   @override
-  Future<void> destroy(int id) async {
-    await send<void>(
-      AgRequest(
-        endpoint: PostEndpoints.postById,
-        method: AgHttpMethod.delete,
-        pathParams: {'id': id},
-      ),
-    );
-  }
+  Future<void> destroy(int id) =>
+      delete(PostEndpoints.postById, pathParams: {'id': id});
 }

@@ -10,25 +10,17 @@ class ProductDetailsService extends AgBaseService
   ProductDetailsService(super.apiProvider);
 
   @override
-  Future<Product> retrieve(int id) async {
-    final response = await send<Product>(
-      AgRequest(endpoint: ProductEndpoints.productById, pathParams: {'id': id}),
-      decode: (json) => Product.fromJson(json! as Map<String, dynamic>),
-    );
-    return response.data;
-  }
+  Future<Product> retrieve(int id) => get(
+    ProductEndpoints.productById,
+    pathParams: {'id': id},
+    decode: (json) => Product.fromJson(json! as Map<String, dynamic>),
+  );
 
   @override
-  Future<Product> update(int id, Product item) async {
-    final response = await send<Product>(
-      AgRequest(
-        endpoint: ProductEndpoints.productById,
-        method: AgHttpMethod.put,
-        pathParams: {'id': id},
-        body: item.toJson(),
-      ),
-      decode: (json) => Product.fromJson(json! as Map<String, dynamic>),
-    );
-    return response.data;
-  }
+  Future<Product> update(int id, Product item) => put(
+    ProductEndpoints.productById,
+    pathParams: {'id': id},
+    body: item.toJson(),
+    decode: (json) => Product.fromJson(json! as Map<String, dynamic>),
+  );
 }

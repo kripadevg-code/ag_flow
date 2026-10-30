@@ -145,7 +145,7 @@ Only the Service has action mixins — `AgListMixin`, `AgCreateMixin`,
 `AgRetrieveMixin`, `AgUpdateMixin`, `AgDestroyMixin`. Each is a typed
 contract: it fixes the method name (`list` / `create` / `retrieve` /
 `update` / `destroy`) and types, and the Service writes the body with
-`send`. Mix in only the actions the backend supports. A paging backend
+`get` / `post` / `put` / `patch` / `delete`. Mix in only the actions the backend supports. A paging backend
 declares `AgPagination get pagination` (`AgPageNumberPagination`,
 `AgLimitOffsetPagination`, or a subclass) and builds its query with
 `pagination.query(page)`.

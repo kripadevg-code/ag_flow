@@ -4,7 +4,8 @@
 
 - Requires Dart 3.13. Supports `analyzer` 13 and 14 (was 7–12).
 - **Generated Services list one action mixin per generated method**
-  instead of `AgCrudService`, and implement each one with `send`: a
+  instead of `AgCrudService`, and implement each one as a single
+  `get` / `post` / `put` / `delete` call: a
   collection Service is `AgListMixin` plus `AgCreateMixin`/`AgUpdateMixin`/
   `AgDestroyMixin` as `--methods=` selects; a detail Service is
   `AgRetrieveMixin` plus `AgUpdateMixin`/`AgDestroyMixin`. The bodies are

@@ -39,6 +39,7 @@ const Set<AgHttpMethod> _all = {
   AgHttpMethod.get,
   AgHttpMethod.post,
   AgHttpMethod.put,
+  AgHttpMethod.patch,
   AgHttpMethod.delete,
 };
 const _collection = AgEndpoint('/items', methods: _all);
@@ -59,46 +60,38 @@ class _ItemsService extends AgBaseService
   _ItemsService(super.apiProvider);
 
   @override
-  Future<List<_M>> list() async =>
-      (await send(AgRequest(endpoint: _collection), decode: _many)).data;
+  Future<List<_M>> list() => get(_collection, decode: _many);
 
   @override
-  Future<_M> create(_M item) async => (await send(
-    AgRequest(endpoint: _collection, method: AgHttpMethod.post, body: item),
+  Future<_M> create(_M item) => post(_collection, body: item, decode: _one);
+
+  @override
+  Future<_M> retrieve(int id) =>
+      get(_resource, pathParams: {'id': id}, decode: _one);
+
+  @override
+  Future<_M> update(int id, _M item) =>
+      put(_resource, pathParams: {'id': id}, body: item, decode: _one);
+
+  @override
+  Future<void> destroy(int id) => delete(_resource, pathParams: {'id': id});
+
+  /// Feature methods — ordinary methods, no contract needed.
+  Future<List<_M>> search(String term) =>
+      get(_collection, queryParams: {'q': term}, decode: _many);
+
+  Future<_M> rename(int id, String name) => patch(
+    _resource,
+    pathParams: {'id': id},
+    body: {'name': name},
     decode: _one,
-  )).data;
-
-  @override
-  Future<_M> retrieve(int id) async => (await send(
-    AgRequest(endpoint: _resource, pathParams: {'id': id}),
-    decode: _one,
-  )).data;
-
-  @override
-  Future<_M> update(int id, _M item) async => (await send(
-    AgRequest(
-      endpoint: _resource,
-      method: AgHttpMethod.put,
-      pathParams: {'id': id},
-      body: item,
-    ),
-    decode: _one,
-  )).data;
-
-  @override
-  Future<void> destroy(int id) => send<void>(
-    AgRequest(
-      endpoint: _resource,
-      method: AgHttpMethod.delete,
-      pathParams: {'id': id},
-    ),
   );
 
-  /// A feature method — an ordinary method, no contract needed.
-  Future<List<_M>> search(String term) async => (await send(
-    AgRequest(endpoint: _collection, queryParams: {'q': term}),
-    decode: _many,
-  )).data;
+  /// The full response, for when the data alone is not enough.
+  Future<int> statusOf(int id) async => (await send<_M>(
+    AgRequest(endpoint: _resource, pathParams: {'id': id}),
+    decode: _one,
+  )).statusCode;
 }
 
 /// A composite lookup — the contract's `ID` is any type, the Service maps
@@ -108,13 +101,11 @@ class _OrgItemsService extends AgBaseService
   _OrgItemsService(super.apiProvider);
 
   @override
-  Future<_M> retrieve(({String org, int id}) key) async => (await send(
-    AgRequest(
-      endpoint: const AgEndpoint('/orgs/{org}/items/{id}'),
-      pathParams: {'org': key.org, 'id': key.id},
-    ),
+  Future<_M> retrieve(({String org, int id}) key) => get(
+    const AgEndpoint('/orgs/{org}/items/{id}'),
+    pathParams: {'org': key.org, 'id': key.id},
     decode: _one,
-  )).data;
+  );
 }
 
 /// Paging is one opt-in line; the override adds an optional parameter and
@@ -126,17 +117,15 @@ class _PagedItemsService extends AgBaseService with AgListMixin<_M> {
   final AgPagination pagination;
 
   @override
-  Future<List<_M>> list({int page = 1}) async => (await send(
-    AgRequest(endpoint: _collection, queryParams: pagination.query(page)),
-    decode: _many,
-  )).data;
+  Future<List<_M>> list({int page = 1}) =>
+      get(_collection, queryParams: pagination.query(page), decode: _many);
 }
 
 void main() {
   late _Api api;
   setUp(() => api = _Api());
 
-  test('a Service implements each mixed-in contract itself', () async {
+  test('a Service implements each contract with the verb methods', () async {
     final service = _ItemsService(api);
 
     expect(await service.list(), hasLength(1));
@@ -145,6 +134,8 @@ void main() {
     expect((await service.update(3, {}))['id'], 1);
     await service.destroy(4);
     expect(await service.search('x'), hasLength(1));
+    expect((await service.rename(5, 'n'))['id'], 1);
+    expect(await service.statusOf(6), 200);
 
     expect(api.calls, [
       'GET /items',
@@ -153,6 +144,8 @@ void main() {
       'PUT /items/3',
       'DELETE /items/4',
       'GET /items?q=x',
+      'PATCH /items/5',
+      'GET /items/6',
     ]);
   });
 

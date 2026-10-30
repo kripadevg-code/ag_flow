@@ -302,7 +302,7 @@ void main() {
 
       expect(
         read('order', 'services', 'orders_service.dart'),
-        allOf(isNot(contains('pagination')), contains('list() async')),
+        allOf(isNot(contains('pagination')), contains('list() => get(')),
       );
       expect(
         read('order', 'controllers', 'orders_controller.dart'),
