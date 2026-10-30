@@ -8,10 +8,12 @@ import 'package:ag_showcase_tasks/core/routes/app_routes.dart';
 /// If the user IS  logged in   → allow through (return null).
 ///
 /// ```dart
-/// AgRoute(
+/// GoRoute(
 ///   path: AppRoutes.tasks,
-///   page: TasksPage.new,
-///   guards: [const AuthGuard()],
+///   name: AppRoutes.tasks,
+///   redirect: (context, state) =>
+///       AgGuard.check(const [AuthGuard()], state.fullPath!),
+///   pageBuilder: ...,
 /// )
 /// ```
 class AuthGuard extends AgGuard {
@@ -32,10 +34,12 @@ class AuthGuard extends AgGuard {
 /// or the back button.
 ///
 /// ```dart
-/// AgRoute(
+/// GoRoute(
 ///   path: AppRoutes.login,
-///   page: LoginPage.new,
-///   guards: [const GuestGuard()],
+///   name: AppRoutes.login,
+///   redirect: (context, state) =>
+///       AgGuard.check(const [GuestGuard()], state.fullPath!),
+///   pageBuilder: ...,
 /// )
 /// ```
 class GuestGuard extends AgGuard {

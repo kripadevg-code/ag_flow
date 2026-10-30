@@ -27,13 +27,16 @@ abstract class _Routes {
 
 const _appPagesSeed = '''
 import 'package:ag_flow/ag_flow.dart';
+import 'package:go_router/go_router.dart';
 
 import 'app_routes.dart';
 
 abstract class AppPages {
   static const AgTransition defaultTransition = AgTransition.rightToLeft;
 
-  static final List<AgRoute> pages = [];
+  static final GoRouter router = GoRouter(routes: pages);
+
+  static final List<RouteBase> pages = [];
 }
 ''';
 
@@ -52,9 +55,9 @@ abstract class RouteManagement {
   }) {
     AgLocator.delete<LoginController>();
     if (canPopCurrentRoute) {
-      AgNavigator.offNamed(AppRoutes.login, arguments: model);
+      AppPages.router.pushReplacementNamed(AppRoutes.login, extra: model);
     } else {
-      AgNavigator.toNamed(AppRoutes.login, arguments: model);
+      AppPages.router.pushNamed(AppRoutes.login, extra: model);
     }
   }
 }
@@ -244,7 +247,7 @@ void main() {
 
   group('ModuleGenerator — aggregator file updates', () {
     test(
-      'generating a root module registers its route and AgRoute entry, and never touches arguments.dart',
+      'generating a root module registers its route and GoRoute entry, and never touches arguments.dart',
       () async {
         final ops = await ModuleGenerator(
           project: Project(appDir),
@@ -266,8 +269,13 @@ void main() {
 
         final appPages = _coreFile(appDir, p.join('routes', 'app_pages.dart'));
         expect(appPages, contains('path: AppRoutes.product,'));
-        expect(appPages, contains('page: ProductsPage.new,'));
+        expect(appPages, contains('name: AppRoutes.product,'));
+        expect(appPages, contains('child: const ProductsPage(),'));
         expect(appPages, contains('binding: ProductsBinding(),'));
+        expect(
+          appPages,
+          contains('pageBuilder: (context, state) => AgRoutePage'),
+        );
 
         final routeManagement = _coreFile(
           appDir,
@@ -276,7 +284,7 @@ void main() {
         expect(routeManagement, contains('static void goToProductsPage()'));
         expect(
           routeManagement,
-          contains('AgNavigator.toNamed<dynamic>(AppRoutes.product);'),
+          contains('AppPages.router.pushNamed<void>(AppRoutes.product);'),
         );
 
         expect(
@@ -288,7 +296,7 @@ void main() {
     );
 
     test(
-      'generating a detail module registers its argument class, route, AgRoute entry, and nav method',
+      'generating a detail module registers its argument class, route, GoRoute entry, and nav method',
       () async {
         _touchParentController(appDir, ModulePath.parse('product'));
 
@@ -325,7 +333,8 @@ void main() {
 
         final appPages = _coreFile(appDir, p.join('routes', 'app_pages.dart'));
         expect(appPages, contains('path: AppRoutes.productDetails,'));
-        expect(appPages, contains('page: ProductDetailsPage.new,'));
+        expect(appPages, contains('child: const ProductDetailsPage(),'));
+        expect(appPages, contains('pathParameters: state.pathParameters,'));
         expect(appPages, contains('binding: ProductDetailsBinding(),'));
         expect(
           appPages,
@@ -386,13 +395,52 @@ void main() {
             '  }) {\n'
             '    AgLocator.delete<LoginController>();\n'
             '    if (canPopCurrentRoute) {\n'
-            '      AgNavigator.offNamed(AppRoutes.login, arguments: model);\n'
+            '      AppPages.router.pushReplacementNamed(AppRoutes.login, extra: model);\n'
             '    } else {\n'
-            '      AgNavigator.toNamed(AppRoutes.login, arguments: model);\n'
+            '      AppPages.router.pushNamed(AppRoutes.login, extra: model);\n'
             '    }\n'
             '  }',
           ),
         );
+      },
+    );
+
+    test(
+      'a GoRoute the developer moved inside a ShellRoute is found there, '
+      'never re-added at the top level',
+      () async {
+        final generator = ModuleGenerator(project: Project(appDir));
+        await Executor(
+          dryRun: false,
+          logger: quietLogger,
+        ).execute(await generator.plan(ModulePath.parse('product')));
+
+        final appPagesFile = File(
+          p.join(appDir.path, 'lib', 'core', 'routes', 'app_pages.dart'),
+        );
+        final source = appPagesFile.readAsStringSync();
+        final route = RegExp(
+          r'    GoRoute\(.*?\n    \),',
+          dotAll: true,
+        ).firstMatch(source)!.group(0)!;
+        appPagesFile.writeAsStringSync(
+          source.replaceFirst(
+            route,
+            '    ShellRoute(\n'
+            '      builder: (context, state, child) => child,\n'
+            '      routes: [\n$route\n      ],\n'
+            '    ),',
+          ),
+        );
+        final moved = appPagesFile.readAsStringSync();
+
+        await Executor(
+          dryRun: false,
+          logger: quietLogger,
+        ).execute(await generator.plan(ModulePath.parse('product')));
+
+        expect(appPagesFile.readAsStringSync(), moved);
+        expect('GoRoute('.allMatches(moved), hasLength(1));
       },
     );
 
@@ -796,8 +844,10 @@ abstract class _Routes {
         expect(
           moduleFile(appDir, p.join('services', 'products_service.dart')),
           allOf(
-            contains('AgCrudService<Product, int>'),
-            contains('AgPagedService<Product, int>'),
+            contains('AgListMixin<Product>'),
+            contains('AgCreateMixin<Product>'),
+            contains('AgUpdateMixin<Product, int>'),
+            contains('AgDestroyMixin<int>'),
             contains('Product fromJson(Map<String, dynamic> json) =>'),
             contains(
               'Map<String, dynamic> toJson(Product item) => item.toJson()',
@@ -808,18 +858,19 @@ abstract class _Routes {
         expect(
           moduleFile(appDir, p.join('controllers', 'products_controller.dart')),
           allOf(
-            contains('AgListController<Product, int>'),
-            contains('AgListPage<Product, int>'),
-            contains('add(Product item)'),
+            contains('extends AgBaseController<List<Product>>'),
+            contains('Future<void> update(int id, Product item)'),
           ),
         );
         expect(
           moduleFile(appDir, p.join('repos', 'products_repo.dart')),
-          contains('AgListPage<Product, int>'),
+          contains(
+            'Future<Product> create(Product item) => _service.create(item);',
+          ),
         );
         expect(
           moduleFile(appDir, p.join('pages', 'products_page.dart')),
-          contains('AgListBuilder<Product, int>'),
+          contains('AgListView<Product>'),
         );
         expect(
           moduleFile(
@@ -845,12 +896,9 @@ abstract class _Routes {
         expect(
           moduleFile(
             appDir,
-            p.join('services', 'product_details_service.dart'),
+            p.join('controllers', 'product_details_controller.dart'),
           ),
-          contains(
-            'int idOf(ProductDetailsPageArgument argument) => '
-            'int.parse(argument.id);',
-          ),
+          contains('int get lookupId => int.parse(argument.id);'),
           reason:
               'path parameters are always strings, so an int id needs the '
               'parse written for it',
@@ -873,7 +921,7 @@ abstract class _Routes {
       );
       expect(
         moduleFile(appDir, p.join('controllers', 'products_controller.dart')),
-        contains('AgListController<dynamic, int>'),
+        contains('extends AgBaseController<List<dynamic>>'),
       );
     });
 

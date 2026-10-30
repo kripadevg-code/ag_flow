@@ -1,6 +1,5 @@
-import 'package:ag_flow/ag_flow.dart';
 import 'package:ag_flow_example/core/auth/auth_service.dart';
-import 'package:ag_flow_example/core/routes/app_routes.dart';
+import 'package:ag_flow_example/core/routes/route_management.dart';
 import 'package:flutter/material.dart';
 
 class LoginPage extends StatelessWidget {
@@ -24,7 +23,7 @@ class LoginPage extends StatelessWidget {
             FilledButton(
               onPressed: () {
                 AuthService.instance.login();
-                AgNavigator.offAllNamed(AppRoutes.home);
+                RouteManagement.resetToHomePage();
               },
               child: const Text('Login as User'),
             ),
@@ -34,7 +33,7 @@ class LoginPage extends StatelessWidget {
             FilledButton.tonal(
               onPressed: () {
                 AuthService.instance.login(role: UserRole.admin);
-                AgNavigator.offAllNamed(AppRoutes.home);
+                RouteManagement.resetToHomePage();
               },
               child: const Text('Login as Admin'),
             ),

@@ -23,14 +23,14 @@ class ProjectsPage extends AgBasePage<ProjectsController> {
 
   @override
   Widget buildSuccess(BuildContext context) {
-    return AgListBuilder<Project, int>(
+    return AgListView<Project>(
       controller: controller,
       itemBuilder: (context, project, index) => ProjectItem(
         project: project,
         onTap: () => RouteManagement.goToProjectDetailsPage(
           ProjectDetailsPageArgument(projectId: project.id),
         ),
-        onDelete: () => controller.delete(project.id),
+        onDelete: () => controller.destroy(project.id),
       ),
     );
   }
@@ -72,7 +72,7 @@ class ProjectsPage extends AgBasePage<ProjectsController> {
           FilledButton(
             onPressed: () {
               if (titleController.text.trim().isEmpty) return;
-              controller.add(
+              controller.create(
                 Project(
                   id: 0,
                   userId: 1,

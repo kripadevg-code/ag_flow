@@ -5,36 +5,42 @@ import 'package:ag_showcase_tasks/modules/tasks/repos/task_details_repo.dart';
 
 /// Detail controller for a single task.
 ///
-/// Extends [AgDetailController] — it resolves the navigation argument from
-/// the route's path parameters automatically so the page opens correctly
-/// from a deep link, a push notification, or an in-app tap.
-class TaskDetailsController
-    extends AgDetailController<Task, TaskDetailsPageArgument> {
-  TaskDetailsController(this._repo);
+/// The navigation argument is rebuilt from the route's path parameters, so
+/// the page opens correctly from a deep link, a push notification, or an
+/// in-app tap. [update] is optimistic: it shows the change at once and
+/// rolls back if the write fails.
+class TaskDetailsController extends AgBaseController<Task> {
+  TaskDetailsController(this._repo)
+    : argument = TaskDetailsPageArgument.fromPathParameters(
+        AgRouteData.pathParameters,
+      );
+
+  final TaskDetailsRepo _repo;
+
+  final TaskDetailsPageArgument argument;
 
   static TaskDetailsController get find =>
       AgLocator.find<TaskDetailsController>();
 
-  final TaskDetailsRepo _repo;
+  int get lookupId => argument.taskId;
 
   @override
-  TaskDetailsPageArgument? argumentsFromPath(
-    Map<String, String> pathParameters,
-  ) => TaskDetailsPageArgument.fromPathParameters(pathParameters);
+  Future<Task> fetch() => _repo.retrieve(lookupId);
 
-  @override
-  Future<Task> fetch() => _repo.getByArgument(arguments);
+  /// Optimistic: shows [item] at once and rolls back if the write fails.
+  Future<void> update(Task item) async {
+    final current = state.dataOrNull;
+    emit(AgPageState.success(item));
+    try {
+      emit(AgPageState.success(await _repo.update(lookupId, item)));
+    } on Object {
+      if (current != null) emit(AgPageState.success(current)); // roll back
+    }
+  }
 
   Future<void> toggleCompleted() async {
     final current = state.dataOrNull;
     if (current == null) return;
-    final toggled = current.copyWith(completed: !current.completed);
-    emit(AgPageState.success(toggled));
-    try {
-      final saved = await _repo.update(arguments, toggled);
-      emit(AgPageState.success(saved));
-    } catch (_) {
-      emit(AgPageState.success(current)); // roll back
-    }
+    await update(current.copyWith(completed: !current.completed));
   }
 }

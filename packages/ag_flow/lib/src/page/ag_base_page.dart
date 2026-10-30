@@ -9,10 +9,8 @@ import 'package:flutter/material.dart';
 /// Base class for a full-screen AG page.
 ///
 /// Works for both collection and detail modules: `C` already carries all
-/// the type information AG needs, including navigation arguments for
-/// detail pages (see `AgDetailController.arguments`) — there is no
-/// separate "detail" variant of this class, and no argument type to state
-/// a second time on the page itself.
+/// the type information AG needs — there is no separate "detail" variant
+/// of this class.
 ///
 /// Subclasses provide [buildSuccess] and may independently override
 /// [loadingBuilder], [errorBuilder], and [emptyBuilder]; anything left

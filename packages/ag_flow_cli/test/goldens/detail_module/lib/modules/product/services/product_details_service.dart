@@ -1,57 +1,60 @@
 import 'package:ag_flow/ag_flow.dart';
-import 'package:sample_app/core/arguments/arguments.dart';
 
-/// Declarative by design — this Service contains no request plumbing.
-///
-/// Everything that differs between backends is a *value* you declare:
-/// [envelope] says where the payload sits inside a response body, and the
-/// endpoints say where to find the resource. AG owns the requests and the
-/// decoding, so this file reads the same in every module of every app.
+/// Each mixin is a typed contract for one backend action, and this
+/// Service lists only the actions its backend supports. The bodies below
+/// are yours: a starting point written with `send`, so change any of them
+/// freely when the backend does something unusual.
 ///
 /// Replace `dynamic` with your real model type.
 class ProductDetailsService extends AgBaseService
-    with AgCrudService<dynamic, Object> {
+    with
+        AgRetrieveMixin<dynamic, Object>,
+        AgUpdateMixin<dynamic, Object>,
+        AgDestroyMixin<Object> {
   ProductDetailsService(super.apiProvider);
 
-  // TODO: point these at real endpoints declared in core/endpoints.dart.
-  @override
-  AgEndpoint get collectionEndpoint =>
-      throw UnimplementedError('ProductDetailsService.collectionEndpoint');
-
-  @override
+  // TODO: point this at a real endpoint declared in core/endpoints.dart.
   AgEndpoint get resourceEndpoint =>
       throw UnimplementedError('ProductDetailsService.resourceEndpoint');
 
-  /// Where the payload sits in a response body. Delete this override if
-  /// the body *is* the payload; use `AgEnvelope.key('data')` for
-  /// `{"data": {...}}`, or `AgEnvelope.path([...])` when it's nested.
-  @override
-  AgEnvelope get envelope => AgEnvelope.raw;
-
   // TODO: replace `dynamic` with your model type, then decode/encode it.
-  @override
   dynamic fromJson(Map<String, dynamic> json) =>
       throw UnimplementedError('ProductDetailsService.fromJson');
 
-  @override
   Map<String, dynamic> toJson(dynamic item) =>
       throw UnimplementedError('ProductDetailsService.toJson');
 
-  /// The one genuinely app-specific decision in this file: which field of
-  /// the navigation argument identifies this resource. Everything below
-  /// is a one-line adapter over the inherited CRUD methods.
-  Object idOf(ProductDetailsPageArgument argument) => throw UnimplementedError(
-    'ProductDetailsService.idOf — return the id field from the argument.',
-  );
+  @override
+  Future<dynamic> retrieve(Object id) async {
+    final response = await send<dynamic>(
+      AgRequest(endpoint: resourceEndpoint, pathParams: {'id': id}),
+      decode: (json) => fromJson(json! as Map<String, dynamic>),
+    );
+    return response.data;
+  }
 
-  Future<dynamic> getByArgument(ProductDetailsPageArgument argument) =>
-      getById(idOf(argument));
+  @override
+  Future<dynamic> update(Object id, dynamic item) async {
+    final response = await send<dynamic>(
+      AgRequest(
+        endpoint: resourceEndpoint,
+        method: AgHttpMethod.put,
+        pathParams: {'id': id},
+        body: toJson(item),
+      ),
+      decode: (json) => fromJson(json! as Map<String, dynamic>),
+    );
+    return response.data;
+  }
 
-  Future<dynamic> updateByArgument(
-    ProductDetailsPageArgument argument,
-    dynamic item,
-  ) => update(idOf(argument), item);
-
-  Future<void> deleteByArgument(ProductDetailsPageArgument argument) =>
-      delete(idOf(argument));
+  @override
+  Future<void> destroy(Object id) async {
+    await send<void>(
+      AgRequest(
+        endpoint: resourceEndpoint,
+        method: AgHttpMethod.delete,
+        pathParams: {'id': id},
+      ),
+    );
+  }
 }

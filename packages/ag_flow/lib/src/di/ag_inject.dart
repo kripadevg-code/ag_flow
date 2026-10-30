@@ -1,8 +1,7 @@
 /// Marks a controller or service class for static-accessor generation.
 ///
 /// Place this annotation on any class that extends [AgBaseController],
-/// [AgListController], [AgDetailController], [AgBaseService], or
-/// [AgStateService].
+/// [AgBaseService], or [AgStateService].
 /// The `ag_flow_generator` build-runner package will generate a
 /// companion `part` file that mixes in a static getter so the class
 /// can be resolved from [AgLocator] without any generic syntax.

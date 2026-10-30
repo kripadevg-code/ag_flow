@@ -3,25 +3,46 @@ import 'package:ag_showcase_store/modules/product/bindings/product_details_bindi
 import 'package:ag_showcase_store/modules/product/bindings/products_binding.dart';
 import 'package:ag_showcase_store/modules/product/pages/product_details_page.dart';
 import 'package:ag_showcase_store/modules/product/pages/products_page.dart';
+import 'package:go_router/go_router.dart';
 
 import 'app_routes.dart';
 
+/// Every route in the app, on plain go_router — the app owns the router
+/// and its go_router version.
 abstract class AppPages {
   static const AgTransition defaultTransition = AgTransition.rightToLeft;
 
-  static final List<AgRoute> pages = [
-    AgRoute(
+  /// Hand this to `MaterialApp.router(routerConfig: AppPages.router)`.
+  static final GoRouter router = GoRouter(
+    initialLocation: AppRoutes.product,
+    routes: pages,
+  );
+
+  static final List<RouteBase> pages = [
+    GoRoute(
       path: AppRoutes.product,
-      page: ProductsPage.new,
-      binding: ProductsBinding(),
-      transition: AppPages.defaultTransition,
+      name: AppRoutes.product,
+      pageBuilder: (context, state) => AgRoutePage<void>(
+        key: state.pageKey,
+        pathParameters: state.pathParameters,
+        extra: state.extra,
+        binding: ProductsBinding(),
+        transition: AppPages.defaultTransition,
+        child: const ProductsPage(),
+      ),
     ),
 
-    AgRoute(
+    GoRoute(
       path: AppRoutes.productDetails,
-      page: ProductDetailsPage.new,
-      binding: ProductDetailsBinding(),
-      transition: AppPages.defaultTransition,
+      name: AppRoutes.productDetails,
+      pageBuilder: (context, state) => AgRoutePage<void>(
+        key: state.pageKey,
+        pathParameters: state.pathParameters,
+        extra: state.extra,
+        binding: ProductDetailsBinding(),
+        transition: AppPages.defaultTransition,
+        child: const ProductDetailsPage(),
+      ),
     ),
   ];
 }

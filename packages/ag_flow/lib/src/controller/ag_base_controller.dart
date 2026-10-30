@@ -12,10 +12,10 @@ import 'package:flutter/foundation.dart';
 /// Service or `ApiProvider` directly.
 ///
 /// Extends [ChangeNotifier] directly: [emit] calls [notifyListeners], and
-/// `AgPage` listens to the controller itself for page-state rebuilds. A
-/// pagination-only change (see [AgPaginationMixin]) notifies through a
-/// *separate* notifier instead, so it never also re-triggers `AgPage`'s
-/// loading/error/empty/success switch, and vice versa.
+/// `AgPage` listens to the controller itself for page-state rebuilds.
+///
+/// Every method beyond [fetch] is the developer's own: a mutation such as
+/// `create` or `destroy` calls the Repo and then [emit]s the new list.
 ///
 /// ---
 /// ### Accessing a controller anywhere — no generics
@@ -71,7 +71,7 @@ abstract class AgBaseController<T> extends ChangeNotifier
   ///
   /// Capture this before an `await` and pass it to [isCurrentRequest]
   /// afterwards to find out whether the result is still wanted. Used by
-  /// [AgPaginationMixin.loadMore], which must be invalidated by a
+  /// `AgLoadMore.loadMore`, which must be invalidated by a
   /// [refresh] that started while it was in flight.
   @protected
   int get currentRequestToken => _requestToken;

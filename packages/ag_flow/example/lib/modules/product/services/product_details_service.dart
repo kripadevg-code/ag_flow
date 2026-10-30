@@ -1,35 +1,60 @@
 import 'package:ag_flow/ag_flow.dart';
-import 'package:ag_flow_example/core/arguments/arguments.dart';
 
-class ProductDetailsService extends AgBaseService {
+/// Each mixin is a typed contract for one backend action, and this
+/// Service lists only the actions its backend supports. The bodies below
+/// are yours: a starting point written with `send`, so change any of them
+/// freely when the backend does something unusual.
+///
+/// Replace `dynamic` with your real model type.
+class ProductDetailsService extends AgBaseService
+    with
+        AgRetrieveMixin<dynamic, Object>,
+        AgUpdateMixin<dynamic, Object>,
+        AgDestroyMixin<Object> {
   ProductDetailsService(super.apiProvider);
 
-  Future<dynamic> getByArgument(ProductDetailsPageArgument argument) async {
-    // TODO: replace with a real AgEndpoint from core/endpoints.dart and
-    // decode the response into your detail type.
-    throw UnimplementedError(
-      'ProductDetailsService.getByArgument is not implemented yet.',
+  // TODO: point this at a real endpoint declared in core/endpoints.dart.
+  AgEndpoint get resourceEndpoint =>
+      throw UnimplementedError('ProductDetailsService.resourceEndpoint');
+
+  // TODO: replace `dynamic` with your model type, then decode/encode it.
+  dynamic fromJson(Map<String, dynamic> json) =>
+      throw UnimplementedError('ProductDetailsService.fromJson');
+
+  Map<String, dynamic> toJson(dynamic item) =>
+      throw UnimplementedError('ProductDetailsService.toJson');
+
+  @override
+  Future<dynamic> retrieve(Object id) async {
+    final response = await send<dynamic>(
+      AgRequest(endpoint: resourceEndpoint, pathParams: {'id': id}),
+      decode: (json) => fromJson(json! as Map<String, dynamic>),
     );
+    return response.data;
   }
 
-  Future<dynamic> update(
-    ProductDetailsPageArgument argument,
-    dynamic item,
-  ) async {
-    // TODO: replace with a real AgEndpoint from core/endpoints.dart and
-    // encode/decode your detail type. Not mandatory — delete this method
-    // (and its Repo/Controller counterparts) if this module never updates.
-    throw UnimplementedError(
-      'ProductDetailsService.update is not implemented yet.',
+  @override
+  Future<dynamic> update(Object id, dynamic item) async {
+    final response = await send<dynamic>(
+      AgRequest(
+        endpoint: resourceEndpoint,
+        method: AgHttpMethod.put,
+        pathParams: {'id': id},
+        body: toJson(item),
+      ),
+      decode: (json) => fromJson(json! as Map<String, dynamic>),
     );
+    return response.data;
   }
 
-  Future<void> delete(ProductDetailsPageArgument argument) async {
-    // TODO: replace with a real AgEndpoint from core/endpoints.dart. Not
-    // mandatory — delete this method (and its Repo/Controller
-    // counterparts) if this module never deletes.
-    throw UnimplementedError(
-      'ProductDetailsService.delete is not implemented yet.',
+  @override
+  Future<void> destroy(Object id) async {
+    await send<void>(
+      AgRequest(
+        endpoint: resourceEndpoint,
+        method: AgHttpMethod.delete,
+        pathParams: {'id': id},
+      ),
     );
   }
 }

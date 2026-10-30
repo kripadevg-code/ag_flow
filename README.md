@@ -5,12 +5,17 @@
 [![Generator Integration](https://github.com/kripadevg-code/ag_flow/actions/workflows/generator-integration.yaml/badge.svg)](https://github.com/kripadevg-code/ag_flow/actions/workflows/generator-integration.yaml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-**An opinionated Flutter framework and CLI — zero third-party state-management dependency — that turns "write a new feature module" into a single command.**
+**An opinionated Flutter framework and CLI for large apps — Django REST Framework's declarative style, brought to Flutter — that turns "write a new feature module" into a single command.**
 
-State and DI are AG's own primitives. Routing is AG's clean API over
-[`go_router`](https://pub.dev/packages/go_router) — the Flutter team's own
-package — so every route is a real URL and every detail page is deep-linkable
-without go_router ever appearing in your pubspec or your generated code.
+Every module has the same shape, and its Service declares the backend
+actions it supports with one typed mixin each (`AgCreateMixin`,
+`AgDestroyMixin`, ...), the way DRF composes `CreateModelMixin` into a view. State and DI are AG's own
+primitives, with no third-party state-management dependency. Routing is
+your app's own [`go_router`](https://pub.dev/packages/go_router) — AG adds
+one page class that scopes each module's dependencies to its route — and the
+network layer is an interface you can swap.
+
+**→ Start with the [developer guide](packages/ag_flow/doc/guide.md).**
 
 AG Flow standardises the shape of every feature module
 (page → controller → repo → service → binding), the routing and
@@ -27,6 +32,10 @@ Open-source, free to use, adopt, and adapt.
 
 ## Why AG Flow
 
+- **Simple, like DRF.** A Service lists the actions its backend supports —
+  `with AgCreateMixin<Product>, AgDestroyMixin<int>` — and implements each
+  one, so an unusual backend never fights a built-in default. The Repo and
+  Controller are plain classes, one of each per module.
 - **One command per module.** `ag g m product` generates a fully-wired
   page / controller / repo / service / binding / component set — routing,
   DI, and navigation arguments included — in one shot.
@@ -40,9 +49,15 @@ Open-source, free to use, adopt, and adapt.
 - **Independent overrides, not all-or-nothing templates.** Override only the
   error state, or only the loading state — every other AG default stays
   exactly as generated.
-- **One networking chokepoint.** Every generated Service goes through a
-  single, centrally-configured `ApiProvider` — no per-feature Dio instances,
-  no hand-rolled URLs, no scattered auth/retry/logging logic.
+- **One networking chokepoint, swappable.** Every Service goes through a
+  single `ApiProvider` — dio-backed by default, or any client you plug in
+  behind its one-method interface (http, GraphQL, an offline queue, a test
+  fake). No per-feature Dio instances, no hand-rolled URLs.
+- **Offline and caching have a home.** The Repo owns where data comes
+  from: override a mixed-in method, call `super`, add your cache. Nothing
+  above it changes.
+- **Your router, not ours.** Routing is plain go_router in your app, at
+  the version you choose; the CLI writes each route for you.
 - **Regeneration never clobbers your work.** Re-running `ag g m` on an
   existing module is a no-op; a hand-customised navigation method survives
   regeneration byte-for-byte, forever.
@@ -67,11 +82,10 @@ Dart pub workspaces.
 
 ## Installing
 
-Add `ag_flow` to your app's `pubspec.yaml`:
+Add `ag_flow`, and `go_router` — your app owns its router:
 
-```yaml
-dependencies:
-  ag_flow: ^0.1.0
+```bash
+flutter pub add ag_flow go_router
 ```
 
 Activate the CLI globally (one-time per machine):
@@ -82,9 +96,8 @@ dart pub global activate ag_flow_cli
 
 Or add it as a dev dependency and run it via `dart run`:
 
-```yaml
-dev_dependencies:
-  ag_flow_cli: ^0.1.0
+```bash
+dart pub add --dev ag_flow_cli
 ```
 
 ### Optional: auto-generated accessors
@@ -130,6 +143,15 @@ ag analyze
 flutter run
 ```
 
+with `main.dart` wired once:
+
+```dart
+void main() {
+  InitialBinding().dependencies();
+  runApp(MaterialApp.router(routerConfig: AppPages.router));
+}
+```
+
 Every generated file is plain Dart — no reflection, no codegen required at
 runtime. `ag analyze` re-validates any time the project grows.
 
@@ -138,14 +160,13 @@ runtime. `ag analyze` re-validates any time the project grows.
 ## Architecture at a glance
 
 ```
-AgApp (root)
-  └─ AgRoute (named URL path)
-       └─ AgBinding (DI scope, route-lifetime)
-            └─ AgBasePage / AgListBuilder (UI, state rendering)
-                 └─ AgBaseController (page state machine)
-                      └─ AgBaseRepo (data access boundary)
-                           └─ AgBaseService / AgCrudService / AgPagedService
-                                └─ ApiProvider (single Dio instance)
+GoRouter (your app's)
+  └─ GoRoute → AgRoutePage (binds the module to the route's lifetime)
+       └─ AgBasePage / AgListBuilder        UI, state rendering
+            └─ Controller + action mixins     page state, user actions
+                 └─ Repo + action mixins      where data comes from (network, cache, offline)
+                      └─ Service + action mixins   what the API looks like
+                           └─ ApiProvider       the network (dio by default, swappable)
 ```
 
 Each layer has exactly one job. Nothing skips a layer — the generator
@@ -169,21 +190,62 @@ class ProductsPage extends AgBasePage<ProductsController> {
 }
 ```
 
-### Service — declare values, not code
+### One mixin per Service action
+
+The way Django REST Framework splits its views into `ListModelMixin`,
+`CreateModelMixin`, and so on. Each mixin is a typed contract — it fixes
+the method and its types — and the Service writes the body:
 
 ```dart
 class ProductsService extends AgBaseService
-    with AgCrudService<Product, int>, AgPagedService<Product, int> {
+    with AgPagedService<Product, int>, AgCreateMixin<Product> {
   ProductsService(super.apiProvider);
 
   @override AgEndpoint get collectionEndpoint => ProductEndpoints.products;
-  @override AgEndpoint get resourceEndpoint   => ProductEndpoints.productById;
-  @override AgPageStrategy<int> get pageStrategy =>
-      const AgPageNumberStrategy(pageParam: 'page', sizeParam: 'limit', pageSize: 20);
+  @override AgPageStrategy<int> get pageStrategy => const AgPageNumberStrategy();
   @override Product fromJson(Map<String, dynamic> json) => Product.fromJson(json);
-  @override Map<String, dynamic> toJson(Product item)   => item.toJson();
+
+  @override
+  Future<Product> add(Product item) => fetchItem(
+    AgRequest(endpoint: ProductEndpoints.products, method: AgHttpMethod.post, body: item.toJson()),
+    fromJson,
+  );
+}
+
+class ProductsRepo extends AgBaseRepo {
+  ProductsRepo(this._service);
+  final ProductsService _service;
+
+  Future<AgListPage<Product, int>> getPage(int pageKey) => _service.getPage(pageKey);
+  Future<Product> add(Product item) => _service.add(item);
+}
+
+class ProductsController extends AgListController<Product, int> {
+  ProductsController(this._repo) : super(initialPageKey: 1);
+  final ProductsRepo _repo;
+
+  @override
+  Future<AgListPage<Product, int>> fetchPage(int pageKey) => _repo.getPage(pageKey);
+
+  Future<void> add(Product item) async {
+    await _repo.add(item);
+    await refresh();
+  }
 }
 ```
+
+| Mixin | You implement |
+|---|---|
+| `AgListMixin<T>` | `Future<List<T>> getAll({queryParams})` |
+| `AgCreateMixin<T>` | `Future<T> add(T item)` |
+| `AgRetrieveMixin<T, ID>` | `Future<T> getById(ID id)` |
+| `AgUpdateMixin<T, ID>` | `Future<T> update(ID id, T item)` |
+| `AgDestroyMixin<ID>` | `Future<void> delete(ID id)` |
+
+`AgPagedService<T, K>` is an optional helper that implements `getPage` from
+a declared `pageStrategy`. `ID` can be an id, a slug, or a record for a
+composite key. `ag g m` writes all of these bodies for you as a starting
+point.
 
 ### Guards — route-level access control
 
@@ -198,11 +260,12 @@ class AuthGuard extends AgGuard {
   }
 }
 
-// In AppPages:
-AgRoute(
+// On a route in AppPages:
+GoRoute(
   path: AppRoutes.home,
-  page: HomePage.new,
-  guards: [const AuthGuard()],
+  redirect: (context, state) =>
+      AgGuard.check(const [AuthGuard()], state.fullPath!),
+  pageBuilder: ...,
 )
 ```
 
@@ -215,9 +278,9 @@ against a live public API, showing a different slice of the framework:
 
 | App | What it demonstrates |
 |---|---|
-| [`showcase/blog`](showcase/blog) | Paginated collection, detail with edit/delete, nested comments module — `AgPagedService`, `AgCrudService`, `AgListBuilder`, path-parameter deep links |
-| [`showcase/store`](showcase/store) | Category-filtered products, full CRUD, `AgRetryPolicy` — `AgCrudService` wired to collection + resource endpoints |
-| [`showcase/tasks`](showcase/tasks) | Auth guard, shell route with bottom nav, `AgStateService`, `AgShellRoute`, optimistic list mutations — a complete architecture reference for a company-grade app |
+| [`showcase/blog`](showcase/blog) | Paginated collection, detail with edit/delete, nested comments module — action mixins on every layer, `lookupId`, `AgListBuilder`, path-parameter deep links |
+| [`showcase/store`](showcase/store) | Category-filtered products, add/update/delete, `AgRetryPolicy` — `AgListMixin` beside `AgPagedService`, feature-specific reads |
+| [`showcase/tasks`](showcase/tasks) | Auth guard, go_router `ShellRoute` + `AgShellScope` with bottom nav, `AgStateService`, optimistic list mutations — a complete architecture reference for a company-grade app |
 
 ---
 

@@ -1,5 +1,4 @@
-import 'package:ag_flow/ag_flow.dart';
-import 'package:ag_flow_example/core/routes/app_routes.dart';
+import 'package:ag_flow_example/core/routes/route_management.dart';
 import 'package:flutter/material.dart';
 
 /// Admin panel — only reachable when the user is logged in AND has the
@@ -29,13 +28,13 @@ class AdminPanelPage extends StatelessWidget {
             const Text('You have admin access.'),
             const SizedBox(height: 32),
             OutlinedButton(
-              onPressed: () => AgNavigator.back<dynamic>(),
+              onPressed: () => RouteManagement.back<void>(),
               child: const Text('Back'),
             ),
             const SizedBox(height: 12),
-            OutlinedButton(
-              onPressed: () => AgNavigator.toNamed<dynamic>(AppRoutes.home),
-              child: const Text('Go to Home'),
+            const OutlinedButton(
+              onPressed: RouteManagement.goToHomePage,
+              child: Text('Go to Home'),
             ),
           ],
         ),

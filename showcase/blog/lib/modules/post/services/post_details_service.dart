@@ -1,34 +1,47 @@
 import 'package:ag_flow/ag_flow.dart';
-import 'package:ag_showcase_blog/core/arguments/arguments.dart';
 import 'package:ag_showcase_blog/core/endpoints.dart';
 import 'package:ag_showcase_blog/modules/post/models/post.dart';
 
-/// The same declarative shape as every other Service. The only
-/// app-specific line is [idOf] — which field of the navigation argument
-/// identifies the post.
-class PostDetailsService extends AgBaseService with AgCrudService<Post, int> {
+/// The same declarative shape as every other Service. Which post to load
+/// is the controller's `lookupId`, not this file's concern.
+class PostDetailsService extends AgBaseService
+    with
+        AgRetrieveMixin<Post, int>,
+        AgUpdateMixin<Post, int>,
+        AgDestroyMixin<int> {
   PostDetailsService(super.apiProvider);
 
   @override
-  AgEndpoint get collectionEndpoint => PostEndpoints.posts;
+  Future<Post> retrieve(int id) async {
+    final response = await send<Post>(
+      AgRequest(endpoint: PostEndpoints.postById, pathParams: {'id': id}),
+      decode: (json) => Post.fromJson(json! as Map<String, dynamic>),
+    );
+    return response.data;
+  }
 
   @override
-  AgEndpoint get resourceEndpoint => PostEndpoints.postById;
+  Future<Post> update(int id, Post item) async {
+    final response = await send<Post>(
+      AgRequest(
+        endpoint: PostEndpoints.postById,
+        method: AgHttpMethod.put,
+        pathParams: {'id': id},
+        body: item.toJson(),
+      ),
+      decode: (json) => Post.fromJson(json! as Map<String, dynamic>),
+    );
+    return response.data;
+  }
 
   @override
-  Post fromJson(Map<String, dynamic> json) => Post.fromJson(json);
-
-  @override
-  Map<String, dynamic> toJson(Post item) => item.toJson();
-
-  int idOf(PostDetailsPageArgument argument) => argument.postId;
-
-  Future<Post> getByArgument(PostDetailsPageArgument argument) =>
-      getById(idOf(argument));
-
-  Future<Post> updateByArgument(PostDetailsPageArgument argument, Post item) =>
-      update(idOf(argument), item);
-
-  Future<void> deleteByArgument(PostDetailsPageArgument argument) =>
-      delete(idOf(argument));
+  Future<void> destroy(int id) async {
+    await send<void>(
+      AgRequest(
+        endpoint: PostEndpoints.postById,
+        method: AgHttpMethod.delete,
+        pathParams: {'id': id},
+      ),
+    );
+  }
 }

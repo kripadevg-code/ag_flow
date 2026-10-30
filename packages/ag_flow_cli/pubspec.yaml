@@ -1,8 +1,7 @@
 name: ag_flow_cli
 description: >-
-  The `ag` CLI for ag_flow — one command generates a fully-wired feature
-  module (page, controller, repo, service, binding, component) and wires
-  its route, argument, and navigation method automatically.
+  The `ag` CLI for ag_flow: generates a fully wired feature module (page,
+  controller, repo, service, binding, components) and registers its route.
 version: 0.3.0
 repository: https://github.com/kripadevg-code/ag_flow
 homepage: https://github.com/kripadevg-code/ag_flow
@@ -10,20 +9,20 @@ issue_tracker: https://github.com/kripadevg-code/ag_flow/issues
 resolution: workspace
 
 environment:
-  sdk: ^3.11.0
+  sdk: ^3.13.0
 
 executables:
   ag: ag
 
 dependencies:
-  analyzer: ">=7.0.0 <13.0.0"
+  analyzer: ">=13.0.0 <15.0.0"
   args: ^2.7.0
   dart_style: ^3.1.0
   io: ^1.0.4
   mason: ^0.1.0
   mason_logger: ^0.3.0
   meta: ^1.16.0
-  package_config: ^2.1.0
+  package_config: ">=2.1.0 <4.0.0"
   path: ^1.9.0
   pluralize: ^0.0.8
   yaml: ^3.1.0

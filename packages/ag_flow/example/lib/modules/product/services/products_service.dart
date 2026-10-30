@@ -1,27 +1,89 @@
 import 'package:ag_flow/ag_flow.dart';
 
-class ProductsService extends AgBaseService {
+/// Each mixin is a typed contract for one backend action, and this
+/// Service lists only the actions its backend supports. The bodies below
+/// are yours: a starting point written with `send`, so change any of them
+/// freely when the backend does something unusual.
+///
+/// Replace `dynamic` with your real model type.
+class ProductsService extends AgBaseService
+    with
+        AgListMixin<dynamic>,
+        AgCreateMixin<dynamic>,
+        AgUpdateMixin<dynamic, Object>,
+        AgDestroyMixin<Object> {
   ProductsService(super.apiProvider);
 
-  /// Resolves this service from [AgLocator] — no generics at call sites:
-  /// ```dart
-  /// final service = ProductsService.instance;
-  /// ```
-  static ProductsService get instance => AgLocator.find<ProductsService>();
+  // TODO: point these at real endpoints declared in core/endpoints.dart.
+  AgEndpoint get collectionEndpoint =>
+      throw UnimplementedError('ProductsService.collectionEndpoint');
 
-  Future<AgListPage<dynamic, int>> getPage(int pageKey) async {
-    throw UnimplementedError('ProductsService.getPage is not implemented yet.');
+  AgEndpoint get resourceEndpoint =>
+      throw UnimplementedError('ProductsService.resourceEndpoint');
+
+  /// How this backend pages: `?page=1&limit=20`. Use
+  /// [AgLimitOffsetPagination] for `?offset=0&limit=20`, or subclass
+  /// [AgPagination] for any other format.
+  @override
+  AgPagination get pagination => const AgPageNumberPagination();
+
+  // TODO: replace `dynamic` with your model type, then decode/encode it.
+  dynamic fromJson(Map<String, dynamic> json) =>
+      throw UnimplementedError('ProductsService.fromJson');
+
+  Map<String, dynamic> toJson(dynamic item) =>
+      throw UnimplementedError('ProductsService.toJson');
+
+  @override
+  Future<List<dynamic>> list({int page = 1}) async {
+    final response = await send<List<dynamic>>(
+      AgRequest(
+        endpoint: collectionEndpoint,
+        queryParams: pagination.query(page),
+      ),
+      decode: (json) => [
+        for (final item in json! as List<Object?>)
+          fromJson(item! as Map<String, dynamic>),
+      ],
+    );
+    return response.data;
   }
 
-  Future<dynamic> add(dynamic item) async {
-    throw UnimplementedError('ProductsService.add is not implemented yet.');
+  @override
+  Future<dynamic> create(dynamic item) async {
+    final response = await send<dynamic>(
+      AgRequest(
+        endpoint: collectionEndpoint,
+        method: AgHttpMethod.post,
+        body: toJson(item),
+      ),
+      decode: (json) => fromJson(json! as Map<String, dynamic>),
+    );
+    return response.data;
   }
 
-  Future<dynamic> update(dynamic id, dynamic item) async {
-    throw UnimplementedError('ProductsService.update is not implemented yet.');
+  @override
+  Future<dynamic> update(Object id, dynamic item) async {
+    final response = await send<dynamic>(
+      AgRequest(
+        endpoint: resourceEndpoint,
+        method: AgHttpMethod.put,
+        pathParams: {'id': id},
+        body: toJson(item),
+      ),
+      decode: (json) => fromJson(json! as Map<String, dynamic>),
+    );
+    return response.data;
   }
 
-  Future<void> delete(dynamic id) async {
-    throw UnimplementedError('ProductsService.delete is not implemented yet.');
+  @override
+  Future<void> destroy(Object id) async {
+    await send<void>(
+      AgRequest(
+        endpoint: resourceEndpoint,
+        method: AgHttpMethod.delete,
+        pathParams: {'id': id},
+      ),
+    );
   }
 }

@@ -1,17 +1,22 @@
 import 'package:ag_flow/ag_flow.dart';
 import 'package:ag_flow_example/modules/product/services/products_service.dart';
 
+/// The one Repo for this module: it decides where data comes from. Today
+/// every method delegates to the Service; add caching or offline support
+/// here without touching anything above it.
 class ProductsRepo extends AgBaseRepo {
-  const ProductsRepo(this._service);
+  ProductsRepo(this._service);
 
   final ProductsService _service;
 
-  Future<AgListPage<dynamic, int>> getPage(int pageKey) =>
-      _service.getPage(pageKey);
+  Future<List<dynamic>> list({int page = 1}) => _service.list(page: page);
 
-  Future<dynamic> add(dynamic item) => _service.add(item);
+  /// Whether [items] was the backend's last page.
+  bool isLastPage(List<dynamic> items) => _service.pagination.isLastPage(items);
 
-  Future<dynamic> update(dynamic id, dynamic item) => _service.update(id, item);
+  Future<dynamic> create(dynamic item) => _service.create(item);
 
-  Future<void> delete(dynamic id) => _service.delete(id);
+  Future<dynamic> update(Object id, dynamic item) => _service.update(id, item);
+
+  Future<void> destroy(Object id) => _service.destroy(id);
 }

@@ -5,32 +5,57 @@ import 'package:ag_showcase_blog/modules/post/bindings/posts_binding.dart';
 import 'package:ag_showcase_blog/modules/post/pages/post_details_comments_page.dart';
 import 'package:ag_showcase_blog/modules/post/pages/post_details_page.dart';
 import 'package:ag_showcase_blog/modules/post/pages/posts_page.dart';
+import 'package:go_router/go_router.dart';
 
 import 'app_routes.dart';
 
 abstract class AppPages {
   static const AgTransition defaultTransition = AgTransition.rightToLeft;
 
-  static final List<AgRoute> pages = [
-    AgRoute(
+  /// Hand this to `MaterialApp.router(routerConfig: AppPages.router)`.
+  static final GoRouter router = GoRouter(
+    initialLocation: AppRoutes.post,
+    routes: pages,
+  );
+
+  static final List<RouteBase> pages = [
+    GoRoute(
       path: AppRoutes.post,
-      page: PostsPage.new,
-      binding: PostsBinding(),
-      transition: AppPages.defaultTransition,
+      name: AppRoutes.post,
+      pageBuilder: (context, state) => AgRoutePage<void>(
+        key: state.pageKey,
+        pathParameters: state.pathParameters,
+        extra: state.extra,
+        binding: PostsBinding(),
+        transition: AppPages.defaultTransition,
+        child: const PostsPage(),
+      ),
     ),
 
-    AgRoute(
+    GoRoute(
       path: AppRoutes.postDetails,
-      page: PostDetailsPage.new,
-      binding: PostDetailsBinding(),
-      transition: AppPages.defaultTransition,
+      name: AppRoutes.postDetails,
+      pageBuilder: (context, state) => AgRoutePage<void>(
+        key: state.pageKey,
+        pathParameters: state.pathParameters,
+        extra: state.extra,
+        binding: PostDetailsBinding(),
+        transition: AppPages.defaultTransition,
+        child: const PostDetailsPage(),
+      ),
     ),
 
-    AgRoute(
+    GoRoute(
       path: AppRoutes.postDetailsComments,
-      page: PostDetailsCommentsPage.new,
-      binding: PostDetailsCommentsBinding(),
-      transition: AppPages.defaultTransition,
+      name: AppRoutes.postDetailsComments,
+      pageBuilder: (context, state) => AgRoutePage<void>(
+        key: state.pageKey,
+        pathParameters: state.pathParameters,
+        extra: state.extra,
+        binding: PostDetailsCommentsBinding(),
+        transition: AppPages.defaultTransition,
+        child: const PostDetailsCommentsPage(),
+      ),
     ),
   ];
 }

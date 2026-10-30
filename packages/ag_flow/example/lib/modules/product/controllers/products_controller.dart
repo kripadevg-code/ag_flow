@@ -1,33 +1,33 @@
 import 'package:ag_flow/ag_flow.dart';
 import 'package:ag_flow_example/modules/product/repos/products_repo.dart';
 
-class ProductsController extends AgListController<dynamic, int> {
-  ProductsController(this._repo) : super(initialPageKey: 1);
-
-  /// Resolves this controller from [AgLocator] — no generics at call sites:
-  /// ```dart
-  /// final controller = ProductsController.find;
-  /// ```
-  static ProductsController get find => AgLocator.find<ProductsController>();
+/// Loads the list through the Repo, one page at a time.
+/// Each write goes through the Repo and then refreshes the list. Add
+/// feature-specific methods (search, filter) alongside them freely.
+class ProductsController extends AgBaseController<List<dynamic>>
+    with AgLoadMore<dynamic> {
+  ProductsController(this._repo);
 
   final ProductsRepo _repo;
 
   @override
-  Future<AgListPage<dynamic, int>> fetchPage(int pageKey) =>
-      _repo.getPage(pageKey);
+  Future<List<dynamic>> list({int page = 1}) => _repo.list(page: page);
 
-  Future<void> add(dynamic item) async {
-    await _repo.add(item);
+  @override
+  bool isLastPage(List<dynamic> items) => _repo.isLastPage(items);
+
+  Future<void> create(dynamic item) async {
+    await _repo.create(item);
     await refresh();
   }
 
-  Future<void> update(dynamic id, dynamic item) async {
+  Future<void> update(Object id, dynamic item) async {
     await _repo.update(id, item);
     await refresh();
   }
 
-  Future<void> delete(dynamic id) async {
-    await _repo.delete(id);
+  Future<void> destroy(Object id) async {
+    await _repo.destroy(id);
     await refresh();
   }
 }

@@ -23,7 +23,7 @@ class TasksPage extends AgBasePage<TasksController> {
 
   @override
   Widget buildSuccess(BuildContext context) {
-    return AgListBuilder<Task, int>(
+    return AgListView<Task>(
       controller: controller,
       itemBuilder: (context, task, index) => TaskItem(
         task: task,
@@ -31,7 +31,7 @@ class TasksPage extends AgBasePage<TasksController> {
           TaskDetailsPageArgument(taskId: task.id),
         ),
         onToggle: () => controller.toggleCompleted(task),
-        onDelete: () => controller.delete(task.id),
+        onDelete: () => controller.destroy(task.id),
       ),
     );
   }
@@ -67,7 +67,7 @@ class TasksPage extends AgBasePage<TasksController> {
 
   void _addTask(BuildContext ctx, String title) {
     if (title.trim().isEmpty) return;
-    controller.add(
+    controller.create(
       Task(id: 0, userId: 1, title: title.trim(), completed: false),
     );
     Navigator.of(ctx).pop();

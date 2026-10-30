@@ -1,15 +1,17 @@
-import 'package:ag_flow/ag_flow.dart';
 import 'package:ag_showcase_store/core/arguments/arguments.dart';
 
+import 'app_pages.dart';
 import 'app_routes.dart';
 
+/// The only place the app navigates by route — every screen calls a
+/// `goToXPage(...)` method here, never a literal path.
 abstract class RouteManagement {
   static void goToProductsPage() {
-    AgNavigator.toNamed<dynamic>(AppRoutes.product);
+    AppPages.router.pushNamed<void>(AppRoutes.product);
   }
 
   static void goToProductDetailsPage(ProductDetailsPageArgument argument) {
-    AgNavigator.toNamed<dynamic>(
+    AppPages.router.pushNamed<void>(
       AppRoutes.productDetails,
       pathParameters: argument.toPathParameters(),
     );

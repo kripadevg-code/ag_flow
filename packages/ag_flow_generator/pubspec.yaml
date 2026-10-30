@@ -10,12 +10,12 @@ issue_tracker: https://github.com/kripadevg-code/ag_flow/issues
 resolution: workspace
 
 environment:
-  sdk: ^3.11.0
+  sdk: ^3.13.0
 
 dependencies:
   ag_flow: ^0.3.0
-  analyzer: ">=7.0.0 <13.0.0"
-  build: ">=3.0.2 <5.0.0"
+  analyzer: ">=13.0.0 <15.0.0"
+  build: ">=3.0.2 <6.0.0"
   source_gen: ^4.2.3
 
 dev_dependencies:

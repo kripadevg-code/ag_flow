@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:ag_flow_cli/src/analyze/analyze_issue.dart';
 import 'package:ag_flow_cli/src/analyze/route_table.dart';
+import 'package:ag_flow_cli/src/generators/app_pages_updater.dart';
 import 'package:ag_flow_cli/src/io/project.dart';
 import 'package:ag_flow_cli/src/naming/module_path.dart';
 import 'package:ag_flow_cli/src/naming/module_spec.dart';
@@ -11,7 +12,7 @@ import 'package:path/path.dart' as p;
 
 /// For every route in [routes] (as parsed from `app_routes.dart`, minus
 /// `initial`), checks that the module it names has all five architectural
-/// layer files (Rule: missing layer file), an `AgRoute` entry in
+/// layer files (Rule: missing layer file), a `GoRoute` entry in
 /// `app_pages.dart`, a navigation method in `route_management.dart`, and —
 /// for detail modules — an argument class in `arguments.dart` (Rule:
 /// missing route wiring).
@@ -109,12 +110,12 @@ List<AnalyzeIssue> checkRouteWiring(Project project, List<RouteEntry> routes) {
       spec.bindingFile,
     );
 
-    if (appPagesUnit != null && !_hasAgRouteEntry(appPagesUnit, route.name)) {
+    if (appPagesUnit != null && !hasGoRouteFor(appPagesUnit, route.name)) {
       issues.add(
         AnalyzeIssue(
           category: AnalyzeCategory.missingRouteWiring,
           message:
-              'Route "AppRoutes.${route.name}" has no AgRoute entry in '
+              'Route "AppRoutes.${route.name}" has no GoRoute entry in '
               'app_pages.dart.',
           file: p.join('lib', 'core', 'routes', 'app_pages.dart'),
         ),
@@ -167,41 +168,6 @@ void _checkLayerFile(
       message: 'Expected $layerDir file is missing: $fileName.',
       file: p.relative(path, from: project.root.path),
     ),
-  );
-}
-
-bool _hasAgRouteEntry(CompilationUnit appPagesUnit, String routeConstant) {
-  ClassDeclaration? appPages;
-  for (final declaration in appPagesUnit.declarations) {
-    if (declaration is ClassDeclaration &&
-        declaration.namePart.typeName.lexeme == 'AppPages') {
-      appPages = declaration;
-      break;
-    }
-  }
-  if (appPages == null) return false;
-
-  ListLiteral? pagesList;
-  for (final member in appPages.body.members) {
-    if (member is! FieldDeclaration) continue;
-    for (final variable in member.fields.variables) {
-      final initializer = variable.initializer;
-      if (variable.name.lexeme == 'pages' && initializer is ListLiteral) {
-        pagesList = initializer;
-      }
-    }
-  }
-  if (pagesList == null) return false;
-
-  final routeConstantExpr = 'AppRoutes.$routeConstant';
-  return pagesList.elements.whereType<MethodInvocation>().any(
-    (invocation) =>
-        invocation.methodName.name == 'AgRoute' &&
-        invocation.argumentList.arguments.whereType<NamedExpression>().any(
-          (arg) =>
-              arg.name.label.name == 'path' &&
-              arg.expression.toSource() == routeConstantExpr,
-        ),
   );
 }
 

@@ -14,8 +14,17 @@ class PostDetailsPage extends AgBasePage<PostDetailsController> {
   @override
   PreferredSizeWidget? appBar(BuildContext context) => PostDetailsAppBar(
     onEdit: () => _showEditDialog(context),
-    onDelete: () => controller.delete(),
+    onDelete: _deleteAndGoBack,
   );
+
+  /// jsonplaceholder never actually removes the post — this is a live
+  /// demo of the DELETE call itself, not a persistence guarantee — so on
+  /// success we simply pop back to the list rather than trying to reflect
+  /// the deletion anywhere.
+  Future<void> _deleteAndGoBack() async {
+    await controller.destroy();
+    RouteManagement.back();
+  }
 
   @override
   WidgetBuilder? get loadingBuilder =>
@@ -43,9 +52,8 @@ class PostDetailsPage extends AgBasePage<PostDetailsController> {
           const SizedBox(height: 8),
           Text(
             'by user ${data.userId}',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Theme.of(context).colorScheme.outline,
-            ),
+            style: Theme.of(context).textTheme.bodySmall
+                ?.copyWith(color: Theme.of(context).colorScheme.outline),
           ),
           const SizedBox(height: 16),
           Text(data.body, style: Theme.of(context).textTheme.bodyLarge),

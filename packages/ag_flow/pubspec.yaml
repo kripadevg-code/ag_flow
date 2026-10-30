@@ -1,9 +1,8 @@
 name: ag_flow
 description: >-
-  An opinionated Flutter framework: typed page-state, paginated list
-  controllers, a type-keyed DI locator, guard-based routing over
-  go_router, and a centralized networking layer — zero third-party
-  state-management dependency.
+  Layered Flutter framework for large apps, DRF-style: typed Service action
+  mixins, page state, paginated lists, DI, go_router bindings and a
+  swappable network layer.
 version: 0.3.0
 repository: https://github.com/kripadevg-code/ag_flow
 homepage: https://github.com/kripadevg-code/ag_flow
@@ -11,20 +10,22 @@ issue_tracker: https://github.com/kripadevg-code/ag_flow/issues
 resolution: workspace
 
 environment:
-  sdk: ^3.11.0
-  flutter: ">=3.41.0"
+  sdk: ^3.13.0
+  flutter: ">=3.47.0"
 
 dependencies:
   collection: ^1.19.0
   dio: ^5.11.0
   flutter:
     sdk: flutter
-  go_router: ^17.2.1
   meta: ^1.16.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  # Tests only: they drive AgRoutePage through a real GoRouter, the way a
+  # generated app does. The app itself owns its go_router dependency.
+  go_router: ^17.2.1
   mocktail: ^1.0.5
   very_good_analysis: ^10.3.0
 

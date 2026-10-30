@@ -8,16 +8,76 @@ import 'package:ag_flow/src/network/ag_retry_interceptor.dart';
 import 'package:dio/dio.dart';
 import 'package:meta/meta.dart';
 
-/// The single, shared HTTP execution point for the whole application.
+/// The single, shared network execution point for the whole application —
+/// the only thing a Service talks to.
 ///
-/// Wraps `dio` directly — every capability the endpoint rules require
-/// (interceptors, base URL, auth, timeout, retry, multipart, tracing) is a
-/// first-class dio feature. dio types never leak past this class: Services
-/// only ever see [AgRequest] in, [AgResponse]/[AgApiException] out, and
-/// callers cancel in-flight requests via [AgCancelToken], never dio's own
-/// `CancelToken`.
-class ApiProvider {
-  ApiProvider({
+/// An interface, so the transport is replaceable without touching a single
+/// Service, Repo, or Controller: [DioApiProvider] is the ready-made default
+/// (and what `ApiProvider(baseUrl: ...)` builds), while a team that needs
+/// `package:http`, a GraphQL client, an offline request queue, or a test
+/// fake implements this one method instead:
+///
+/// ```dart
+/// class FakeApiProvider implements ApiProvider {
+///   @override
+///   Future<AgResponse<D>> send<D>(
+///     AgRequest request, {
+///     D Function(Object? json)? decode,
+///     AgCancelToken? cancelToken,
+///     void Function(int, int)? onSendProgress,
+///     void Function(int, int)? onReceiveProgress,
+///   }) async {
+///     final json = fixtures[request.resolvePath()];
+///     return AgResponse(
+///       statusCode: 200,
+///       data: decode != null ? decode(json) : json as D,
+///       headers: const {},
+///       duration: Duration.zero,
+///     );
+///   }
+/// }
+/// ```
+///
+/// Whatever the implementation, the contract is the same: [AgRequest] in,
+/// [AgResponse] out, failures as [AgApiException] — so error handling above
+/// this layer never depends on which transport is plugged in.
+// A one-method interface on purpose: it is the seam a team swaps the whole
+// transport through, not a function that happens to be a class.
+// ignore: one_member_abstracts
+abstract interface class ApiProvider {
+  /// The default, dio-backed provider. See [DioApiProvider].
+  factory ApiProvider({
+    required String baseUrl,
+    Duration connectTimeout,
+    Duration receiveTimeout,
+    List<Interceptor> interceptors,
+    AgLogOptions logOptions,
+    AgRetryPolicy? retryPolicy,
+    Map<String, String> defaultHeaders,
+  }) = DioApiProvider;
+
+  /// Sends [request], returning a decoded [AgResponse] or throwing an
+  /// [AgApiException]. [decode] converts the raw JSON body to [D]; when
+  /// omitted, the raw body is used as-is (only safe when `D` is `dynamic`
+  /// or already matches the raw shape).
+  Future<AgResponse<D>> send<D>(
+    AgRequest request, {
+    D Function(Object? json)? decode,
+    AgCancelToken? cancelToken,
+    void Function(int, int)? onSendProgress,
+    void Function(int, int)? onReceiveProgress,
+  });
+}
+
+/// The default [ApiProvider], over `dio`.
+///
+/// Every capability the endpoint rules require (interceptors, base URL,
+/// auth, timeout, retry, multipart, tracing) is a first-class dio feature.
+/// dio types never leak past this class: Services only ever see
+/// [AgRequest] in, [AgResponse]/[AgApiException] out, and callers cancel
+/// in-flight requests via [AgCancelToken], never dio's own `CancelToken`.
+class DioApiProvider implements ApiProvider {
+  DioApiProvider({
     required String baseUrl,
     Duration connectTimeout = const Duration(seconds: 15),
     Duration receiveTimeout = const Duration(seconds: 15),
@@ -54,10 +114,7 @@ class ApiProvider {
   void addInterceptor(Interceptor interceptor) =>
       _dio.interceptors.add(interceptor);
 
-  /// Sends [request], returning a decoded [AgResponse] or throwing an
-  /// [AgApiException]. [decode] converts the raw JSON body to [D]; when
-  /// omitted, the raw body is used as-is (only safe when `D` is `dynamic`
-  /// or already matches the raw shape).
+  @override
   Future<AgResponse<D>> send<D>(
     AgRequest request, {
     D Function(Object? json)? decode,

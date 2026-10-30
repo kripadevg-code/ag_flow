@@ -4,19 +4,24 @@ import 'package:ag_showcase_blog/core/endpoints.dart';
 import 'package:ag_showcase_blog/modules/post/models/comment.dart';
 
 /// A nested collection read in one shot (`/posts/{id}/comments`), so
-/// neither CRUD nor paging applies. Even here the read is one declarative
-/// line: [fetchList] unwraps via the Service's `envelope` and decodes,
-/// exactly like every other read in the app.
+/// neither an action mixin nor paging applies — a feature-specific read is
+/// just a plain method written with [send], like every other body.
 class PostDetailsCommentsService extends AgBaseService {
   const PostDetailsCommentsService(super.apiProvider);
 
-  Future<List<Comment>> getByArgument(
+  Future<List<Comment>> listFor(
     PostDetailsCommentsPageArgument argument,
-  ) => fetchList(
-    AgRequest(
-      endpoint: PostEndpoints.postComments,
-      pathParams: {'id': '${argument.postId}'},
-    ),
-    Comment.fromJson,
-  );
+  ) async {
+    final response = await send<List<Comment>>(
+      AgRequest(
+        endpoint: PostEndpoints.postComments,
+        pathParams: {'id': '${argument.postId}'},
+      ),
+      decode: (json) => [
+        for (final item in json! as List<Object?>)
+          Comment.fromJson(item! as Map<String, dynamic>),
+      ],
+    );
+    return response.data;
+  }
 }

@@ -109,8 +109,8 @@ class ModelSpec {
   /// The snake_case file base, e.g. `product` for `Product`.
   String get fileBase => snakeCase(className);
 
-  /// The type of this model's `id`, used as `AgCrudService`'s second type
-  /// argument. Falls back to `Object` when the payload has no `id` — a
+  /// The type of this model's `id`, used as the `ID` type argument of the
+  /// Service's `AgRetrieveMixin`/`AgUpdateMixin`/`AgDestroyMixin`. Falls back to `Object` when the payload has no `id` — a
   /// module can still declare a different one by editing the Service.
   String get idType {
     for (final field in fields) {

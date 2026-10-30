@@ -32,10 +32,18 @@ class ModuleCommand extends Command<int> {
         help:
             'Which mutation-method stubs to generate across '
             'Service/Repo/Controller, beyond the always-present read '
-            'method — a comma-separated subset of add,update,delete '
-            '(add is silently dropped for detail modules, which have '
+            'method — a comma-separated subset of create,update,destroy '
+            '(create is silently dropped for detail modules, which have '
             'no "create a new one" concept). Defaults to all of them; '
             'pass --methods=none to generate only the read method.',
+      )
+      ..addFlag(
+        'paginate',
+        negatable: false,
+        help:
+            'Make a collection module page its list: the Service declares '
+            'an AgPagination (?page=1&limit=20 by default) and the '
+            'Controller mixes in AgLoadMore. Ignored for detail modules.',
       )
       ..addOption(
         'model',
@@ -172,6 +180,7 @@ class ModuleCommand extends Command<int> {
           : (_) => pascalCase(pluralOverride),
       methods: methods,
       model: model,
+      paginate: argResults!['paginate'] as bool,
     );
 
     final List<FileOp> ops;

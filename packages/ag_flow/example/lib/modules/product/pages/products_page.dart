@@ -29,7 +29,7 @@ class ProductsPage extends AgBasePage<ProductsController> {
 
   @override
   Widget buildSuccess(BuildContext context) {
-    return AgListBuilder<dynamic, int>(
+    return AgListView<dynamic>(
       controller: controller,
       itemBuilder: (context, item, index) => ProductItem(item: item),
     );

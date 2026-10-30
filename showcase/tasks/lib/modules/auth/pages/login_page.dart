@@ -1,5 +1,6 @@
 import 'package:ag_flow/ag_flow.dart';
 import 'package:ag_showcase_tasks/core/auth/auth_service.dart';
+import 'package:ag_showcase_tasks/core/routes/route_management.dart';
 import 'package:ag_showcase_tasks/modules/auth/controllers/auth_controller.dart';
 import 'package:flutter/material.dart';
 
@@ -117,17 +118,17 @@ class _LoginPageState extends State<LoginPage> {
                               vertical: 8,
                             ),
                             decoration: BoxDecoration(
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.errorContainer,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .errorContainer,
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
                               error,
                               style: TextStyle(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onErrorContainer,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onErrorContainer,
                               ),
                             ),
                           ),
@@ -157,7 +158,7 @@ class _LoginPageState extends State<LoginPage> {
                         TextButton(
                           onPressed: isLoading
                               ? null
-                              : () => AgNavigator.toNamed('/register'),
+                              : RouteManagement.goToRegisterPage,
                           child: const Text("Don't have an account? Sign up"),
                         ),
                       ],
