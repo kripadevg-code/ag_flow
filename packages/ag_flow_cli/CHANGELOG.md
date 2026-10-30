@@ -1,5 +1,41 @@
 # Changelog
 
+## Unreleased
+
+- Requires Dart 3.13. Supports `analyzer` 13 and 14 (was 7–12).
+- **Generated Services list one action mixin per generated method**
+  instead of `AgCrudService`, and implement each one with `send`: a
+  collection Service is `AgListMixin` plus `AgCreateMixin`/`AgUpdateMixin`/
+  `AgDestroyMixin` as `--methods=` selects; a detail Service is
+  `AgRetrieveMixin` plus `AgUpdateMixin`/`AgDestroyMixin`. The bodies are
+  plain code in the developer's file, a starting point to change freely.
+- **Breaking: DRF method names at every layer** — `list` / `create` /
+  `retrieve` / `update` / `destroy` in the Service, Repo and Controller.
+  `--methods=` takes `create,update,destroy` (was `add,update,delete`).
+- Generated Repos and Controllers are plain classes — `AgBaseRepo` and
+  `AgBaseController<List<T>>` / `AgBaseController<T>` — with one delegating
+  method per generated action. A list page renders with `AgListView`. A
+  detail Controller reads its argument in its constructor from
+  `AgRouteData.pathParameters` and derives `lookupId` from it (the
+  `int.parse` for an int id already written); detail Services lose their
+  `idOf`/`*ByArgument` adapters.
+- **New `--paginate`** for collection modules: the Service declares an
+  `AgPagination` and takes a `page`, the Controller mixes in `AgLoadMore`.
+  Without it a list loads in one request.
+- `ag analyze`'s unused-detail-argument check now looks for a controller
+  field typed by a navigation argument class that is never read (it
+  looked for `AgDetailController.arguments`, which no longer exists).
+- The generated `AGENTS.md` describes this layer contract.
+- **Routing is generated as plain go_router.** `ag init` writes
+  `AppPages.router` (a `GoRouter`) and `RouteManagement` navigating through
+  it; `ag g m` adds a `GoRoute` + `AgRoutePage` per module, and finds an
+  existing one anywhere in the file — inside a `ShellRoute` included — so it
+  never adds a duplicate. Apps add `go_router` themselves (`ag init` prints
+  the step).
+- `ag analyze` checks `GoRoute` wiring, and flags literal paths passed to
+  go_router navigation (`context.push('/x')`, `router.go('/x')`, ...)
+  outside `route_management.dart`.
+
 ## 0.3.0
 
 - Automated release pipeline verification — no CLI behavior changes.

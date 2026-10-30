@@ -37,12 +37,8 @@ vars:
     default: model
   id_type:
     type: string
-    description: "The model's id type, used as AgCrudService's ID type argument."
+    description: "The model's id type, used as the ID type argument of the Service's action mixins."
     default: Object
-  id_of_expression:
-    type: string
-    description: "Expression converting the page argument into the resource id."
-    default: "throw UnimplementedError('idOf — return the id field from the argument.')"
   has_model:
     type: boolean
     description: Whether a real model type was generated for this module.
@@ -51,7 +47,15 @@ vars:
     type: boolean
     description: Whether to generate an update() stub across Service/Repo/Controller.
     default: true
-  generate_delete:
+  generate_destroy:
     type: boolean
-    description: Whether to generate a delete() stub across Service/Repo/Controller.
+    description: Whether to generate a destroy() stub across Service/Repo/Controller.
     default: true
+  needs_to_json:
+    type: boolean
+    description: Whether any listed action mixin (create/update) needs toJson.
+    default: true
+  lookup_id_expression:
+    type: string
+    description: "How the Controller derives lookupId from its argument, e.g. int.parse(argument.id)."
+    default: argument.id

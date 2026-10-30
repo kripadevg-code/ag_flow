@@ -93,7 +93,7 @@ void main() {
   );
 
   test(
-    'flags a route with no AgRoute entry',
+    'flags a route with no GoRoute entry',
     () async {
       appDir = await _buildCleanProject();
       final appPagesFile = File(
@@ -101,7 +101,7 @@ void main() {
       );
       appPagesFile.writeAsStringSync(
         appPagesFile.readAsStringSync().replaceFirst(
-          RegExp(r'AgRoute\(.*?\),', dotAll: true),
+          RegExp(r'    GoRoute\(.*?\n    \),', dotAll: true),
           '',
         ),
       );
@@ -109,7 +109,7 @@ void main() {
       final issues = await _analyze(appDir);
       expect(issues, hasLength(1));
       expect(issues.single.category, AnalyzeCategory.missingRouteWiring);
-      expect(issues.single.message, contains('AgRoute'));
+      expect(issues.single.message, contains('GoRoute'));
     },
   );
 
@@ -179,10 +179,10 @@ void main() {
                   "  static const String productAlias = '/product';",
             ),
       );
-      // Give the alias its own AgRoute entry too, so the *only* remaining
+      // Give the alias its own GoRoute entry too, so the *only* remaining
       // issue is the duplicate-path one this test targets — otherwise the
-      // route-wiring check (correctly) also flags the alias as missing an
-      // AgRoute of its own, since that check keys off the route's own
+      // route-wiring check (correctly) also flags the alias as missing a
+      // GoRoute of its own, since that check keys off the route's own
       // name, not the module path it happens to share with "product".
       final appPagesFile = File(
         p.join(appDir.path, 'lib', 'core', 'routes', 'app_pages.dart'),
@@ -191,11 +191,11 @@ void main() {
         appPagesFile.readAsStringSync().replaceFirst(
           'pages = [',
           'pages = [\n'
-              '    AgRoute(\n'
+              '    GoRoute(\n'
               '      path: AppRoutes.productAlias,\n'
-              '      page: ProductsPage.new,\n'
-              '      binding: ProductsBinding(),\n'
-              '      transition: AppPages.defaultTransition,\n'
+              '      pageBuilder: (context, state) => AgRoutePage<void>(\n'
+              '        child: const ProductsPage(),\n'
+              '      ),\n'
               '    ),',
         ),
       );
@@ -270,8 +270,11 @@ void main() {
         ),
       ).writeAsStringSync('''
 class RogueNavigator {
-  void go() {
-    AgNavigator.toNamed('/product');
+  void go(BuildContext context) {
+    context.push('/product');
+    // Not a route: an unrelated method sharing a navigation method's name
+    // is never flagged unless its literal looks like a path.
+    names.replace('old', 'new');
   }
 }
 ''');
@@ -284,7 +287,38 @@ class RogueNavigator {
   );
 
   test(
-    'never flags a literal-looking AgNavigator.toNamed(AppRoutes.x) call — only a '
+    'a GoRoute moved inside a ShellRoute still counts as wired — the app '
+    'owns its router and may restructure it freely',
+    () async {
+      appDir = await _buildCleanProject();
+      final appPagesFile = File(
+        p.join(appDir.path, 'lib', 'core', 'routes', 'app_pages.dart'),
+      );
+      final source = appPagesFile.readAsStringSync();
+      final route = RegExp(
+        r'    GoRoute\(.*?\n    \),',
+        dotAll: true,
+      ).firstMatch(source)!.group(0)!;
+      appPagesFile.writeAsStringSync(
+        source.replaceFirst(
+          route,
+          '    ShellRoute(\n'
+          '      builder: (context, state, child) => child,\n'
+          '      routes: [\n$route\n      ],\n'
+          '    ),',
+        ),
+      );
+
+      final issues = await _analyze(appDir);
+      expect(
+        issues.where((i) => i.category == AnalyzeCategory.missingRouteWiring),
+        isEmpty,
+      );
+    },
+  );
+
+  test(
+    'never flags AppPages.router.pushNamed(AppRoutes.x) — only a '
     'raw string literal argument counts',
     () async {
       appDir = await _buildCleanProject();

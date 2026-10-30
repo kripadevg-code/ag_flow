@@ -7,20 +7,29 @@ import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/ast/visitor.dart';
 import 'package:path/path.dart' as p;
 
+/// go_router's navigation methods. Whatever the receiver — `context`,
+/// `GoRouter.of(context)`, `AppPages.router` — a literal path passed to
+/// one of these outside `route_management.dart` is a hard-coded route.
+/// Route names are the paths themselves (`name: AppRoutes.x`), so the
+/// `*Named` variants take the same `/...` literal.
 const _navigationMethods = {
-  'toNamed',
-  'offNamed',
-  'offAllNamed',
-  'offAndToNamed',
+  'go',
+  'goNamed',
+  'push',
+  'pushNamed',
+  'pushReplacement',
+  'pushReplacementNamed',
+  'replace',
+  'replaceNamed',
 };
 
-/// Flags `AgNavigator.toNamed('/some/literal/path')`-style calls anywhere
-/// in the project's `lib/` tree — routes must always be referenced via
-/// their `AppRoutes.*` constant so `route_management.dart` stays the
-/// single source of truth for navigation (requirments/routes.md §1).
+/// Flags `context.push('/some/literal/path')`-style navigation anywhere in
+/// the project's `lib/` tree — routes must always be referenced via their
+/// `AppRoutes.*` constant so `route_management.dart` stays the single
+/// source of truth for navigation (requirments/routes.md §1).
 /// Deliberately only matches a raw string-literal first argument:
-/// `AgNavigator.toNamed(AppRoutes.product)` is exactly what generated
-/// code does and is never flagged.
+/// `AppPages.router.pushNamed(AppRoutes.product)` is exactly what
+/// generated code does and is never flagged.
 ///
 /// `route_management.dart` itself is exempt — it's the one place a literal
 /// route string is ever appropriate.
@@ -70,9 +79,12 @@ class _HardcodedRouteVisitor extends RecursiveAstVisitor<void> {
   void visitMethodInvocation(MethodInvocation node) {
     final arguments = node.argumentList.arguments;
     final firstArg = arguments.isEmpty ? null : arguments.first;
+    // Only a literal that *looks like a route* — `/...` — so an unrelated
+    // `replace('a', 'b')` on a String or a list is never flagged.
     if (_navigationMethods.contains(node.methodName.name) &&
-        node.target?.toSource() == 'AgNavigator' &&
-        firstArg is SimpleStringLiteral) {
+        node.target != null &&
+        firstArg is SimpleStringLiteral &&
+        firstArg.value.startsWith('/')) {
       found.add(firstArg.value);
     }
     super.visitMethodInvocation(node);

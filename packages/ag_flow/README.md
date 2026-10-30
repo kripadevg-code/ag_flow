@@ -1,136 +1,136 @@
 # ag_flow
 
-The runtime half of [AG Flow](../../README.md) — an opinionated Flutter
-framework with no third-party state-management dependency. `ag_flow` gives
-every feature module the same page/controller/repo/service layering,
-page-state handling, pagination, and networking primitives, so the
-[`ag_flow_cli`](../ag_flow_cli) generator (and hand-written modules) build
-on a single, consistent contract.
+The runtime half of [AG Flow](../../README.md): a layered Flutter framework
+for large apps, in the spirit of Django REST Framework. Every feature module
+has the same shape — Page → Controller → Repo → Service → ApiProvider — and
+the Service declares which backend actions it supports, one mixin each.
 
-State and DI are AG's own. **Routing is AG's API over
-[`go_router`](https://pub.dev/packages/go_router)**, the Flutter team's own
-package — so every route is a real URL, every detail page is deep-linkable,
-and the system back button behaves correctly, without AG maintaining a
-router. go_router stays an implementation detail: it is not in your
-pubspec and it appears in no generated file.
+No third-party state-management dependency. Routing is your app's own
+go_router; the network layer is an interface you can swap.
+
+**Read the [developer guide](doc/guide.md)** for the full walkthrough.
 
 ## Install
 
-```yaml
-dependencies:
-  ag_flow:
-    git:
-      url: https://github.com/kripadevg-code/ag_flow.git
-      path: packages/ag_flow
-      ref: ag_flow-v0.1.0
+```bash
+flutter pub add ag_flow go_router
+dart pub add --dev ag_flow_cli
+dart run ag_flow_cli:ag init
+dart run ag_flow_cli:ag g m product
 ```
-
-## Architecture
-
-```
-Page → Controller → Repo → Service → ApiProvider
-```
-
-Each layer has one job, and only talks to the layer directly below it —
-see [ag_framework.md](../../requirments/ag_framework.md) for the full,
-binding spec this package implements.
-
-## Quick start — a collection module
 
 ```dart
+void main() {
+  InitialBinding().dependencies();
+  runApp(MaterialApp.router(routerConfig: AppPages.router));
+}
+```
+
+## A module
+
+`ag g m product` generates the middle layers as plain code you own:
+
+```dart
+class ProductsService extends AgBaseService
+    with AgPagedService<Product, int>, AgCreateMixin<Product> {
+  ProductsService(super.apiProvider);
+
+  @override
+  AgEndpoint get collectionEndpoint => ProductEndpoints.products;
+  @override
+  AgPageStrategy<int> get pageStrategy => const AgPageNumberStrategy();
+  @override
+  Product fromJson(Map<String, dynamic> json) => Product.fromJson(json);
+
+  @override
+  Future<Product> add(Product item) => fetchItem(
+    AgRequest(
+      endpoint: ProductEndpoints.products,
+      method: AgHttpMethod.post,
+      body: item.toJson(),
+    ),
+    fromJson,
+  );
+}
+
+class ProductsRepo extends AgBaseRepo {
+  ProductsRepo(this._service);
+
+  final ProductsService _service;
+
+  Future<AgListPage<Product, int>> getPage(int pageKey) =>
+      _service.getPage(pageKey);
+  Future<Product> add(Product item) => _service.add(item);
+}
+
 class ProductsController extends AgListController<Product, int> {
-  ProductsController(this._repo) : super(initialPageKey: 0);
+  ProductsController(this._repo) : super(initialPageKey: 1);
+
   final ProductsRepo _repo;
 
   @override
-  Future<AgListPage<Product, int>> fetchPage(int pageKey) => _repo.getPage(pageKey);
-}
+  Future<AgListPage<Product, int>> fetchPage(int pageKey) =>
+      _repo.getPage(pageKey);
 
+  Future<void> add(Product item) async {
+    await _repo.add(item);
+    await refresh();
+  }
+}
+```
+
+and the page, which renders loading / error / empty / success for you:
+
+```dart
 class ProductsPage extends AgBasePage<ProductsController> {
   const ProductsPage({super.key});
-
-  // Independently overridable — leaving loadingBuilder/emptyBuilder null
-  // keeps the AG defaults; only Error is customized here.
-  @override
-  Widget Function(BuildContext, Object, StackTrace?, VoidCallback)? get errorBuilder =>
-      (context, error, stackTrace, retry) => MyCustomError(error: error, onRetry: retry);
 
   @override
   Widget buildSuccess(BuildContext context) {
     return AgListBuilder<Product, int>(
       controller: controller,
-      itemBuilder: (context, product, index) => ProductCard(product: product),
+      itemBuilder: (context, product, index) => ProductItem(item: product),
     );
   }
 }
 ```
 
-## Quick start — a detail module
+## Service actions, one mixin each
 
-```dart
-class ProductDetailsController extends AgDetailController<Product, ProductDetailsArguments> {
-  ProductDetailsController(this._repo);
-  final ProductDetailsRepo _repo;
+| Action | Mixin | You implement |
+|---|---|---|
+| List | `AgListMixin<T>` | `getAll` |
+| Create | `AgCreateMixin<T>` | `add` |
+| Retrieve | `AgRetrieveMixin<T, ID>` | `getById` |
+| Update | `AgUpdateMixin<T, ID>` | `update` |
+| Delete | `AgDestroyMixin<ID>` | `delete` |
 
-  @override
-  Future<Product> fetch() => _repo.getById(arguments.productId);
-}
+- **Each mixin is a typed contract.** It fixes the method and its types;
+  the Service writes the body with `fetchList` / `fetchItem` / `send`, so
+  an unusual backend never fights a built-in default.
+- **Only the Service has mixins.** One plain Repo and one plain Controller
+  per module, with ordinary methods.
+- **Any lookup type.** `ID` can be an id, a slug, or a record for a
+  composite key — the Service places it in the URL.
+- **Optional paging helper.** `AgPagedService` implements `getPage` from a
+  declared value: `AgPageNumberStrategy`, `AgOffsetStrategy`,
+  `AgCursorStrategy`, `AgSinglePageStrategy`; responses unwrap with
+  `AgEnvelope.raw`, `.key('data')`, `.path([...])`.
 
-class ProductDetailsPage extends AgBasePage<ProductDetailsController> {
-  const ProductDetailsPage({super.key});
+## Built for large apps
 
-  @override
-  Widget buildSuccess(BuildContext context) => ProductDetailsView(product: controller.state.dataOrNull!);
-}
-```
+- **Caching and offline live in the Repo.** Change a Repo method's body;
+  nothing above it changes.
+- **Swappable network.** `ApiProvider` is a one-method interface;
+  `DioApiProvider` is the default. Plug in http, GraphQL, an offline queue,
+  or a test fake without touching a Service.
+- **Your router.** `AgRoutePage` scopes a module's binding to its go_router
+  route — registered when the route is created, released when it is gone,
+  reference-counted across stacked instances. `AgGuard.check` runs guards
+  from `redirect:`, and `AgShellScope` gives a `ShellRoute` its own binding.
+- **Enforced, not suggested.** `ag analyze` catches layer violations,
+  missing wiring and hard-coded routes; `ag init` puts it in CI.
+- **Feature-specific methods** (search, filters) sit beside the standard
+  ones and pass down the same layers.
 
-`AgBasePage` has a single type parameter regardless of whether the module
-is a collection or a detail page — the controller's own generics (`T`, and
-for detail controllers `A`) already carry everything `AgBasePage` needs, so
-there's no separate "detail" page base class and no argument type to state
-twice.
-
-## Networking
-
-```dart
-abstract class ProductEndpoints {
-  static const products = AgEndpoint('/products', methods: {AgHttpMethod.get, AgHttpMethod.post});
-  static const productById = AgEndpoint('/products/{id}', methods: {AgHttpMethod.get, AgHttpMethod.put, AgHttpMethod.delete});
-}
-
-class ProductService extends AgBaseService with AgCrudService<Product, String> {
-  ProductService(super.apiProvider);
-
-  // Two distinct endpoints, not one shared between them: getAll/add have
-  // no id to supply, and getById/update/delete need one — a single
-  // {id}-shaped endpoint can't serve both correctly.
-  @override
-  AgEndpoint get collectionEndpoint => ProductEndpoints.products;
-  @override
-  AgEndpoint get resourceEndpoint => ProductEndpoints.productById;
-  @override
-  Product fromJson(Map<String, dynamic> json) => Product.fromJson(json);
-  @override
-  Map<String, dynamic> toJson(Product item) => item.toJson();
-
-  // Feature-specific methods sit alongside the free add/getAll/getById/update/delete.
-  Future<List<Product>> search(String query) => /* ... */;
-}
-```
-
-**`AgCrudService` is opt-in, not mandatory.** AG never requires a fixed
-CRUD method set — a Service that doesn't fit `add`/`getAll`/`getById`/
-`update`/`delete` (e.g. a paginated collection, which needs a `getPage`
-that mixin doesn't provide) just skips the mixin and writes exactly the
-methods the feature needs, named however reads best. Repo/Controller
-follow the same rule — a Controller is free to expose `addProduct`/
-`deleteProduct`-style methods instead of a fixed shape, and
-`AgPaginationMixin.updateItems` is available as an `emit()`-style escape
-hatch for reflecting a mutation in the currently-displayed list without a
-full `refresh()` — useful when the mutation itself already returned the
-data, or against a backend that doesn't actually persist writes, where a
-`refresh()` would never show what was just created.
-
-See [example/](example) for a runnable app — entirely produced by
-`ag_flow_cli` (`ag init` + `ag g m`), not hand-wired — demonstrating a
-collection and a detail module wired end-to-end.
+See the [showcase apps](../../showcase) for complete, running examples.

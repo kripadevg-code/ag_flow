@@ -1,5 +1,52 @@
 # Changelog
 
+## Unreleased
+
+- Requires Dart 3.13 / Flutter 3.47 (latest stable).
+- **Breaking: AG provides the architecture, never the bodies.** Every
+  module is three plain classes — `XController extends AgBaseController<T>`,
+  `XRepo extends AgBaseRepo`, `XService extends AgBaseService with` only the
+  action mixins it needs — and the developer writes every method.
+  - **Service action mixins use DRF names and only declare their method:**
+    `AgListMixin<T>` (`list`), `AgCreateMixin<T>` (`create`),
+    `AgRetrieveMixin<T, ID>` (`retrieve`), `AgUpdateMixin<T, ID>` (`update`),
+    `AgDestroyMixin<ID>` (`destroy`). They replace `AgCrudService`.
+    Feature methods (`filterProducts`, `search`) are ordinary methods.
+  - **Removed:** `AgListController`, `AgPaginationMixin`, `AgListPage`,
+    `AgPaginationState`, `AgListBuilder`, `AgDetailController`,
+    `AgPagedService`, the `AgPageStrategy` family, `AgEnvelope`,
+    `fetchList` / `fetchItem` / `decodeListPayload` / `decodeItemPayload`,
+    and `AgNotifier`.
+  - **Opt-in pagination, one line per layer.** A Service declares
+    `AgPagination? get pagination => const AgPageNumberPagination();`
+    (or `AgLimitOffsetPagination`, or its own subclass) and uses
+    `pagination!.query(page)` in its own `list({int page = 1})`. A
+    Controller adds `with AgLoadMore<T>` and implements `list({int page = 1})`.
+  - **New `AgListView<T>`** lists any `AgBaseController<List<T>>`; with
+    `AgLoadMore` it pages on scroll and shows a load-more footer.
+  - **Migration:**
+    - `AgListController<T, K>` → `AgBaseController<List<T>>`, plus
+      `with AgLoadMore<T>` if it paged; `list` returns `List<T>`.
+    - `updateItems(...)` → `emit(AgPageState.success(newList))`.
+    - `AgDetailController<T, A>` → `AgBaseController<T>`; read the id in the
+      constructor from `AgRouteData.pathParameters`.
+    - `AgListBuilder` → `AgListView`.
+    - `getAll` / `add` / `getById` / `delete` → `list` / `create` /
+      `retrieve` / `destroy`; write the bodies with `send`.
+- **Breaking: the app owns go_router.** `AgApp`, `AgRoute`, `AgShellRoute`
+  and `AgNavigator` are removed, and `go_router` is no longer a dependency.
+  New: `AgRoutePage` (a `Page` that registers a module's binding on route
+  creation and releases it from the route's `dispose`, reference-counted per
+  binding *type* so go_router's page rebuilds are safe), `AgShellScope`,
+  `AgGuard.check`, and `AgRouteData` (replaces `AgNavigator.extra` /
+  `.pathParameters`).
+- **`ApiProvider` is an interface.** The dio implementation is
+  `DioApiProvider`; `ApiProvider(baseUrl: ...)` still builds one. Implement
+  `send` to plug in any other transport. **Breaking:** `addInterceptor` and
+  `debugDio` are dio-specific, so they moved to `DioApiProvider` — construct
+  `DioApiProvider(...)` directly where you add interceptors.
+- New [developer guide](doc/guide.md) with a migration table.
+
 ## 0.3.0
 
 - Automated release pipeline verification — no runtime code changes.

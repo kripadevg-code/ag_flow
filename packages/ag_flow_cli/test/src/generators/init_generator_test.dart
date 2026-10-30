@@ -121,8 +121,14 @@ void main() {
         expect(appPages, contains('abstract class AppPages'));
         expect(
           appPages,
-          contains('static final List<AgRoute> pages = [];'),
+          contains('static final List<RouteBase> pages = [];'),
         );
+        // The app owns a plain GoRouter; AG owns no router of its own.
+        expect(
+          appPages,
+          contains("import 'package:go_router/go_router.dart';"),
+        );
+        expect(appPages, contains('static final GoRouter router = GoRouter('));
 
         final routeManagement = File(
           p.join(appDir.path, 'lib', 'core', 'routes', 'route_management.dart'),

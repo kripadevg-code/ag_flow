@@ -2,39 +2,89 @@ import 'package:ag_flow/ag_flow.dart';
 import 'package:ag_showcase_tasks/core/endpoints.dart';
 import 'package:ag_showcase_tasks/modules/tasks/models/task.dart';
 
-/// Tasks service — pure declaration.
+/// Tasks service.
 ///
-/// The five [AgCrudService] methods (getAll, getById, add, update, delete)
-/// and [AgPagedService.getPage] are provided entirely by the two mixins.
-/// This class declares five values: two endpoints, one page strategy, and
-/// two codec hooks. There is no request, decoding, or pagination logic.
-///
-/// This is the AG service pattern for a resource that has both a paginated
-/// list and full CRUD. A resource that only needs read gets [AgCrudService]
-/// alone. A resource with no pagination gets [AgCrudService] alone too.
+/// The action mixins fix each method's name and types; the bodies below
+/// are this Service's own, written against the backend through `send`.
+/// [list] sends the declared [pagination]'s query for the page. A resource
+/// that supports less mixes in only those actions.
 class TasksService extends AgBaseService
-    with AgCrudService<Task, int>, AgPagedService<Task, int> {
+    with
+        AgListMixin<Task>,
+        AgCreateMixin<Task>,
+        AgRetrieveMixin<Task, int>,
+        AgUpdateMixin<Task, int>,
+        AgDestroyMixin<int> {
   TasksService(super.apiProvider);
 
   static TasksService get instance => AgLocator.find<TasksService>();
 
+  // jsonplaceholder paginates with ?_start=N&_limit=N (limit/offset)
   @override
-  AgEndpoint get collectionEndpoint => TaskEndpoints.tasks;
-
-  @override
-  AgEndpoint get resourceEndpoint => TaskEndpoints.taskById;
-
-  // jsonplaceholder paginates with ?_start=N&_limit=N (offset strategy)
-  @override
-  AgPageStrategy<int> get pageStrategy => const AgOffsetStrategy(
+  AgPagination get pagination => const AgLimitOffsetPagination(
     offsetParam: '_start',
     limitParam: '_limit',
-    pageSize: 20,
   );
 
   @override
-  Task fromJson(Map<String, dynamic> json) => Task.fromJson(json);
+  Future<List<Task>> list({int page = 1}) async {
+    final response = await send<List<Task>>(
+      AgRequest(
+        endpoint: TaskEndpoints.tasks,
+        queryParams: pagination.query(page),
+      ),
+      decode: (json) => [
+        for (final item in json! as List<Object?>)
+          Task.fromJson(item! as Map<String, dynamic>),
+      ],
+    );
+    return response.data;
+  }
 
   @override
-  Map<String, dynamic> toJson(Task item) => item.toJson();
+  Future<Task> create(Task item) async {
+    final response = await send<Task>(
+      AgRequest(
+        endpoint: TaskEndpoints.tasks,
+        method: AgHttpMethod.post,
+        body: item.toJson(),
+      ),
+      decode: (json) => Task.fromJson(json! as Map<String, dynamic>),
+    );
+    return response.data;
+  }
+
+  @override
+  Future<Task> retrieve(int id) async {
+    final response = await send<Task>(
+      AgRequest(endpoint: TaskEndpoints.taskById, pathParams: {'id': id}),
+      decode: (json) => Task.fromJson(json! as Map<String, dynamic>),
+    );
+    return response.data;
+  }
+
+  @override
+  Future<Task> update(int id, Task item) async {
+    final response = await send<Task>(
+      AgRequest(
+        endpoint: TaskEndpoints.taskById,
+        method: AgHttpMethod.put,
+        pathParams: {'id': id},
+        body: item.toJson(),
+      ),
+      decode: (json) => Task.fromJson(json! as Map<String, dynamic>),
+    );
+    return response.data;
+  }
+
+  @override
+  Future<void> destroy(int id) async {
+    await send<void>(
+      AgRequest(
+        endpoint: TaskEndpoints.taskById,
+        method: AgHttpMethod.delete,
+        pathParams: {'id': id},
+      ),
+    );
+  }
 }

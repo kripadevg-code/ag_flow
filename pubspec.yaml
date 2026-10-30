@@ -2,7 +2,7 @@ name: ag_workspace
 publish_to: none
 
 environment:
-  sdk: ^3.11.0
+  sdk: ^3.13.0
 
 workspace:
   - packages/ag_flow
@@ -39,6 +39,7 @@ melos:
         packages/ag_flow_cli/test packages/ag_flow_cli/tool
         packages/ag_flow_generator/lib
         showcase/blog/lib showcase/store/lib showcase/tasks/lib
+        showcase/blog/test showcase/store/test showcase/tasks/test
 
     analyze:
       description: >-
@@ -61,9 +62,16 @@ melos:
       packageFilters:
         scope: ag_flow_cli
 
+    test:apps:
+      description: Run the showcase apps' offline smoke tests (Flutter).
+      exec:
+        command: flutter test
+      packageFilters:
+        scope: ag_showcase_*
+
     test:
-      description: Run every package's tests.
-      run: melos run test:flow && melos run test:cli
+      description: Run every package's and app's tests.
+      run: melos run test:flow && melos run test:cli && melos run test:apps
 
     check-bundles-fresh:
       description: >-

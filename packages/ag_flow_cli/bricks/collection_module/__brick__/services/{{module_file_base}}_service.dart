@@ -1,55 +1,100 @@
 import 'package:ag_flow/ag_flow.dart';
 {{#has_model}}import 'package:{{app_package_name}}/{{{module_import_path}}}/models/{{model_file_base}}.dart';
 {{/has_model}}
-/// Declarative by design — this Service contains no request plumbing.
-///
-/// Everything that differs between backends is a *value* you declare:
-/// [pageStrategy] (the paging dialect) and [envelope] (where the payload
-/// sits inside a response body). AG owns the requests, the decoding, and
-/// the paging arithmetic — so this file reads the same in every module of
-/// every app, no matter how unusual the API behind it is.
+/// Each mixin is a typed contract for one backend action, and this
+/// Service lists only the actions its backend supports. The bodies below
+/// are yours: a starting point written with `send`, so change any of them
+/// freely when the backend does something unusual.
 {{^has_model}}///
 /// Replace `dynamic` with your real model type.
 {{/has_model}}class {{module_class_prefix}}Service extends AgBaseService
     with
-        AgCrudService<{{model_class}}, {{id_type}}>,
-        AgPagedService<{{model_class}}, int> {
+        AgListMixin<{{model_class}}>{{#generate_create}},
+        AgCreateMixin<{{model_class}}>{{/generate_create}}{{#generate_update}},
+        AgUpdateMixin<{{model_class}}, {{id_type}}>{{/generate_update}}{{#generate_destroy}},
+        AgDestroyMixin<{{id_type}}>{{/generate_destroy}} {
   {{module_class_prefix}}Service(super.apiProvider);
 
   // TODO: point these at real endpoints declared in core/endpoints.dart.
-  @override
   AgEndpoint get collectionEndpoint =>
       throw UnimplementedError('{{module_class_prefix}}Service.collectionEndpoint');
+{{#needs_resource_endpoint}}
 
-  @override
   AgEndpoint get resourceEndpoint =>
       throw UnimplementedError('{{module_class_prefix}}Service.resourceEndpoint');
+{{/needs_resource_endpoint}}{{#paginate}}
 
-  /// How this backend paginates. Swap in [AgOffsetStrategy],
-  /// [AgCursorStrategy], or [AgSinglePageStrategy] (for a backend that
-  /// returns the whole collection in one response) to match yours.
+  /// How this backend pages: `?page=1&limit=20`. Use
+  /// [AgLimitOffsetPagination] for `?offset=0&limit=20`, or subclass
+  /// [AgPagination] for any other format.
   @override
-  AgPageStrategy<int> get pageStrategy => const AgPageNumberStrategy();
+  AgPagination get pagination => const AgPageNumberPagination();
+{{/paginate}}
 
-  /// Where the payload sits in a response body. Delete this override if
-  /// the body *is* the payload; use `AgEnvelope.key('data')` for
-  /// `{"data": [...]}`, or `AgEnvelope.path([...])` when it's nested.
-  @override
-  AgEnvelope get envelope => AgEnvelope.raw;
-
-{{#has_model}}  @override
-  {{model_class}} fromJson(Map<String, dynamic> json) =>
+{{#has_model}}  {{model_class}} fromJson(Map<String, dynamic> json) =>
       {{model_class}}.fromJson(json);
+{{#needs_to_json}}
 
-  @override
   Map<String, dynamic> toJson({{model_class}} item) => item.toJson();
-{{/has_model}}{{^has_model}}  // TODO: replace `dynamic` with your model type, then decode/encode it.
-  @override
+{{/needs_to_json}}{{/has_model}}{{^has_model}}  // TODO: replace `dynamic` with your model type, then decode/encode it.
   dynamic fromJson(Map<String, dynamic> json) =>
       throw UnimplementedError('{{module_class_prefix}}Service.fromJson');
+{{#needs_to_json}}
 
-  @override
   Map<String, dynamic> toJson(dynamic item) =>
       throw UnimplementedError('{{module_class_prefix}}Service.toJson');
-{{/has_model}}
-}
+{{/needs_to_json}}{{/has_model}}
+
+  @override
+  Future<List<{{model_class}}>> list({{#paginate}}{int page = 1}{{/paginate}}) async {
+    final response = await send<List<{{model_class}}>>(
+      AgRequest(endpoint: collectionEndpoint{{#paginate}}, queryParams: pagination.query(page){{/paginate}}),
+      decode: (json) => [
+        for (final item in json! as List<Object?>)
+          fromJson(item! as Map<String, dynamic>),
+      ],
+    );
+    return response.data;
+  }
+{{#generate_create}}
+
+  @override
+  Future<{{model_class}}> create({{model_class}} item) async {
+    final response = await send<{{model_class}}>(
+      AgRequest(
+        endpoint: collectionEndpoint,
+        method: AgHttpMethod.post,
+        body: toJson(item),
+      ),
+      decode: (json) => fromJson(json! as Map<String, dynamic>),
+    );
+    return response.data;
+  }
+{{/generate_create}}{{#generate_update}}
+
+  @override
+  Future<{{model_class}}> update({{id_type}} id, {{model_class}} item) async {
+    final response = await send<{{model_class}}>(
+      AgRequest(
+        endpoint: resourceEndpoint,
+        method: AgHttpMethod.put,
+        pathParams: {'id': id},
+        body: toJson(item),
+      ),
+      decode: (json) => fromJson(json! as Map<String, dynamic>),
+    );
+    return response.data;
+  }
+{{/generate_update}}{{#generate_destroy}}
+
+  @override
+  Future<void> destroy({{id_type}} id) async {
+    await send<void>(
+      AgRequest(
+        endpoint: resourceEndpoint,
+        method: AgHttpMethod.delete,
+        pathParams: {'id': id},
+      ),
+    );
+  }
+{{/generate_destroy}}}

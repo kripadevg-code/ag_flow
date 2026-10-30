@@ -11,13 +11,14 @@ class _SlowController extends AgBaseController<List<int>> {
   }
 }
 
-class _SlowListController extends AgListController<int, int> {
-  _SlowListController() : super(initialPageKey: 1, autoLoadOnInit: false);
+class _SlowListController extends AgBaseController<List<int>>
+    with AgLoadMore<int> {
+  _SlowListController() : super(autoLoadOnInit: false);
 
   @override
-  Future<AgListPage<int, int>> fetchPage(int pageKey) async {
+  Future<List<int>> list({int page = 1}) async {
     await Future<void>.delayed(const Duration(milliseconds: 20));
-    return const AgListPage(items: [1, 2], hasMore: false);
+    return [1, 2];
   }
 }
 
@@ -64,7 +65,7 @@ void main() {
   });
 
   test(
-    'a paginated fetchPage completing after dispose is dropped — the '
+    'a paginated list completing after dispose is dropped — the '
     'pagination notifier has the same lifetime as the controller',
     () async {
       final controller = _SlowListController();
@@ -72,7 +73,7 @@ void main() {
       controller.dispose();
 
       await expectLater(inFlight, completes);
-      expect(controller.pagination.items, isEmpty);
+      expect(controller.state.dataOrNull, isNull);
     },
   );
 

@@ -5,47 +5,73 @@ import 'package:ag_showcase_store/modules/product/models/product.dart';
 /// fakestoreapi returns the entire catalog in one response and never
 /// paginates — a completely different backend contract from the blog
 /// app's, yet this file has the identical shape. The whole difference is
-/// [pageStrategy] naming [AgSinglePageStrategy] instead of a paging one.
+/// that this Service declares no `pagination`, so `list` takes no page.
 ///
 /// That is the point: a developer reading any AG Service in any app knows
-/// where to look, and a backend's quirks stay declarations rather than
-/// leaking into imperative code.
+/// where to look, and a backend's quirks stay in one place rather than
+/// leaking into the layers above.
+///
+/// Each mixin is one action this module actually performs: list, create
+/// and destroy. The action mixins only fix each method's name and types;
+/// the bodies are this Service's own.
 class ProductsService extends AgBaseService
-    with AgCrudService<Product, int>, AgPagedService<Product, int> {
+    with AgListMixin<Product>, AgCreateMixin<Product>, AgDestroyMixin<int> {
   ProductsService(super.apiProvider);
 
   @override
-  AgEndpoint get collectionEndpoint => ProductEndpoints.products;
+  Future<List<Product>> list() =>
+      _products(AgRequest(endpoint: ProductEndpoints.products));
 
   @override
-  AgEndpoint get resourceEndpoint => ProductEndpoints.productById;
+  Future<Product> create(Product item) async {
+    final response = await send<Product>(
+      AgRequest(
+        endpoint: ProductEndpoints.products,
+        method: AgHttpMethod.post,
+        body: item.toJson(),
+      ),
+      decode: (json) => Product.fromJson(json! as Map<String, dynamic>),
+    );
+    return response.data;
+  }
 
   @override
-  AgPageStrategy<int> get pageStrategy => const AgSinglePageStrategy();
+  Future<void> destroy(int id) async {
+    await send<void>(
+      AgRequest(
+        endpoint: ProductEndpoints.productById,
+        method: AgHttpMethod.delete,
+        pathParams: {'id': id},
+      ),
+    );
+  }
 
-  @override
-  Product fromJson(Map<String, dynamic> json) => Product.fromJson(json);
-
-  @override
-  Map<String, dynamic> toJson(Product item) => item.toJson();
-
-  // Feature-specific reads sit alongside the inherited CRUD — one
-  // declarative line each, via the same decoding path.
-  Future<List<Product>> getByCategory(String category) => fetchList(
+  // Feature-specific reads sit alongside the mixed-in actions, written
+  // with the same `send` as every action body.
+  Future<List<Product>> listByCategory(String category) => _products(
     AgRequest(
       endpoint: ProductEndpoints.productsByCategory,
       pathParams: {'category': category},
     ),
-    Product.fromJson,
   );
 
-  /// An array of bare strings rather than objects, so this one reads the
-  /// payload directly instead of going through [fromJson].
-  Future<List<String>> getCategories() async {
-    final response = await send<Object?>(
+  /// An array of bare strings rather than objects.
+  Future<List<String>> categories() async {
+    final response = await send<List<String>>(
       AgRequest(endpoint: ProductEndpoints.categories),
-      decode: (json) => json,
+      decode: (json) => (json! as List<Object?>).cast<String>(),
     );
-    return (envelope.payloadOf(response.data)! as List<dynamic>).cast<String>();
+    return response.data;
+  }
+
+  Future<List<Product>> _products(AgRequest request) async {
+    final response = await send<List<Product>>(
+      request,
+      decode: (json) => [
+        for (final item in json! as List<Object?>)
+          Product.fromJson(item! as Map<String, dynamic>),
+      ],
+    );
+    return response.data;
   }
 }

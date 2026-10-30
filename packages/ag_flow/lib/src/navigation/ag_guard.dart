@@ -1,8 +1,8 @@
 /// A single route guard — AG's hook for intercepting a navigation push
 /// before the destination page is built.
 ///
-/// Implement this class and attach one or more instances to an [AgRoute]
-/// via its `guards` parameter.  When the route is about to be pushed,
+/// Implement this class and run one or more instances from a go_router
+/// route's `redirect` via [check].  When the route is about to be pushed,
 /// every guard's [redirect] is called **in order**.  The first guard that
 /// returns a non-null route name wins; the remaining guards are skipped
 /// and the navigator goes to that route instead.  Returning `null` means
@@ -24,11 +24,16 @@
 /// Attach it to every protected route:
 ///
 /// ```dart
-/// AgRoute(
+/// GoRoute(
 ///   path: AppRoutes.home,
-///   page: HomePage.new,
-///   binding: HomeBinding(),
-///   guards: [AuthGuard()],
+///   name: AppRoutes.home,
+///   redirect: (context, state) =>
+///       AgGuard.check(const [AuthGuard()], state.fullPath!),
+///   pageBuilder: (context, state) => AgRoutePage(
+///     key: state.pageKey,
+///     binding: HomeBinding(),
+///     child: const HomePage(),
+///   ),
 /// )
 /// ```
 ///
@@ -40,12 +45,10 @@
 /// single mega-guard:
 ///
 /// ```dart
-/// AgRoute(
-///   path: AppRoutes.adminPanel,
-///   page: AdminPanelPage.new,
-///   binding: AdminPanelBinding(),
-///   guards: [AuthGuard(), AdminGuard()],   // auth first, role second
-/// )
+/// redirect: (context, state) => AgGuard.check(
+///   const [AuthGuard(), AdminGuard()],   // auth first, role second
+///   state.fullPath!,
+/// ),
 /// ```
 ///
 /// ---
@@ -57,7 +60,6 @@
 /// once during app start-up (typically in [AgBinding.dependencies] or
 /// your `InitialBinding`) and keep it in a service that [redirect] reads
 /// synchronously.
-// ignore: one_member_abstracts
 abstract class AgGuard {
   const AgGuard();
 
@@ -84,4 +86,15 @@ abstract class AgGuard {
   /// }
   /// ```
   String? redirect(String path);
+
+  /// Runs [guards] in order and returns the first redirect, or null to
+  /// allow. Wire it into a go_router route as
+  /// `redirect: (context, state) => AgGuard.check(guards, state.fullPath!)`.
+  static String? check(List<AgGuard> guards, String path) {
+    for (final guard in guards) {
+      final redirectTo = guard.redirect(path);
+      if (redirectTo != null) return redirectTo;
+    }
+    return null;
+  }
 }

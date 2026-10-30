@@ -1,18 +1,17 @@
 import 'package:ag_flow/ag_flow.dart';
-import 'package:ag_flow_example/core/arguments/arguments.dart';
 import 'package:ag_flow_example/modules/product/services/product_details_service.dart';
 
+/// The one Repo for this module: it decides where data comes from. Today
+/// every method delegates to the Service; add caching or offline support
+/// here without touching anything above it.
 class ProductDetailsRepo extends AgBaseRepo {
-  const ProductDetailsRepo(this._service);
+  ProductDetailsRepo(this._service);
 
   final ProductDetailsService _service;
 
-  Future<dynamic> getByArgument(ProductDetailsPageArgument argument) =>
-      _service.getByArgument(argument);
+  Future<dynamic> retrieve(Object id) => _service.retrieve(id);
 
-  Future<dynamic> update(ProductDetailsPageArgument argument, dynamic item) =>
-      _service.update(argument, item);
+  Future<dynamic> update(Object id, dynamic item) => _service.update(id, item);
 
-  Future<void> delete(ProductDetailsPageArgument argument) =>
-      _service.delete(argument);
+  Future<void> destroy(Object id) => _service.destroy(id);
 }

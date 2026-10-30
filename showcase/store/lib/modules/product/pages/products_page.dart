@@ -41,14 +41,14 @@ class ProductsPage extends AgBasePage<ProductsController> {
 
   @override
   Widget buildSuccess(BuildContext context) {
-    return AgListBuilder<Product, int>(
+    return AgListView<Product>(
       controller: controller,
       itemBuilder: (context, item, index) => ProductItem(
         item: item,
         onTap: () => RouteManagement.goToProductDetailsPage(
           ProductDetailsPageArgument(productId: item.id),
         ),
-        onDelete: () => controller.delete(item.id),
+        onDelete: () => controller.destroy(item.id),
       ),
     );
   }
@@ -104,7 +104,7 @@ class ProductsPage extends AgBasePage<ProductsController> {
             ),
             FilledButton(
               onPressed: () {
-                controller.add(
+                controller.create(
                   Product(
                     id: 0,
                     title: titleController.text,

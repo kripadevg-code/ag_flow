@@ -34,7 +34,12 @@ AggregatorUpdateResult updateRouteManagement(
       );
   if (alreadyExists) return AggregatorUpdateResult.unchanged(source);
 
-  final patches = <Patch>[];
+  // Navigation goes through the app's own router, declared in
+  // app_pages.dart. A project initialized before that existed has no such
+  // import yet.
+  final patches = <Patch>[
+    ?insertImportPatch(unit, 'app_pages.dart'),
+  ];
   if (spec.isDetail) {
     final importPatch = insertImportPatch(
       unit,
@@ -49,16 +54,18 @@ AggregatorUpdateResult updateRouteManagement(
       : body.members.last.end;
   // A detail route carries its argument in the URL path, not as an
   // opaque payload — that is what makes the destination reachable from a
-  // deep link, a notification, or a reloaded web URL.
+  // deep link, a notification, or a reloaded web URL. `pushNamed`, not
+  // `goNamed`: a push keeps the current page underneath so back returns
+  // to it.
   final snippet = spec.isDetail
       ? '\n\n  static void ${spec.navMethod}(${spec.argumentClass} argument) {\n'
-            '    AgNavigator.toNamed<dynamic>(\n'
+            '    AppPages.router.pushNamed<void>(\n'
             '      AppRoutes.${spec.routeConstant},\n'
             '      pathParameters: argument.toPathParameters(),\n'
             '    );\n'
             '  }'
       : '\n\n  static void ${spec.navMethod}() {\n'
-            '    AgNavigator.toNamed<dynamic>(AppRoutes.${spec.routeConstant});\n'
+            '    AppPages.router.pushNamed<void>(AppRoutes.${spec.routeConstant});\n'
             '  }';
   patches.add(Patch.insertion(insertOffset, snippet));
 

@@ -1,22 +1,23 @@
-import 'package:ag_flow/src/navigation/ag_navigator.dart';
+import 'package:ag_flow/src/navigation/ag_route_data.dart';
 
 /// Resolves typed navigation arguments safely.
 ///
 /// Replaces an unsafe `extra as XArgument` cast with a named,
 /// clearly-erroring lookup.
 ///
-/// Note this reads [AgNavigator.extra], which is *not* deep-link safe —
+/// Note this reads [AgRouteData.extra], which is *not* deep-link safe —
 /// open the same URL cold and there is no extra to read. A detail
 /// module's argument should come from the route's path parameters
-/// instead; see `AgDetailController.argumentsFromPath`.
+/// instead — read `AgRouteData.pathParameters` in the controller's
+/// constructor.
 class AgArguments {
   AgArguments._();
 
-  /// Returns [AgNavigator.extra] cast to [A]. [override] is primarily for
+  /// Returns [AgRouteData.extra] cast to [A]. [override] is primarily for
   /// tests that need to supply an argument without a real navigation.
   /// Throws [AgArgumentError] if the value is missing or the wrong type.
   static A resolve<A>({Object? override}) {
-    final raw = override ?? AgNavigator.extra;
+    final raw = override ?? AgRouteData.extra;
     if (raw is A) return raw;
     throw AgArgumentError(expectedType: A, actualValue: raw);
   }
@@ -60,8 +61,8 @@ class AgArgumentError extends Error {
     } else {
       buffer.write(
         ' The route was entered with path parameters $pathParameters — '
-        'override `argumentsFromPath` on this controller to build '
-        '$expectedType from them.',
+        'read them from AgRouteData.pathParameters in the controller '
+        'instead.',
       );
     }
     return buffer.toString();

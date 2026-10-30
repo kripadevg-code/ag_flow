@@ -76,23 +76,34 @@ default pluralizer gets a root module's name wrong, override it:
 ag g m company --plural=companies   # ClassPrefix becomes "Companies", not the default guess
 ```
 
-**By default, every module's Service/Repo/Controller also get `add`/
-`update`/`delete` stubs** — a generator's whole point is to hand over more
+**By default, every module's Service/Repo/Controller also get `create`/
+`update`/`destroy` methods** — a generator's whole point is to hand over more
 working boilerplate than a developer would start from by hand, not less.
-(A detail module never gets `add`: there's no "create a new one" concept
-on a page that's about one existing entity.) Every stub is a plain
-`UnimplementedError` placeholder with a `TODO` pointing at
-`core/endpoints.dart`, exactly like the always-present read method
-(`getPage`/`getByArgument`) already is — not a mixin, not framework-owned:
-delete whichever ones a module doesn't need, exactly as freely as any
-other generated code. All three keep the same name across Service, Repo,
+(A detail module never gets `create`: there's no "create a new one"
+concept on a page that's about one existing entity.) The names are the
+Service action mixins' DRF names, and each body is plain code written with
+`send` against the endpoint getters (a `TODO` points at
+`core/endpoints.dart`), exactly like the always-present read method
+(`list`/`retrieve`) — delete whichever ones a module doesn't need, exactly
+as freely as any other generated code. All three keep the same name across Service, Repo,
 and Controller, so a change reads the same at every layer. Control which
 get generated with `--methods=`:
 
 ```bash
-ag g m product                          # add, update, delete — all three
-ag g m product --methods=add,delete     # only these two
-ag g m product --methods=none           # only the read method
+ag g m product                            # create, update, destroy — all three
+ag g m product --methods=create,destroy   # only these two
+ag g m product --methods=none             # only the read method
+```
+
+**Paging is opt-in.** `--paginate` makes a collection module's list page:
+the Service declares `AgPagination get pagination` (`?page=1&limit=20` by
+default — swap in `AgLimitOffsetPagination` or a subclass) and takes a
+`page` in `list`, the Repo passes it through, and the Controller mixes in
+`AgLoadMore` and implements `list`. Without it the Controller just
+implements `fetch()`.
+
+```bash
+ag g m product --paginate
 ```
 
 Running `ag g m` again for a module that already exists is always safe —
@@ -185,10 +196,10 @@ resolved (`dart pub get` / `flutter pub get`):
   referenced type's full supertype chain, so a concrete `ProductsRepo`
   is caught the same way a raw `AgBaseRepo` reference would be
   (requirments/ag_framework.md §11/§70).
-- **Unused detail argument**: a detail module's controller (one extending
-  `AgDetailController`) that never reads its inherited `arguments`
-  anywhere in the class — the navigation argument that route exists to
-  carry is going unread.
+- **Unused detail argument**: a controller holding a field typed by one of
+  the app's navigation argument classes (from `core/arguments/arguments.dart`)
+  that never reads it anywhere in the class — the navigation argument that
+  route exists to carry is going unread.
 
 If dependencies haven't been resolved yet, these two are silently skipped
 (everything else still runs) and `ag analyze` prints a note telling you to
