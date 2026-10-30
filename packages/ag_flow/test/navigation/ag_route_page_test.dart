@@ -37,11 +37,12 @@ class _CountingBinding extends AgBinding {
   }
 }
 
-class _TrackedController extends AgBaseController<String> {
+class _TrackedController extends AgBaseController<String>
+    with AgRetrieve<String> {
   int disposeCalls = 0;
 
   @override
-  Future<String> fetch() async => 'ready';
+  Future<String> retrieve() async => 'ready';
 
   @override
   void dispose() {
@@ -62,13 +63,14 @@ class _TrackedPage extends AgBasePage<_TrackedController> {
   Widget buildSuccess(BuildContext context) => const Text('tracked');
 }
 
-class _ProductController extends AgBaseController<String> {
+class _ProductController extends AgBaseController<String>
+    with AgRetrieve<String> {
   _ProductController() : id = AgRouteData.pathParameters['id']!;
 
   final String id;
 
   @override
-  Future<String> fetch() async => 'product $id';
+  Future<String> retrieve() async => 'product $id';
 }
 
 class _ProductBinding extends AgBinding {

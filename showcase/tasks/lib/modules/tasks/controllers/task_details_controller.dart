@@ -9,7 +9,8 @@ import 'package:ag_showcase_tasks/modules/tasks/repos/task_details_repo.dart';
 /// the page opens correctly from a deep link, a push notification, or an
 /// in-app tap. [update] is optimistic: it shows the change at once and
 /// rolls back if the write fails.
-class TaskDetailsController extends AgBaseController<Task> {
+class TaskDetailsController extends AgBaseController<Task>
+    with AgRetrieve<Task> {
   TaskDetailsController(this._repo)
     : argument = TaskDetailsPageArgument.fromPathParameters(
         AgRouteData.pathParameters,
@@ -25,7 +26,7 @@ class TaskDetailsController extends AgBaseController<Task> {
   int get lookupId => argument.taskId;
 
   @override
-  Future<Task> fetch() => _repo.retrieve(lookupId);
+  Future<Task> retrieve() => _repo.retrieve(lookupId);
 
   /// Optimistic: shows [item] at once and rolls back if the write fails.
   Future<void> update(Task item) async {

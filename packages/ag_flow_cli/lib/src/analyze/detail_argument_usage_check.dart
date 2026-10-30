@@ -16,7 +16,7 @@ import 'package:path/path.dart' as p;
 /// never read anywhere in the class. A detail route only exists to carry
 /// navigation data to its controller; a controller that stores its
 /// argument and never reads it is either dead code or a developer who
-/// refactored `fetch()` and forgot to keep using it
+/// refactored `retrieve()` and forgot to keep using it
 /// (requirments/ag_framework.md §70's "Missing detail argument" check,
 /// read as "the argument exists but nothing uses it").
 ///

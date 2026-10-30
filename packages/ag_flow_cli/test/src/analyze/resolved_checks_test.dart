@@ -272,7 +272,7 @@ dependencies:
     'flags a detail controller that stores its argument but never reads it',
     () async {
       appDir = await _freshResolvedProject();
-      // Replaces the whole file (rather than patching fetch() in place)
+      // Replaces the whole file (rather than patching retrieve() in place)
       // because the default-generated controller also has update()/
       // destroy() methods that legitimately read the argument — a
       // partial patch leaving those in place would no longer produce a
@@ -293,7 +293,8 @@ import 'package:ag_flow/ag_flow.dart';
 import 'package:sample_app/core/arguments/arguments.dart';
 import 'package:sample_app/modules/product/repos/product_details_repo.dart';
 
-class ProductDetailsController extends AgBaseController<dynamic> {
+class ProductDetailsController extends AgBaseController<dynamic>
+    with AgRetrieve<dynamic> {
   ProductDetailsController(this.repo)
     : argument = ProductDetailsPageArgument.fromPathParameters(
         AgRouteData.pathParameters,
@@ -304,7 +305,7 @@ class ProductDetailsController extends AgBaseController<dynamic> {
   final ProductDetailsPageArgument argument;
 
   @override
-  Future<dynamic> fetch() async => 'stub';
+  Future<dynamic> retrieve() async => 'stub';
 }
 ''');
 

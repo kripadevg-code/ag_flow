@@ -296,7 +296,7 @@ void main() {
           contains('with AgLoadMore<dynamic>'),
           contains('list({int page = 1}) => _repo.list(page: page)'),
           contains('isLastPage(List<dynamic> items)'),
-          isNot(contains('fetch()')),
+          isNot(contains('with AgList')),
         ),
       );
 
@@ -308,7 +308,8 @@ void main() {
         read('order', 'controllers', 'orders_controller.dart'),
         allOf(
           isNot(contains('AgLoadMore')),
-          contains('fetch() => _repo.list()'),
+          contains('with AgList<dynamic>'),
+          contains('list() => _repo.list()'),
         ),
       );
     },

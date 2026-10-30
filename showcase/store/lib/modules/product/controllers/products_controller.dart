@@ -3,13 +3,14 @@ import 'package:ag_showcase_store/modules/product/models/product.dart';
 import 'package:ag_showcase_store/modules/product/repos/products_repo.dart';
 
 /// fakestoreapi doesn't paginate, so this controller has no `AgLoadMore`
-/// — [fetch] returns the whole (optionally filtered) catalog.
+/// — [list] returns the whole (optionally filtered) catalog.
 ///
 /// The write actions don't refresh after writing: fakestoreapi never
 /// persists a write, so a refresh would immediately undo what the user
 /// just did. [create]/[destroy] reflect the mutation in the shown list
 /// instead.
-class ProductsController extends AgBaseController<List<Product>> {
+class ProductsController extends AgBaseController<List<Product>>
+    with AgList<Product> {
   ProductsController(this._repo);
 
   final ProductsRepo _repo;
@@ -17,7 +18,7 @@ class ProductsController extends AgBaseController<List<Product>> {
   String? _category;
 
   @override
-  Future<List<Product>> fetch() {
+  Future<List<Product>> list() {
     final category = _category;
     return category == null ? _repo.list() : _repo.listByCategory(category);
   }

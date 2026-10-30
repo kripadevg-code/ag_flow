@@ -2,11 +2,11 @@ import 'package:ag_flow/ag_flow.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-class _FakeController extends AgBaseController<String> {
+class _FakeController extends AgBaseController<String> with AgRetrieve<String> {
   _FakeController() : super(autoLoadOnInit: false);
 
   @override
-  Future<String> fetch() async => 'data';
+  Future<String> retrieve() async => 'data';
 
   void setState(AgPageState<String> next) => emit(next);
 }

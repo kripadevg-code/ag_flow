@@ -5,7 +5,8 @@ import 'package:ag_showcase_store/modules/product/repos/product_details_repo.dar
 
 /// Loads the product named by the route; [update] shows what the backend
 /// returned.
-class ProductDetailsController extends AgBaseController<Product> {
+class ProductDetailsController extends AgBaseController<Product>
+    with AgRetrieve<Product> {
   ProductDetailsController(this._repo)
     : argument = ProductDetailsPageArgument.fromPathParameters(
         AgRouteData.pathParameters,
@@ -18,7 +19,7 @@ class ProductDetailsController extends AgBaseController<Product> {
   int get lookupId => argument.productId;
 
   @override
-  Future<Product> fetch() => _repo.retrieve(lookupId);
+  Future<Product> retrieve() => _repo.retrieve(lookupId);
 
   Future<void> update(Product item) async {
     emit(AgPageState.success(await _repo.update(lookupId, item)));

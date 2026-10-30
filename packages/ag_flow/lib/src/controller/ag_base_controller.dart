@@ -4,17 +4,22 @@ import 'package:ag_flow/src/di/ag_initializable.dart';
 import 'package:ag_flow/src/page/ag_page_state.dart';
 import 'package:flutter/foundation.dart';
 
+part 'ag_load_more.dart';
+
 /// Base class for every AG controller.
 ///
 /// Owns page-level state — [loadInitial], [refresh], [retry], and the
-/// current [state] as an [AgPageState]. Subclasses implement [fetch] to
-/// load their data by calling their Repo; a controller must never call a
-/// Service or `ApiProvider` directly.
+/// current [state] as an [AgPageState]. A controller loads its data with
+/// the same action name as its Repo: mix in [AgList] and implement `list()`
+/// for a list page, [AgRetrieve] and `retrieve()` for a details page, or
+/// [AgLoadMore] and `list({int page = 1})` for a paged list. A controller
+/// that loads nothing (a form, a settings screen) mixes in none of them.
+/// Either way it calls its Repo — never a Service or `ApiProvider`.
 ///
 /// Extends [ChangeNotifier] directly: [emit] calls [notifyListeners], and
 /// `AgPage` listens to the controller itself for page-state rebuilds.
 ///
-/// Every method beyond [fetch] is the developer's own: a mutation such as
+/// Every other method is the developer's own: a mutation such as
 /// `create` or `destroy` calls the Repo and then [emit]s the new list.
 ///
 /// ---
@@ -60,7 +65,7 @@ abstract class AgBaseController<T> extends ChangeNotifier
   /// Whether this controller has been disposed — its route popped, and
   /// its registration torn down by `AgBinding`.
   ///
-  /// An in-flight [fetch] that completes *after* that point must not
+  /// An in-flight load that completes *after* that point must not
   /// touch state or notify listeners (a disposed [ChangeNotifier] throws
   /// on [notifyListeners]). Backing out of a screen while its first load
   /// is still running is completely ordinary, so this is a normal path,
@@ -105,11 +110,19 @@ abstract class AgBaseController<T> extends ChangeNotifier
     super.dispose();
   }
 
-  /// Loads this controller's data. Must call the Repo — never a Service or
-  /// `ApiProvider` directly. Throw to signal failure; AG turns the
-  /// exception into [AgPageState.error] automatically.
-  @protected
-  Future<T> fetch();
+  /// Loads this controller's data through whichever of [AgList],
+  /// [AgRetrieve] or [AgLoadMore] it mixes in. (Dispatched here rather than
+  /// overridden by the mixins: Dart forbids a mixin applied in another
+  /// library from overriding a private member.)
+  Future<T> _load() async {
+    final Object self = this;
+    if (self is AgLoadMore) return await self._firstPage() as T;
+    if (self is AgList) return await self.list() as T;
+    if (self is AgRetrieve<T>) return self.retrieve();
+    throw UnimplementedError(
+      '$runtimeType loads nothing: mix in AgList, AgRetrieve or AgLoadMore.',
+    );
+  }
 
   /// Whether [data] should be presented as the empty state rather than
   /// success. Default: true for an empty [Iterable], false otherwise.
@@ -118,13 +131,13 @@ abstract class AgBaseController<T> extends ChangeNotifier
   @protected
   bool isEmptyData(T data) => data is Iterable && data.isEmpty;
 
-  /// Runs [fetch] and transitions through loading to success/empty/error.
+  /// Loads the data and transitions through loading to success/empty/error.
   Future<void> loadInitial() async {
     emit(const AgPageState.loading());
-    await _runFetch();
+    await _run();
   }
 
-  /// Re-runs [fetch]. If data is already loaded, it stays visible (via
+  /// Loads the data again. If data is already loaded, it stays visible (via
   /// [AgPageState.success]'s `isRefreshing` flag) instead of being
   /// replaced by a loading indicator while the refresh is in flight.
   Future<void> refresh() async {
@@ -134,24 +147,24 @@ abstract class AgBaseController<T> extends ChangeNotifier
           ? current.copyWith(isRefreshing: true)
           : const AgPageState.loading(),
     );
-    await _runFetch();
+    await _run();
   }
 
   /// Re-runs [loadInitial]. Exposed separately so subclasses may customize
   /// retry semantics independently of the initial load later.
   Future<void> retry() => loadInitial();
 
-  Future<void> _runFetch() async {
+  Future<void> _run() async {
     final token = startRequest();
     try {
-      final data = await fetch();
+      final data = await _load();
       if (!isCurrentRequest(token)) return;
       emit(
         isEmptyData(data)
             ? const AgPageState.empty()
             : AgPageState.success(data),
       );
-      // A developer's fetch() may throw anything (Exception, Error, a bare
+      // A developer's list()/retrieve() may throw anything (Exception, Error, a bare
       // String, ...) — AG's contract is to turn all of it into
       // AgPageState.error, so this catch is deliberately unconstrained.
       // ignore: avoid_catches_without_on_clauses
@@ -172,4 +185,22 @@ abstract class AgBaseController<T> extends ChangeNotifier
     _pageState = next;
     notifyListeners();
   }
+}
+
+/// Loads a list page's data: implement [list] by calling the Repo.
+///
+/// For a paged list, use [AgLoadMore] instead.
+mixin AgList<T> on AgBaseController<List<T>> {
+  /// Reads the list — call the Repo, never a Service directly. Throw to
+  /// signal failure; AG turns the exception into [AgPageState.error].
+  @protected
+  Future<List<T>> list();
+}
+
+/// Loads a details page's data: implement [retrieve] by calling the Repo.
+mixin AgRetrieve<T> on AgBaseController<T> {
+  /// Reads the item — call the Repo, never a Service directly. Throw to
+  /// signal failure; AG turns the exception into [AgPageState.error].
+  @protected
+  Future<T> retrieve();
 }

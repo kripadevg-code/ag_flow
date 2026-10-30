@@ -1,12 +1,10 @@
-import 'package:ag_flow/src/controller/ag_base_controller.dart';
-import 'package:ag_flow/src/page/ag_page_state.dart';
-import 'package:flutter/foundation.dart';
+part of 'ag_base_controller.dart';
 
 /// Opt-in load-more for a controller whose data is a [List].
 ///
 /// Add `with AgLoadMore<Post>` and implement [list] (pages start at
-/// 1) instead of `fetch`. Remove the mixin and write `fetch` again to turn
-/// paging off — nothing else in the controller or page changes, because
+/// 1). Swap it for [AgList] and drop the `page` parameter to turn paging
+/// off — nothing else in the controller or page changes, because
 /// `AgListView` adapts to whichever it finds.
 ///
 /// Appended pages go into the controller's own `state`, so the page shows
@@ -19,7 +17,7 @@ mixin AgLoadMore<T> on AgBaseController<List<T>> {
   bool _isLoadingMore = false;
   Object? _loadMoreError;
 
-  /// Fetches one page — call the Repo, never a Service directly.
+  /// Reads one page — call the Repo, never a Service directly.
   @protected
   Future<List<T>> list({int page = 1});
 
@@ -39,8 +37,8 @@ mixin AgLoadMore<T> on AgBaseController<List<T>> {
   /// Why the last [loadMore] failed, until the next attempt.
   Object? get loadMoreError => _loadMoreError;
 
-  @override
-  Future<List<T>> fetch() async {
+  /// Loads page 1 and starts paging over.
+  Future<List<T>> _firstPage() async {
     // A (re)load starts paging over; an in-flight load-more is abandoned
     // by the new request token rather than awaited.
     _nextPage = 2;
@@ -76,7 +74,7 @@ mixin AgLoadMore<T> on AgBaseController<List<T>> {
       _isLoadingMore = false;
       final shown = state.dataOrNull ?? const [];
       emit(AgPageState.success([...shown, ...items]));
-      // A developer's list() may throw anything, same as fetch() —
+      // A developer's list() may throw anything, same as a first load —
       // captured as loadMoreError, never re-thrown.
       // ignore: avoid_catches_without_on_clauses
     } catch (error) {

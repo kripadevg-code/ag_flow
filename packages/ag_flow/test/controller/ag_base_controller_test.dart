@@ -3,16 +3,16 @@ import 'dart:async';
 import 'package:ag_flow/ag_flow.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-class _FakeController extends AgBaseController<List<int>> {
-  _FakeController(this._fetch, {super.autoLoadOnInit});
+class _FakeController extends AgBaseController<List<int>> with AgList<int> {
+  _FakeController(this._load, {super.autoLoadOnInit});
 
-  final Future<List<int>> Function() _fetch;
-  int fetchCallCount = 0;
+  final Future<List<int>> Function() _load;
+  int loadCallCount = 0;
 
   @override
-  Future<List<int>> fetch() {
-    fetchCallCount++;
-    return _fetch();
+  Future<List<int>> list() {
+    loadCallCount++;
+    return _load();
   }
 }
 
@@ -24,13 +24,13 @@ void main() {
         autoLoadOnInit: false,
       );
       expect(controller.state, const AgPageState<List<int>>.initial());
-      expect(controller.fetchCallCount, 0);
+      expect(controller.loadCallCount, 0);
     });
 
     test('onInit triggers loadInitial automatically by default', () async {
       final controller = _FakeController(() async => [1, 2, 3])..onAgInit();
       await Future<void>.delayed(Duration.zero);
-      expect(controller.fetchCallCount, 1);
+      expect(controller.loadCallCount, 1);
       expect(controller.state, isA<AgPageSuccess<List<int>>>());
     });
 
@@ -60,7 +60,7 @@ void main() {
     );
 
     test(
-      'loadInitial transitions loading -> error when fetch throws anything',
+      'loadInitial transitions loading -> error when list() throws anything',
       () async {
         final controller = _FakeController(
           // A bare String is deliberately used here (not an
@@ -77,7 +77,7 @@ void main() {
     );
 
     test(
-      'refresh keeps previous data visible via isRefreshing while re-fetching',
+      'refresh keeps previous data visible via isRefreshing while reloading',
       () async {
         var callCount = 0;
         final controller = _FakeController(() async {
@@ -128,7 +128,7 @@ void main() {
       );
       await controller.loadInitial();
       await controller.retry();
-      expect(controller.fetchCallCount, 2);
+      expect(controller.loadCallCount, 2);
     });
   });
 
