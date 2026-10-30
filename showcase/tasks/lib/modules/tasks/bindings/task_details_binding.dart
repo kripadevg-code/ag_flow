@@ -11,7 +11,7 @@ class TaskDetailsBinding extends AgBinding {
     // binding type by AgRoutePage, so this registration is released when
     // the last details route is disposed.
     lazyPut(() => TasksService(AgLocator.find()));
-    lazyPut(() => TaskDetailsRepo(AgLocator.find()));
+    lazyPut(() => TaskDetailsRepo(AgLocator.find(), AgLocator.find()));
     lazyPut(() => TaskDetailsController(AgLocator.find()));
   }
 }

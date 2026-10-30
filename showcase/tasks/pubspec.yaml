@@ -2,8 +2,9 @@ name: ag_showcase_tasks
 description: >-
   Architecture reference app for ag_flow — demonstrates ShellRoute
   (persistent bottom nav), AgStateService (auth state), AgGuard (route
-  guards), typed Service action mixins, AgPagedService, and optimistic list mutations,
-  all in one company-grade project structure.
+  guards), typed Service action mixins, AgLoadMore paging, optimistic list
+  mutations and offline reads from a local store, all in one company-grade
+  project structure.
 publish_to: none
 resolution: workspace
 version: 1.0.0+1

@@ -9,7 +9,7 @@ class TasksBinding extends AgBinding {
   @override
   void dependencies() {
     lazyPut(() => TasksService(AgLocator.find()));
-    lazyPut(() => TasksRepo(AgLocator.find()));
+    lazyPut(() => TasksRepo(AgLocator.find(), AgLocator.find()));
     lazyPut(() => TasksController(AgLocator.find()));
   }
 }

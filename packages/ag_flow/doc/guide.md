@@ -581,6 +581,10 @@ The Controller and Page above it don't change. For queued offline writes,
 change `create`/`update`/`destroy` the same way, or plug an offline-aware
 `ApiProvider` in underneath.
 
+The tasks showcase does exactly this: `TasksRepo` and `TaskDetailsRepo`
+save what they read to a `TasksStore` and read it back on a network error
+(`showcase/tasks/lib/modules/tasks/`).
+
 ## 12. Custom actions and escape hatches
 
 Feature-specific actions sit beside the standard ones, passed down the
