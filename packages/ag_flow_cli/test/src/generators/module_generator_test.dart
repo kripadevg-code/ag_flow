@@ -865,7 +865,7 @@ abstract class _Routes {
         expect(
           moduleFile(appDir, p.join('repos', 'products_repo.dart')),
           contains(
-            'Future<Product> create(Product item) => _service.create(item);',
+            'Future<Product> create(Product item) => guard(() => _service.create(item));',
           ),
         );
         expect(

@@ -9,14 +9,14 @@ class ProductsRepo extends AgBaseRepo {
 
   final ProductsService _service;
 
-  Future<List<Product>> list() => _service.list();
+  Future<List<Product>> list() => guard(() => _service.list());
 
-  Future<Product> create(Product item) => _service.create(item);
+  Future<Product> create(Product item) => guard(() => _service.create(item));
 
-  Future<void> destroy(int id) => _service.destroy(id);
+  Future<void> destroy(int id) => guard(() => _service.destroy(id));
 
   Future<List<Product>> listByCategory(String category) =>
-      _service.listByCategory(category);
+      guard(() => _service.listByCategory(category));
 
-  Future<List<String>> categories() => _service.categories();
+  Future<List<String>> categories() => guard(() => _service.categories());
 }

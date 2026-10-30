@@ -11,13 +11,15 @@ class TasksRepo extends AgBaseRepo {
 
   final TasksService _service;
 
-  Future<List<Task>> list({int page = 1}) => _service.list(page: page);
+  Future<List<Task>> list({int page = 1}) =>
+      guard(() => _service.list(page: page));
 
   bool isLastPage(List<Task> items) => _service.pagination.isLastPage(items);
 
-  Future<Task> create(Task item) => _service.create(item);
+  Future<Task> create(Task item) => guard(() => _service.create(item));
 
-  Future<Task> update(int id, Task item) => _service.update(id, item);
+  Future<Task> update(int id, Task item) =>
+      guard(() => _service.update(id, item));
 
-  Future<void> destroy(int id) => _service.destroy(id);
+  Future<void> destroy(int id) => guard(() => _service.destroy(id));
 }

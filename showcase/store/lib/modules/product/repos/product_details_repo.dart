@@ -9,7 +9,8 @@ class ProductDetailsRepo extends AgBaseRepo {
 
   final ProductDetailsService _service;
 
-  Future<Product> retrieve(int id) => _service.retrieve(id);
+  Future<Product> retrieve(int id) => guard(() => _service.retrieve(id));
 
-  Future<Product> update(int id, Product item) => _service.update(id, item);
+  Future<Product> update(int id, Product item) =>
+      guard(() => _service.update(id, item));
 }

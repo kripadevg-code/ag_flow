@@ -137,7 +137,7 @@ Each layer talks only to the next. Never skip one, never reach backwards.
 |---|---|---|
 | Page | `AgBasePage<C>` | Rendering only. No business logic, no Repo/Service access. |
 | Controller | `AgBaseController<T>` (`<List<T>>` for a list) | Page state. Calls **only** its Repo. |
-| Repo | `AgBaseRepo` | Calls **only** its Service. Caching / offline live here. |
+| Repo | `AgBaseRepo` | Calls **only** its Service, inside `guard` (errors become `AgRepoException`). Caching / offline live here. |
 | Service | `AgBaseService` + action mixins | Talks to the backend through `ApiProvider`. |
 | Network | `ApiProvider` (`DioApiProvider` by default) | The only thing that touches the network. |
 
