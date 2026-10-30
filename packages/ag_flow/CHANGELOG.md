@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- **`decode` may be async.** The `get`/`post`/`put`/`patch`/`delete` verb
+  methods accept a `decode` that returns a Future, so a Service can build
+  a very large response's objects off the UI thread with `compute`.
+  Existing synchronous `decode` functions are unchanged. `ApiProvider`'s
+  interface is unchanged.
 - **Repos turn errors into app errors.** `AgBaseRepo.guard` now classifies
   what it catches: `AgRepoException.kind` (`network`, `timeout`,
   `cancelled`, `unauthorized`, `notFound`, `rejected`, `server`,
