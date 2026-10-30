@@ -63,7 +63,7 @@ for that slot.
 ...and idempotently wires it into the shared aggregator files:
 
 - `lib/core/routes/app_routes.dart` — a new `AppRoutes`/`_Routes` constant pair.
-- `lib/core/routes/app_pages.dart` — a new `AgRoute(...)` entry (plus the imports it needs).
+- `lib/core/routes/app_pages.dart` — a new `GoRoute(...)` entry built with `AgRoutePage` (plus the imports it needs).
 - `lib/core/routes/route_management.dart` — a new `goToXPage(...)` navigation method.
 - `lib/core/arguments/arguments.dart` — (detail modules only) a new `<ClassPrefix>PageArgument` class, generated empty — add fields yourself; the generated controller/repo/service pass the whole argument object through rather than guessing field names.
 
@@ -81,8 +81,8 @@ ag g m company --plural=companies   # ClassPrefix becomes "Companies", not the d
 working boilerplate than a developer would start from by hand, not less.
 (A detail module never gets `create`: there's no "create a new one"
 concept on a page that's about one existing entity.) The names are the
-Service action mixins' DRF names, and each body is plain code written with
-`send` against the endpoint getters (a `TODO` points at
+Service action mixins' DRF names, and each body is one plain
+`get` / `post` / `put` / `delete` call against the endpoint getters (a `TODO` points at
 `core/endpoints.dart`), exactly like the always-present read method
 (`list`/`retrieve`) — delete whichever ones a module doesn't need, exactly
 as freely as any other generated code. All three keep the same name across Service, Repo,
@@ -175,13 +175,13 @@ Mechanical/structural checks — always run, derived from re-parsing
 
 - a module missing one of its five architectural-layer files
   (page/controller/repo/service/binding)
-- a route with no `AgRoute` entry in `app_pages.dart`
+- a route with no `GoRoute` entry in `app_pages.dart`
 - a route with no navigation method in `route_management.dart`
 - a detail route missing its argument class in `arguments.dart`
 - two different route constants pointing at the identical path
 - a nested subfolder under an architectural-layer or component-namespace
   folder (both must stay flat)
-- a hard-coded route string (`AgNavigator.toNamed('/literal')`) anywhere outside
+- a hard-coded route string (`context.push('/literal')`, `pushNamed`, `go`, ... with a literal path) anywhere outside
   `route_management.dart`
 
 Resolved-model checks — need a *resolved* element model (`analyzer`'s

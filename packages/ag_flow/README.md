@@ -32,24 +32,27 @@ void main() {
 
 ```dart
 class ProductsService extends AgBaseService
-    with AgPagedService<Product, int>, AgCreateMixin<Product> {
+    with AgListMixin<Product>, AgCreateMixin<Product> {
   ProductsService(super.apiProvider);
 
   @override
-  AgEndpoint get collectionEndpoint => ProductEndpoints.products;
-  @override
-  AgPageStrategy<int> get pageStrategy => const AgPageNumberStrategy();
-  @override
-  Product fromJson(Map<String, dynamic> json) => Product.fromJson(json);
+  AgPagination get pagination => const AgPageNumberPagination();
 
   @override
-  Future<Product> add(Product item) => fetchItem(
-    AgRequest(
-      endpoint: ProductEndpoints.products,
-      method: AgHttpMethod.post,
-      body: item.toJson(),
-    ),
-    fromJson,
+  Future<List<Product>> list({int page = 1}) => get(
+    ProductEndpoints.products,
+    queryParams: pagination.query(page),
+    decode: (json) => [
+      for (final item in json! as List<Object?>)
+        Product.fromJson(item! as Map<String, dynamic>),
+    ],
+  );
+
+  @override
+  Future<Product> create(Product item) => post(
+    ProductEndpoints.products,
+    body: item.toJson(),
+    decode: (json) => Product.fromJson(json! as Map<String, dynamic>),
   );
 }
 
@@ -58,22 +61,24 @@ class ProductsRepo extends AgBaseRepo {
 
   final ProductsService _service;
 
-  Future<AgListPage<Product, int>> getPage(int pageKey) =>
-      _service.getPage(pageKey);
-  Future<Product> add(Product item) => _service.add(item);
+  Future<List<Product>> list({int page = 1}) => _service.list(page: page);
+  bool isLastPage(List<Product> items) => _service.pagination.isLastPage(items);
+  Future<Product> create(Product item) => _service.create(item);
 }
 
-class ProductsController extends AgListController<Product, int> {
-  ProductsController(this._repo) : super(initialPageKey: 1);
+class ProductsController extends AgBaseController<List<Product>>
+    with AgLoadMore<Product> {
+  ProductsController(this._repo);
 
   final ProductsRepo _repo;
 
   @override
-  Future<AgListPage<Product, int>> fetchPage(int pageKey) =>
-      _repo.getPage(pageKey);
+  Future<List<Product>> list({int page = 1}) => _repo.list(page: page);
+  @override
+  bool isLastPage(List<Product> items) => _repo.isLastPage(items);
 
-  Future<void> add(Product item) async {
-    await _repo.add(item);
+  Future<void> create(Product item) async {
+    await _repo.create(item);
     await refresh();
   }
 }
@@ -87,7 +92,7 @@ class ProductsPage extends AgBasePage<ProductsController> {
 
   @override
   Widget buildSuccess(BuildContext context) {
-    return AgListBuilder<Product, int>(
+    return AgListView<Product>(
       controller: controller,
       itemBuilder: (context, product, index) => ProductItem(item: product),
     );
@@ -95,27 +100,30 @@ class ProductsPage extends AgBasePage<ProductsController> {
 }
 ```
 
-## Service actions, one mixin each
+## Same action names at every layer
 
-| Action | Mixin | You implement |
+| Action | Service mixin | Method (Service, Repo and Controller) |
 |---|---|---|
-| List | `AgListMixin<T>` | `getAll` |
-| Create | `AgCreateMixin<T>` | `add` |
-| Retrieve | `AgRetrieveMixin<T, ID>` | `getById` |
+| List | `AgListMixin<T>` | `list` |
+| Create | `AgCreateMixin<T>` | `create` |
+| Retrieve | `AgRetrieveMixin<T, ID>` | `retrieve` |
 | Update | `AgUpdateMixin<T, ID>` | `update` |
-| Delete | `AgDestroyMixin<ID>` | `delete` |
+| Destroy | `AgDestroyMixin<ID>` | `destroy` |
 
 - **Each mixin is a typed contract.** It fixes the method and its types;
-  the Service writes the body with `fetchList` / `fetchItem` / `send`, so
-  an unusual backend never fights a built-in default.
+  the Service writes the body as one `get` / `post` / `put` / `patch` /
+  `delete` call, so an unusual backend never
+  fights a built-in default.
 - **Only the Service has mixins.** One plain Repo and one plain Controller
-  per module, with ordinary methods.
+  per module, with ordinary methods of the same names.
 - **Any lookup type.** `ID` can be an id, a slug, or a record for a
   composite key — the Service places it in the URL.
-- **Optional paging helper.** `AgPagedService` implements `getPage` from a
-  declared value: `AgPageNumberStrategy`, `AgOffsetStrategy`,
-  `AgCursorStrategy`, `AgSinglePageStrategy`; responses unwrap with
-  `AgEnvelope.raw`, `.key('data')`, `.path([...])`.
+- **Paging is opt-in.** Declare an `AgPagination`
+  (`AgPageNumberPagination`, `AgLimitOffsetPagination`, or your own
+  subclass) and pass `pagination.query(page)` from `list({int page = 1})`.
+  The controller adds `with AgLoadMore<T>` and `AgListView<T>` loads the
+  next page as the user scrolls. A backend that returns everything at once
+  skips all three.
 
 ## Built for large apps
 

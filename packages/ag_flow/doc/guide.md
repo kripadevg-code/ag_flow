@@ -114,47 +114,45 @@ Page → Controller → Repo → Service → ApiProvider
 | **Page** | Rendering | Business logic, Repo or Service access |
 | **Controller** | Page state, user actions | Talking to a Service or the network |
 | **Repo** | Where data comes from: network, cache, offline | Building requests |
-| **Service** | What the API looks like: endpoints, paging, envelopes | Caching, state |
+| **Service** | What the API looks like: endpoints, paging, decoding | Caching, state |
 | **ApiProvider** | Sending requests | Knowing about features |
 
 Each layer talks only to the one directly below it. `ag analyze` enforces
 this, including through type hierarchies (a Page holding a type that
 *extends* a Repo is caught too).
 
-A generated collection module's three middle layers:
+A generated collection module's three middle layers
+(`ag g m product --paginate --methods=create,destroy`):
 
 ```dart
 class ProductsService extends AgBaseService
-    with
-        AgPagedService<Product, int>,
-        AgCreateMixin<Product>,
-        AgDestroyMixin<int> {
+    with AgListMixin<Product>, AgCreateMixin<Product>, AgDestroyMixin<int> {
   ProductsService(super.apiProvider);
 
   @override
-  AgEndpoint get collectionEndpoint => ProductEndpoints.products;
-  @override
-  AgPageStrategy<int> get pageStrategy => const AgPageNumberStrategy();
-  @override
-  Product fromJson(Map<String, dynamic> json) => Product.fromJson(json);
+  AgPagination get pagination => const AgPageNumberPagination();
 
   @override
-  Future<Product> add(Product item) => fetchItem(
-    AgRequest(
-      endpoint: ProductEndpoints.products,
-      method: AgHttpMethod.post,
-      body: item.toJson(),
-    ),
-    fromJson,
+  Future<List<Product>> list({int page = 1}) => get(
+    ProductEndpoints.products,
+    queryParams: pagination.query(page),
+    decode: (json) => [
+      for (final item in json! as List<Object?>)
+        Product.fromJson(item! as Map<String, dynamic>),
+    ],
   );
 
   @override
-  Future<void> delete(int id) => send<void>(
-    AgRequest(
-      endpoint: ProductEndpoints.productById,
-      method: AgHttpMethod.delete,
-      pathParams: {'id': id},
-    ),
+  Future<Product> create(Product item) => post(
+    ProductEndpoints.products,
+    body: item.toJson(),
+    decode: (json) => Product.fromJson(json! as Map<String, dynamic>),
+  );
+
+  @override
+  Future<void> destroy(int id) => delete(
+    ProductEndpoints.productById,
+    pathParams: {'id': id},
   );
 }
 
@@ -163,28 +161,30 @@ class ProductsRepo extends AgBaseRepo {
 
   final ProductsService _service;
 
-  Future<AgListPage<Product, int>> getPage(int pageKey) =>
-      _service.getPage(pageKey);
-  Future<Product> add(Product item) => _service.add(item);
-  Future<void> delete(int id) => _service.delete(id);
+  Future<List<Product>> list({int page = 1}) => _service.list(page: page);
+  bool isLastPage(List<Product> items) => _service.pagination.isLastPage(items);
+  Future<Product> create(Product item) => _service.create(item);
+  Future<void> destroy(int id) => _service.destroy(id);
 }
 
-class ProductsController extends AgListController<Product, int> {
-  ProductsController(this._repo) : super(initialPageKey: 1);
+class ProductsController extends AgBaseController<List<Product>>
+    with AgLoadMore<Product> {
+  ProductsController(this._repo);
 
   final ProductsRepo _repo;
 
   @override
-  Future<AgListPage<Product, int>> fetchPage(int pageKey) =>
-      _repo.getPage(pageKey);
+  Future<List<Product>> list({int page = 1}) => _repo.list(page: page);
+  @override
+  bool isLastPage(List<Product> items) => _repo.isLastPage(items);
 
-  Future<void> add(Product item) async {
-    await _repo.add(item);
+  Future<void> create(Product item) async {
+    await _repo.create(item);
     await refresh();
   }
 
-  Future<void> delete(int id) async {
-    await _repo.delete(id);
+  Future<void> destroy(int id) async {
+    await _repo.destroy(id);
     await refresh();
   }
 }
@@ -192,7 +192,8 @@ class ProductsController extends AgListController<Product, int> {
 
 Every one of these bodies is yours: the generator writes them as a starting
 point and never touches them again. One Repo and one Controller per module,
-with plain methods — there is nothing extra to learn above the Service.
+with plain methods that use the same five names as the Service — there is
+nothing extra to learn above the Service.
 
 ## 5. Service actions: one mixin each
 
@@ -203,28 +204,34 @@ built-in body to suit them all, so AG never guesses.
 
 | Action | Mixin | Method you implement |
 |---|---|---|
-| List | `AgListMixin<T>` | `Future<List<T>> getAll({Map<String, dynamic>? queryParams})` |
-| Create | `AgCreateMixin<T>` | `Future<T> add(T item)` |
-| Retrieve | `AgRetrieveMixin<T, ID>` | `Future<T> getById(ID id)` |
+| List | `AgListMixin<T>` | `Future<List<T>> list()` — a paged Service writes `list({int page = 1})` |
+| Create | `AgCreateMixin<T>` | `Future<T> create(T item)` |
+| Retrieve | `AgRetrieveMixin<T, ID>` | `Future<T> retrieve(ID id)` |
 | Update | `AgUpdateMixin<T, ID>` | `Future<T> update(ID id, T item)` |
-| Delete | `AgDestroyMixin<ID>` | `Future<void> delete(ID id)` |
+| Destroy | `AgDestroyMixin<ID>` | `Future<void> destroy(ID id)` |
 
 A Service mixes in exactly the actions its backend supports, so it never
 exposes a method that can only fail. Forgetting a body is a compile error.
+The Repo and Controller use the same names, so `list` / `create` /
+`retrieve` / `update` / `destroy` mean the same thing at every layer.
 
-Write the bodies with the three helpers on `AgBaseService`, which send
-through `ApiProvider` and unwrap the response with the Service's
-`envelope`:
+Write each body as one call named after its HTTP verb — `get`, `post`,
+`put`, `patch` or `delete` on `AgBaseService`:
 
-| Helper | Returns |
+| Argument | Meaning |
 |---|---|
-| `fetchList(request, fromJson)` | `List<T>` |
-| `fetchItem(request, fromJson)` | `T` |
-| `send<D>(request, decode: ...)` | the raw `AgResponse<D>` |
+| endpoint (first) | an `AgEndpoint` from `core/endpoints.dart` |
+| `pathParams` | fills `{tokens}` in the endpoint's path |
+| `queryParams` | the query string |
+| `body` | the JSON body (`post` / `put` / `patch` / `delete`) |
+| `headers` | per-request headers |
+| `decode` | turns the JSON body into your type |
 
-`AgPagedService<T, K>` is the one mixin with a body: an optional helper
-that implements `getPage` from a declared `pageStrategy` (see section 7).
-Skip it and write `getPage` yourself if your backend pages some other way.
+Each sends through `ApiProvider` and returns only the decoded data. A
+wrapped response is unwrapped inside `decode`
+(`(json) => ... (json! as Map)['data'] ...`). When you need the whole
+`AgResponse` — status code, headers — or form data, build an `AgRequest`
+and call `send<D>(request, decode: ...)` instead.
 
 ## 6. Pages and state
 
@@ -244,7 +251,7 @@ class ProductsPage extends AgBasePage<ProductsController> {
 
   @override
   Widget buildSuccess(BuildContext context) {
-    return AgListBuilder<Product, int>(
+    return AgListView<Product>(
       controller: controller,
       itemBuilder: (context, product, index) => ProductItem(item: product),
     );
@@ -262,89 +269,103 @@ is dropped — never shown.
 
 ## 7. Lists and pagination
 
-The paging dialect is a value the Service declares:
+Every controller extends `AgBaseController<T>` and implements `fetch()`.
+A list is just `AgBaseController<List<Product>>`; paging is opt-in.
 
-| Backend | `pageStrategy` |
+How the backend pages is a value the Service declares:
+
+| Backend | `pagination` |
 |---|---|
-| `?page=2&limit=20` | `AgPageNumberStrategy(pageParam: 'page', sizeParam: 'limit')` |
-| `?offset=40&limit=20` | `AgOffsetStrategy(offsetParam: 'offset', limitParam: 'limit')` |
-| opaque `next` cursor | `AgCursorStrategy(...)` |
-| everything in one response | `AgSinglePageStrategy()` |
+| `?page=2&limit=20` | `AgPageNumberPagination(pageParam: 'page', sizeParam: 'limit')` |
+| `?offset=40&limit=20` | `AgLimitOffsetPagination(offsetParam: 'offset', limitParam: 'limit')` |
+| anything else | your own `AgPagination` subclass: implement `query(page)` |
+| everything in one response | nothing — leave `pagination` null and write `list()` with no page |
 
-Where the items sit in the body is another value, `envelope`:
-`AgEnvelope.raw` (the body is the list), `AgEnvelope.key('data')`,
-`AgEnvelope.path(['data', 'items'])`, or `AgEnvelope.custom(...)`.
+`pageSize` defaults to 20. `isLastPage(items)` defaults to "fewer items than
+`pageSize`"; override it when the backend says so another way.
 
-Filters, search terms and sort orders go in `pageQueryParams`:
+The paged controller adds `with AgLoadMore<T>` and implements
+`list({int page = 1})` and `isLastPage`. `AgLoadMore` writes `fetch()` for
+you (page 1) and adds `loadMore()`, `hasMore`, `isLoadingMore` and
+`loadMoreError`. `AgListView<T>` loads the next page as the user scrolls,
+shows a retry slot when a page fails, and keeps load-more state apart from
+page state, so a failed page never blanks a list that's already showing.
+`AgListView` also works on a controller without `AgLoadMore` — it then
+just shows the list.
+
+A filter, search term or sort order is state the controller keeps, loaded
+through `refresh()`, so a pull-to-refresh keeps it and a newer request
+always wins over an older one:
 
 ```dart
-String? category;
+String? _category;
 
 @override
-Map<String, dynamic> get pageQueryParams =>
-    {if (category != null) 'category': category};
-```
+Future<List<Product>> fetch() {
+  final category = _category;
+  return category == null ? _repo.list() : _repo.listByCategory(category);
+}
 
-`AgListBuilder` loads the next page as the user scrolls, shows a retry slot
-when a page fails, and keeps load-more state apart from page state, so a
-failed page never blanks a list that's already showing.
+Future<void> filterByCategory(String? category) {
+  _category = category;
+  return refresh();
+}
+```
 
 ## 8. Detail modules and lookups
 
 A detail route carries what it needs in its URL (`/product/details/:id`),
 so it opens from a deep link, a notification or a browser reload — not only
-from an in-app push. The controller turns its argument into a **lookup**,
-the way a DRF view declares `lookup_field`:
+from an in-app push. The controller reads its argument from
+`AgRouteData.pathParameters` and turns it into a **lookup**, the way a DRF
+view declares `lookup_field`:
 
 ```dart
-class ProductDetailsController
-    extends AgDetailController<Product, ProductDetailsPageArgument> {
-  ProductDetailsController(this._repo);
+class ProductDetailsController extends AgBaseController<Product> {
+  ProductDetailsController(this._repo)
+    : argument = ProductDetailsPageArgument.fromPathParameters(
+        AgRouteData.pathParameters,
+      );
 
   final ProductDetailsRepo _repo;
+  final ProductDetailsPageArgument argument;
+
+  int get lookupId => int.parse(argument.id);
 
   @override
-  ProductDetailsPageArgument? argumentsFromPath(Map<String, String> p) =>
-      ProductDetailsPageArgument.fromPathParameters(p);
-
-  int get lookupId => int.parse(arguments.id);
-
-  @override
-  Future<Product> fetch() => _repo.getById(lookupId);
+  Future<Product> fetch() => _repo.retrieve(lookupId);
 
   Future<void> update(Product item) async {
     emit(AgPageState.success(await _repo.update(lookupId, item)));
   }
 
-  Future<void> delete() => _repo.delete(lookupId);
+  Future<void> destroy() => _repo.destroy(lookupId);
 }
 ```
 
 A lookup is not limited to an id. `ID` is any type — a slug, a UUID, or a
-record — and the Service, which writes its own `getById`, places it in the
+record — and the Service, which writes its own `retrieve`, places it in the
 URL however the backend wants:
 
 ```dart
 // A composite key:   /orgs/{org}/projects/{id}
 @override
-Future<Project> getById(({String org, int id}) key) => fetchItem(
-  AgRequest(
-    endpoint: ProjectEndpoints.byOrg,
-    pathParams: {'org': key.org, 'id': key.id},
-  ),
-  Project.fromJson,
+Future<Project> retrieve(({String org, int id}) key) => get(
+  ProjectEndpoints.byOrg,
+  pathParams: {'org': key.org, 'id': key.id},
+  decode: (json) => Project.fromJson(json! as Map<String, dynamic>),
 );
 ```
 
-If the argument already carries the whole object, still return its id from
-`lookupId` (so update and delete address it), and override `fetch()` if you
-want to skip the refetch — falling back to it on a deep link, where only
-the id is in the URL:
+If the push already handed over the whole object in `extra`, still return
+its id from `lookupId` (so update and destroy address it), and override
+`fetch()` to skip the refetch — falling back to it on a deep link, where
+only the id is in the URL:
 
 ```dart
 @override
 Future<Product> fetch() async =>
-    arguments.product ?? await _repo.getById(lookupId);
+    AgRouteData.extra as Product? ?? await _repo.retrieve(lookupId);
 ```
 
 ## 9. Routing (your go_router)
@@ -480,12 +501,16 @@ Every failure surfaces as `AgApiException`, whichever transport is
 plugged in.
 
 **Feature-specific reads** — a search, a filtered sub-collection — are one
-line too, and decode through the same envelope:
+more method on the Service, written with `get` like the actions:
 
 ```dart
-Future<List<Product>> search(String term) => fetchList(
-  AgRequest(endpoint: ProductEndpoints.search, queryParams: {'q': term}),
-  fromJson,
+Future<List<Product>> search(String term) => get(
+  ProductEndpoints.search,
+  queryParams: {'q': term},
+  decode: (json) => [
+    for (final item in json! as List<Object?>)
+      Product.fromJson(item! as Map<String, dynamic>),
+  ],
 );
 ```
 
@@ -501,22 +526,22 @@ class ProductsRepo extends AgBaseRepo {
   final ProductsService _service;
   final ProductCache _cache;
 
-  Future<AgListPage<Product, int>> getPage(int pageKey) async {
+  Future<List<Product>> list({int page = 1}) async {
     try {
-      final page = await _service.getPage(pageKey);
-      await _cache.save(pageKey, page.items);
-      return page;
+      final items = await _service.list(page: page);
+      await _cache.save(page, items);
+      return items;
     } on AgApiException {
-      final cached = await _cache.read(pageKey);
+      final cached = await _cache.read(page);
       if (cached == null) rethrow;
-      return AgListPage(items: cached, hasMore: false);
+      return cached;
     }
   }
 }
 ```
 
 The Controller and Page above it don't change. For queued offline writes,
-change `add`/`update`/`delete` the same way, or plug an offline-aware
+change `create`/`update`/`destroy` the same way, or plug an offline-aware
 `ApiProvider` in underneath.
 
 ## 12. Custom actions and escape hatches
@@ -525,22 +550,24 @@ Feature-specific actions sit beside the standard ones, passed down the
 same layers:
 
 ```dart
-class ProductsController extends AgListController<Product, int> {
+class ProductsController extends AgBaseController<List<Product>>
+    with AgLoadMore<Product> {
   ...
 
-  // ProductsRepo.search → ProductsService.search (a one-line fetchList).
+  // ProductsRepo.search → ProductsService.search.
   Future<List<Product>> search(String term) => _repo.search(term);
 
-  // Optimistic delete: update the list now, then confirm with the backend.
-  Future<void> delete(int id) async {
-    updateItems((items) => [...items.where((p) => p.id != id)]);
-    await _repo.delete(id);
+  // Optimistic destroy: update the list now, then confirm with the backend.
+  Future<void> destroy(int id) async {
+    final shown = state.dataOrNull ?? const <Product>[];
+    emit(AgPageState.success(shown.where((p) => p.id != id).toList()));
+    await _repo.destroy(id);
   }
 }
 ```
 
-`updateItems` changes the displayed list without a refetch — useful when
-the backend doesn't persist writes immediately. The layering rules apply
+`emit` changes the displayed list without a refetch — useful when the
+backend doesn't persist writes immediately. The layering rules apply
 to every module; how each method works is up to you.
 
 ## 13. Large apps: structure and enforcement
@@ -571,7 +598,7 @@ final controller = ProductsController(
   ProductsRepo(ProductsService(FakeApiProvider())),
 );
 await controller.loadInitial();
-expect(controller.pagination.items, hasLength(20));
+expect(controller.state.dataOrNull, hasLength(20));
 ```
 
 Widget tests construct a controller directly and pass it to the page's
@@ -585,6 +612,15 @@ widgets — no locator setup needed. To exercise navigation, pump
 |---|---|
 | `with AgCrudService<T, ID>` | `extends AgBaseService with` only the action mixins the backend supports, each method implemented by the Service |
 | Service `idOf` / `getByArgument` adapters | Controller `lookupId` |
+| `getAll` / `add` / `getById` / `update` / `delete` | `list` / `create` / `retrieve` / `update` / `destroy`, at every layer |
+| `fetchList` / `fetchItem` / `AgEnvelope` | `get` / `post` / `put` / `patch` / `delete` — unwrap inside `decode` |
+| `AgPagedService` + `pageStrategy` | `pagination` (`AgPageNumberPagination` / `AgLimitOffsetPagination`) + your own `list({int page = 1})` |
+| `extends AgListController<T, K>` + `fetchPage(key)` | `extends AgBaseController<List<T>> with AgLoadMore<T>` + `list({int page = 1})` and `isLastPage` |
+| An unpaged list controller | `extends AgBaseController<List<T>>` + `fetch()` |
+| `extends AgDetailController<T, A>` + `arguments` | `extends AgBaseController<T>`, argument read from `AgRouteData.pathParameters` in the constructor |
+| `AgListBuilder<T, K>` | `AgListView<T>` |
+| `updateItems(...)` | `emit(AgPageState.success(...))` |
+| `pageQueryParams` | a filter field on the controller, loaded through `refresh()` |
 | `AgApp(routes: AppPages.pages, ...)` | `MaterialApp.router(routerConfig: AppPages.router)` |
 | `AgRoute(path:, page:, binding:, guards:)` | `GoRoute(..., redirect: AgGuard.check(...), pageBuilder: AgRoutePage(...))` |
 | `AgShellRoute(binding:, ...)` | `ShellRoute(builder: ... AgShellScope(binding: ...))` |

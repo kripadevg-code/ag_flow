@@ -74,7 +74,7 @@ Dart pub workspaces.
 
 | Package | pub.dev | Purpose |
 |---|---|---|
-| [`ag_flow`](packages/ag_flow) | [![pub.dev](https://img.shields.io/pub/v/ag_flow.svg)](https://pub.dev/packages/ag_flow) | Runtime framework: `AgBasePage`, `AgBaseController`, `AgListBuilder`, `AgBaseRepo`, `AgBaseService`, `ApiProvider`, routing, DI, and everything every generated module is built from. |
+| [`ag_flow`](packages/ag_flow) | [![pub.dev](https://img.shields.io/pub/v/ag_flow.svg)](https://pub.dev/packages/ag_flow) | Runtime framework: `AgBasePage`, `AgBaseController`, `AgListView`, `AgBaseRepo`, `AgBaseService`, `ApiProvider`, routing, DI, and everything every generated module is built from. |
 | [`ag_flow_cli`](packages/ag_flow_cli) | [![pub.dev](https://img.shields.io/pub/v/ag_flow_cli.svg)](https://pub.dev/packages/ag_flow_cli) | The `ag` CLI. `ag init` bootstraps `lib/core/`; `ag g m <module>` generates a complete module and wires it in idempotently; `ag analyze` validates the whole project against AG's structural rules. |
 | [`ag_flow_generator`](packages/ag_flow_generator) | [![pub.dev](https://img.shields.io/pub/v/ag_flow_generator.svg)](https://pub.dev/packages/ag_flow_generator) | Optional `build_runner` companion — auto-generates static `find` / `instance` accessors on controllers and services from the `@AgInject()` annotation. |
 
@@ -162,9 +162,9 @@ runtime. `ag analyze` re-validates any time the project grows.
 ```
 GoRouter (your app's)
   └─ GoRoute → AgRoutePage (binds the module to the route's lifetime)
-       └─ AgBasePage / AgListBuilder        UI, state rendering
-            └─ Controller + action mixins     page state, user actions
-                 └─ Repo + action mixins      where data comes from (network, cache, offline)
+       └─ AgBasePage / AgListView          UI, state rendering
+            └─ Controller                    page state, user actions
+                 └─ Repo                     where data comes from (network, cache, offline)
                       └─ Service + action mixins   what the API looks like
                            └─ ApiProvider       the network (dio by default, swappable)
 ```
@@ -178,7 +178,7 @@ enforces this and `ag analyze` catches it if you drift.
 class ProductsPage extends AgBasePage<ProductsController> {
   @override
   Widget buildSuccess(BuildContext context) {
-    return AgListBuilder<Product, int>(
+    return AgListView<Product>(
       controller: controller,
       itemBuilder: (context, item, index) => ProductItem(item: item),
     );
@@ -198,17 +198,27 @@ the method and its types — and the Service writes the body:
 
 ```dart
 class ProductsService extends AgBaseService
-    with AgPagedService<Product, int>, AgCreateMixin<Product> {
+    with AgListMixin<Product>, AgCreateMixin<Product> {
   ProductsService(super.apiProvider);
 
-  @override AgEndpoint get collectionEndpoint => ProductEndpoints.products;
-  @override AgPageStrategy<int> get pageStrategy => const AgPageNumberStrategy();
-  @override Product fromJson(Map<String, dynamic> json) => Product.fromJson(json);
+  @override
+  AgPagination get pagination => const AgPageNumberPagination();
 
   @override
-  Future<Product> add(Product item) => fetchItem(
-    AgRequest(endpoint: ProductEndpoints.products, method: AgHttpMethod.post, body: item.toJson()),
-    fromJson,
+  Future<List<Product>> list({int page = 1}) => get(
+    ProductEndpoints.products,
+    queryParams: pagination.query(page),
+    decode: (json) => [
+      for (final item in json! as List<Object?>)
+        Product.fromJson(item! as Map<String, dynamic>),
+    ],
+  );
+
+  @override
+  Future<Product> create(Product item) => post(
+    ProductEndpoints.products,
+    body: item.toJson(),
+    decode: (json) => Product.fromJson(json! as Map<String, dynamic>),
   );
 }
 
@@ -216,36 +226,41 @@ class ProductsRepo extends AgBaseRepo {
   ProductsRepo(this._service);
   final ProductsService _service;
 
-  Future<AgListPage<Product, int>> getPage(int pageKey) => _service.getPage(pageKey);
-  Future<Product> add(Product item) => _service.add(item);
+  Future<List<Product>> list({int page = 1}) => _service.list(page: page);
+  bool isLastPage(List<Product> items) => _service.pagination.isLastPage(items);
+  Future<Product> create(Product item) => _service.create(item);
 }
 
-class ProductsController extends AgListController<Product, int> {
-  ProductsController(this._repo) : super(initialPageKey: 1);
+class ProductsController extends AgBaseController<List<Product>>
+    with AgLoadMore<Product> {
+  ProductsController(this._repo);
   final ProductsRepo _repo;
 
   @override
-  Future<AgListPage<Product, int>> fetchPage(int pageKey) => _repo.getPage(pageKey);
+  Future<List<Product>> list({int page = 1}) => _repo.list(page: page);
+  @override
+  bool isLastPage(List<Product> items) => _repo.isLastPage(items);
 
-  Future<void> add(Product item) async {
-    await _repo.add(item);
+  Future<void> create(Product item) async {
+    await _repo.create(item);
     await refresh();
   }
 }
 ```
 
-| Mixin | You implement |
-|---|---|
-| `AgListMixin<T>` | `Future<List<T>> getAll({queryParams})` |
-| `AgCreateMixin<T>` | `Future<T> add(T item)` |
-| `AgRetrieveMixin<T, ID>` | `Future<T> getById(ID id)` |
-| `AgUpdateMixin<T, ID>` | `Future<T> update(ID id, T item)` |
-| `AgDestroyMixin<ID>` | `Future<void> delete(ID id)` |
+| Mixin | You implement | Repo and Controller method |
+|---|---|---|
+| `AgListMixin<T>` | `Future<List<T>> list()` (add `{int page = 1}` when paged) | `list` |
+| `AgCreateMixin<T>` | `Future<T> create(T item)` | `create` |
+| `AgRetrieveMixin<T, ID>` | `Future<T> retrieve(ID id)` | `retrieve` |
+| `AgUpdateMixin<T, ID>` | `Future<T> update(ID id, T item)` | `update` |
+| `AgDestroyMixin<ID>` | `Future<void> destroy(ID id)` | `destroy` |
 
-`AgPagedService<T, K>` is an optional helper that implements `getPage` from
-a declared `pageStrategy`. `ID` can be an id, a slug, or a record for a
-composite key. `ag g m` writes all of these bodies for you as a starting
-point.
+Paging is opt-in: declare an `AgPagination` on the Service and add
+`with AgLoadMore<T>` to the controller. `ID` can be an id, a slug, or a
+record for a composite key. `ag g m` writes all of these bodies for you as
+a starting point (`--paginate` for paging, `--methods=create,update,destroy`
+to pick the writes).
 
 ### Guards — route-level access control
 
@@ -278,9 +293,9 @@ against a live public API, showing a different slice of the framework:
 
 | App | What it demonstrates |
 |---|---|
-| [`showcase/blog`](showcase/blog) | Paginated collection, detail with edit/delete, nested comments module — action mixins on every layer, `lookupId`, `AgListBuilder`, path-parameter deep links |
-| [`showcase/store`](showcase/store) | Category-filtered products, add/update/delete, `AgRetryPolicy` — `AgListMixin` beside `AgPagedService`, feature-specific reads |
-| [`showcase/tasks`](showcase/tasks) | Auth guard, go_router `ShellRoute` + `AgShellScope` with bottom nav, `AgStateService`, optimistic list mutations — a complete architecture reference for a company-grade app |
+| [`showcase/blog`](showcase/blog) | Paginated collection, detail with edit/delete, nested comments module — the same action names on every layer, `lookupId`, `AgLoadMore` + `AgListView`, path-parameter deep links |
+| [`showcase/store`](showcase/store) | Category-filtered products, add/update/delete, `AgRetryPolicy` — an unpaged `list`, a filter kept in the controller and loaded through `refresh()`, feature-specific reads |
+| [`showcase/tasks`](showcase/tasks) | Auth guard, go_router `ShellRoute` + `AgShellScope` with bottom nav, `AgStateService`, list writes shown with `emit(...)` — a complete architecture reference for a company-grade app |
 
 ---
 
