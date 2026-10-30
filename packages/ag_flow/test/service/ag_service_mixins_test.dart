@@ -1,4 +1,5 @@
 import 'package:ag_flow/ag_flow.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// Records `METHOD path?query` for every request and echoes a canned body.
@@ -87,6 +88,10 @@ class _ItemsService extends AgBaseService
     decode: _one,
   );
 
+  /// A large body decoded off the UI thread — `decode` may be async.
+  Future<List<_M>> listInBackground() =>
+      get(_collection, decode: (json) => compute(_many, json));
+
   /// The full response, for when the data alone is not enough.
   Future<int> statusOf(int id) async => (await send<_M>(
     AgRequest(endpoint: _resource, pathParams: {'id': id}),
@@ -146,6 +151,14 @@ void main() {
       'GET /items?q=x',
       'PATCH /items/5',
       'GET /items/6',
+    ]);
+  });
+
+  test('decode may be async, e.g. compute for a large body', () async {
+    final items = await _ItemsService(api).listInBackground();
+
+    expect(items, [
+      {'id': 1},
     ]);
   });
 

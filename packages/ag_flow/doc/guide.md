@@ -233,6 +233,20 @@ wrapped response is unwrapped inside `decode`
 `AgResponse` — status code, headers — or form data, build an `AgRequest`
 and call `send<D>(request, decode: ...)` instead.
 
+Decoding stays in the Service, so the Repo and everything above it only
+ever see typed objects. `decode` may return a Future: for a very large
+body, build the objects off the UI thread with Flutter's `compute`:
+
+```dart
+Future<List<Product>> list() => get(
+  ProductEndpoints.products,
+  decode: (json) => compute(Product.listFromJson, json),
+);
+```
+
+dio already parses large JSON text in a background isolate, so this is
+only worth it when building the objects is itself slow.
+
 ## 6. Pages and state
 
 A controller's state is one sealed `AgPageState<T>`: `initial`, `loading`,

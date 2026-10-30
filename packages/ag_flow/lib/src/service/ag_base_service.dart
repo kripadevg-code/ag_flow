@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:ag_flow/src/network/ag_endpoint.dart';
 import 'package:ag_flow/src/network/ag_http_method.dart';
 import 'package:ag_flow/src/network/ag_request.dart';
@@ -78,15 +80,26 @@ abstract class AgBaseService {
   /// The five verb methods are how an action body talks to the backend:
   /// each builds the `AgRequest`, sends it through [apiProvider] and
   /// returns only the data. [decode] turns the JSON body into [D] — unwrap
-  /// an enveloped response there. Use [send] when you need the full
-  /// response (status code, headers) or form data.
+  /// an enveloped response there. It may return a Future, so a large body
+  /// can be decoded off the UI thread with Flutter's `compute`:
+  ///
+  /// ```dart
+  /// Future<List<Post>> list({int page = 1}) => get(
+  ///   PostEndpoints.posts,
+  ///   decode: (json) => compute(Post.listFromJson, json),
+  /// );
+  /// ```
+  ///
+  /// dio already parses large JSON text in a background isolate, so this
+  /// is only worth it when building the objects is itself slow. Use [send]
+  /// when you need the full response (status code, headers) or form data.
   @protected
   Future<D> get<D>(
     AgEndpoint endpoint, {
     Map<String, dynamic> pathParams = const {},
     Map<String, dynamic> queryParams = const {},
     Map<String, String> headers = const {},
-    D Function(Object? json)? decode,
+    FutureOr<D> Function(Object? json)? decode,
   }) => _data(
     AgHttpMethod.get,
     endpoint,
@@ -104,7 +117,7 @@ abstract class AgBaseService {
     Map<String, dynamic> pathParams = const {},
     Map<String, dynamic> queryParams = const {},
     Map<String, String> headers = const {},
-    D Function(Object? json)? decode,
+    FutureOr<D> Function(Object? json)? decode,
   }) => _data(
     AgHttpMethod.post,
     endpoint,
@@ -123,7 +136,7 @@ abstract class AgBaseService {
     Map<String, dynamic> pathParams = const {},
     Map<String, dynamic> queryParams = const {},
     Map<String, String> headers = const {},
-    D Function(Object? json)? decode,
+    FutureOr<D> Function(Object? json)? decode,
   }) => _data(
     AgHttpMethod.put,
     endpoint,
@@ -142,7 +155,7 @@ abstract class AgBaseService {
     Map<String, dynamic> pathParams = const {},
     Map<String, dynamic> queryParams = const {},
     Map<String, String> headers = const {},
-    D Function(Object? json)? decode,
+    FutureOr<D> Function(Object? json)? decode,
   }) => _data(
     AgHttpMethod.patch,
     endpoint,
@@ -161,7 +174,7 @@ abstract class AgBaseService {
     Map<String, dynamic> pathParams = const {},
     Map<String, dynamic> queryParams = const {},
     Map<String, String> headers = const {},
-    D Function(Object? json)? decode,
+    FutureOr<D> Function(Object? json)? decode,
   }) => _data(
     AgHttpMethod.delete,
     endpoint,
@@ -178,10 +191,10 @@ abstract class AgBaseService {
     required Map<String, dynamic> pathParams,
     required Map<String, dynamic> queryParams,
     required Map<String, String> headers,
-    required D Function(Object? json)? decode,
+    required FutureOr<D> Function(Object? json)? decode,
     Object? body,
   }) async {
-    final response = await send<D>(
+    final response = await send<Object?>(
       AgRequest(
         endpoint: endpoint,
         method: method,
@@ -190,9 +203,9 @@ abstract class AgBaseService {
         headers: headers,
         body: body,
       ),
-      decode: decode,
     );
-    return response.data;
+    final json = response.data;
+    return decode != null ? await decode(json) : json as D;
   }
 
   /// Sends [request] through the shared [ApiProvider] and returns the
