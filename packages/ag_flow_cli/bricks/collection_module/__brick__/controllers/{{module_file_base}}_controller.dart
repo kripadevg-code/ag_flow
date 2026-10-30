@@ -5,14 +5,14 @@ import 'package:ag_flow/ag_flow.dart';
 /// Loads the list through the Repo{{#paginate}}, one page at a time{{/paginate}}.
 /// Each write goes through the Repo and then refreshes the list. Add
 /// feature-specific methods (search, filter) alongside them freely.
-class {{module_class_prefix}}Controller extends AgBaseController<List<{{model_class}}>>{{#paginate}}
-    with AgLoadMore<{{model_class}}>{{/paginate}} {
+class {{module_class_prefix}}Controller extends AgBaseController<List<{{model_class}}>>
+    with {{#paginate}}AgLoadMore{{/paginate}}{{^paginate}}AgList{{/paginate}}<{{model_class}}> {
   {{module_class_prefix}}Controller(this._repo);
 
   final {{module_class_prefix}}Repo _repo;
 {{^paginate}}
   @override
-  Future<List<{{model_class}}>> fetch() => _repo.list();
+  Future<List<{{model_class}}>> list() => _repo.list();
 {{/paginate}}{{#paginate}}
   @override
   Future<List<{{model_class}}>> list({int page = 1}) => _repo.list(page: page);

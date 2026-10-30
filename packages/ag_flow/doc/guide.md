@@ -283,8 +283,10 @@ is dropped — never shown.
 
 ## 7. Lists and pagination
 
-Every controller extends `AgBaseController<T>` and implements `fetch()`.
-A list is just `AgBaseController<List<Product>>`; paging is opt-in.
+Every controller extends `AgBaseController<T>` and loads with its Repo's
+action name: `with AgList<Product>` and `list()` for a list page,
+`with AgRetrieve<Product>` and `retrieve()` for a details page. A controller
+that loads nothing (a form) mixes in neither. Paging is opt-in.
 
 How the backend pages is a value the Service declares:
 
@@ -298,9 +300,9 @@ How the backend pages is a value the Service declares:
 `pageSize` defaults to 20. `isLastPage(items)` defaults to "fewer items than
 `pageSize`"; override it when the backend says so another way.
 
-The paged controller adds `with AgLoadMore<T>` and implements
-`list({int page = 1})` and `isLastPage`. `AgLoadMore` writes `fetch()` for
-you (page 1) and adds `loadMore()`, `hasMore`, `isLoadingMore` and
+The paged controller mixes in `AgLoadMore<T>` instead of `AgList<T>` and
+implements `list({int page = 1})` and `isLastPage`. `AgLoadMore` loads
+page 1 for you and adds `loadMore()`, `hasMore`, `isLoadingMore` and
 `loadMoreError`. `AgListView<T>` loads the next page as the user scrolls,
 shows a retry slot when a page fails, and keeps load-more state apart from
 page state, so a failed page never blanks a list that's already showing.
@@ -315,7 +317,7 @@ always wins over an older one:
 String? _category;
 
 @override
-Future<List<Product>> fetch() {
+Future<List<Product>> list() {
   final category = _category;
   return category == null ? _repo.list() : _repo.listByCategory(category);
 }
@@ -335,7 +337,8 @@ from an in-app push. The controller reads its argument from
 view declares `lookup_field`:
 
 ```dart
-class ProductDetailsController extends AgBaseController<Product> {
+class ProductDetailsController extends AgBaseController<Product>
+    with AgRetrieve<Product> {
   ProductDetailsController(this._repo)
     : argument = ProductDetailsPageArgument.fromPathParameters(
         AgRouteData.pathParameters,
@@ -347,7 +350,7 @@ class ProductDetailsController extends AgBaseController<Product> {
   int get lookupId => int.parse(argument.id);
 
   @override
-  Future<Product> fetch() => _repo.retrieve(lookupId);
+  Future<Product> retrieve() => _repo.retrieve(lookupId);
 
   Future<void> update(Product item) async {
     emit(AgPageState.success(await _repo.update(lookupId, item)));
@@ -373,12 +376,12 @@ Future<Project> retrieve(({String org, int id}) key) => get(
 
 If the push already handed over the whole object in `extra`, still return
 its id from `lookupId` (so update and destroy address it), and override
-`fetch()` to skip the refetch — falling back to it on a deep link, where
+`retrieve()` to skip the request — falling back to it on a deep link, where
 only the id is in the URL:
 
 ```dart
 @override
-Future<Product> fetch() async =>
+Future<Product> retrieve() async =>
     AgRouteData.extra as Product? ?? await _repo.retrieve(lookupId);
 ```
 
@@ -621,7 +624,7 @@ class ProductsController extends AgBaseController<List<Product>>
 }
 ```
 
-`emit` changes the displayed list without a refetch — useful when the
+`emit` changes the displayed list without a reload — useful when the
 backend doesn't persist writes immediately. The layering rules apply
 to every module; how each method works is up to you.
 
@@ -671,7 +674,7 @@ widgets — no locator setup needed. To exercise navigation, pump
 | `fetchList` / `fetchItem` / `AgEnvelope` | `get` / `post` / `put` / `patch` / `delete` — unwrap inside `decode` |
 | `AgPagedService` + `pageStrategy` | `pagination` (`AgPageNumberPagination` / `AgLimitOffsetPagination`) + your own `list({int page = 1})` |
 | `extends AgListController<T, K>` + `fetchPage(key)` | `extends AgBaseController<List<T>> with AgLoadMore<T>` + `list({int page = 1})` and `isLastPage` |
-| An unpaged list controller | `extends AgBaseController<List<T>>` + `fetch()` |
+| `fetch()` on a controller | `with AgList<T>` + `list()`, or `with AgRetrieve<T>` + `retrieve()` |
 | `extends AgDetailController<T, A>` + `arguments` | `extends AgBaseController<T>`, argument read from `AgRouteData.pathParameters` in the constructor |
 | `AgListBuilder<T, K>` | `AgListView<T>` |
 | `updateItems(...)` | `emit(AgPageState.success(...))` |

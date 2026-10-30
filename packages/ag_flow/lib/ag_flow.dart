@@ -7,7 +7,6 @@ library;
 
 export 'src/arguments/ag_arguments.dart';
 export 'src/controller/ag_base_controller.dart';
-export 'src/controller/ag_load_more.dart';
 export 'src/di/ag_initializable.dart';
 export 'src/di/ag_inject.dart';
 export 'src/di/ag_locator.dart';

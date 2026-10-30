@@ -4,7 +4,8 @@ import 'package:sample_app/modules/product/repos/product_details_repo.dart';
 
 /// Loads one resource through the Repo; each write goes to the same
 /// resource and shows the result.
-class ProductDetailsController extends AgBaseController<dynamic> {
+class ProductDetailsController extends AgBaseController<dynamic>
+    with AgRetrieve<dynamic> {
   ProductDetailsController(this._repo)
     : argument = ProductDetailsPageArgument.fromPathParameters(
         AgRouteData.pathParameters,
@@ -22,7 +23,7 @@ class ProductDetailsController extends AgBaseController<dynamic> {
   Object get lookupId => argument.id;
 
   @override
-  Future<dynamic> fetch() => _repo.retrieve(lookupId);
+  Future<dynamic> retrieve() => _repo.retrieve(lookupId);
 
   Future<void> update(dynamic item) async {
     emit(AgPageState.success(await _repo.update(lookupId, item)));

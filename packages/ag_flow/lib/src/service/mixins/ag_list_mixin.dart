@@ -13,6 +13,6 @@ import 'package:ag_flow/src/service/ag_base_service.dart';
 /// add optional parameters — `list({int page = 1})` for a paged backend
 /// still satisfies this contract.
 mixin AgListMixin<T> on AgBaseService {
-  /// Fetches the collection.
+  /// Reads the collection.
   Future<List<T>> list();
 }

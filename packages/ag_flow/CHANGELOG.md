@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- **Breaking: controllers use the Repo's action names, not `fetch()`.** A
+  list page's controller adds `with AgList<T>` and implements `list()`; a
+  details page's controller adds `with AgRetrieve<T>` and implements
+  `retrieve()`. `AgLoadMore` is unchanged. A controller that loads
+  nothing (a form) drops its empty `fetch()` and mixes in neither.
+  Migrate: rename `fetch()` and add the mixin.
 - **`decode` may be async.** The `get`/`post`/`put`/`patch`/`delete` verb
   methods accept a `decode` that returns a Future, so a Service can build
   a very large response's objects off the UI thread with `compute`.

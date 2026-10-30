@@ -175,10 +175,11 @@ folders.
 
 Use `AgPageState` — `initial` / `loading` / `success` / `empty` / `error`.
 Never ad-hoc `isLoading` / `errorMessage` fields. `emit()` is the only write
-path. Render a list with `AgListView`. For a paged list, mix
-`AgLoadMore<T>` into the Controller and implement `list({int page})`; it
-owns load-more, separately from page state (`ag g m <module> --paginate`
-generates this).
+path. A Controller loads its data with the Repo's action name: mix in
+`AgList<T>` and implement `list()`, or `AgRetrieve<T>` and `retrieve()`.
+Render a list with `AgListView`. For a paged list, mix `AgLoadMore<T>` into
+the Controller instead and implement `list({int page})`; it owns load-more,
+separately from page state (`ag g m <module> --paginate` generates this).
 
 ## Routing
 

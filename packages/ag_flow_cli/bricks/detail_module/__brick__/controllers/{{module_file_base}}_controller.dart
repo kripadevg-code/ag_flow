@@ -5,7 +5,8 @@ import 'package:{{app_package_name}}/{{{module_import_path}}}/repos/{{module_fil
 
 /// Loads one resource through the Repo; each write goes to the same
 /// resource and shows the result.
-class {{module_class_prefix}}Controller extends AgBaseController<{{model_class}}> {
+class {{module_class_prefix}}Controller extends AgBaseController<{{model_class}}>
+    with AgRetrieve<{{model_class}}> {
   {{module_class_prefix}}Controller(this._repo)
     : argument = {{module_class_prefix}}PageArgument.fromPathParameters(
         AgRouteData.pathParameters,
@@ -23,7 +24,7 @@ class {{module_class_prefix}}Controller extends AgBaseController<{{model_class}}
   {{id_type}} get lookupId => {{{lookup_id_expression}}};
 
   @override
-  Future<{{model_class}}> fetch() => _repo.retrieve(lookupId);
+  Future<{{model_class}}> retrieve() => _repo.retrieve(lookupId);
 {{#generate_update}}
   Future<void> update({{model_class}} item) async {
     emit(AgPageState.success(await _repo.update(lookupId, item)));

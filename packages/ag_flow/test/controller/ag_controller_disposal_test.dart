@@ -1,11 +1,11 @@
 import 'package:ag_flow/ag_flow.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-class _SlowController extends AgBaseController<List<int>> {
+class _SlowController extends AgBaseController<List<int>> with AgList<int> {
   _SlowController() : super(autoLoadOnInit: false);
 
   @override
-  Future<List<int>> fetch() async {
+  Future<List<int>> list() async {
     await Future<void>.delayed(const Duration(milliseconds: 20));
     return [1, 2, 3];
   }
@@ -22,11 +22,11 @@ class _SlowListController extends AgBaseController<List<int>>
   }
 }
 
-class _FailingController extends AgBaseController<List<int>> {
+class _FailingController extends AgBaseController<List<int>> with AgList<int> {
   _FailingController() : super(autoLoadOnInit: false);
 
   @override
-  Future<List<int>> fetch() async {
+  Future<List<int>> list() async {
     await Future<void>.delayed(const Duration(milliseconds: 20));
     throw StateError('backend exploded');
   }
@@ -36,12 +36,12 @@ class _FailingController extends AgBaseController<List<int>> {
 /// completely ordinary thing for a user to do — not an edge case. Because
 /// `AgBaseController` is a `ChangeNotifier`, and a popped route's
 /// controller is disposed by its `AgBinding`, an unguarded `emit()` from
-/// the late-arriving `fetch()` would throw a "was used after being
+/// the late-arriving load would throw a "was used after being
 /// disposed" error straight out of an untracked async gap.
 void main() {
   setUp(AgLocator.reset);
 
-  test('a fetch completing after dispose is silently dropped', () async {
+  test('a load completing after dispose is silently dropped', () async {
     final controller = _SlowController();
     final inFlight = controller.loadInitial();
     controller.dispose();
@@ -55,7 +55,7 @@ void main() {
     );
   });
 
-  test('a fetch *failing* after dispose is dropped just as quietly', () async {
+  test('a load *failing* after dispose is dropped just as quietly', () async {
     final controller = _FailingController();
     final inFlight = controller.loadInitial();
     controller.dispose();

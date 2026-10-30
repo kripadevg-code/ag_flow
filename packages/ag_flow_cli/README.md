@@ -99,8 +99,8 @@ ag g m product --methods=none             # only the read method
 the Service declares `AgPagination get pagination` (`?page=1&limit=20` by
 default — swap in `AgLimitOffsetPagination` or a subclass) and takes a
 `page` in `list`, the Repo passes it through, and the Controller mixes in
-`AgLoadMore` and implements `list`. Without it the Controller just
-implements `fetch()`.
+`AgLoadMore` and implements `list({int page = 1})`. Without it the
+Controller mixes in `AgList` and implements `list()`.
 
 ```bash
 ag g m product --paginate

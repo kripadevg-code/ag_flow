@@ -2,11 +2,11 @@ import 'package:ag_flow/ag_flow.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-class _Plain extends AgBaseController<List<int>> {
+class _Plain extends AgBaseController<List<int>> with AgList<int> {
   _Plain() : super(autoLoadOnInit: false);
 
   @override
-  Future<List<int>> fetch() async => [1, 2, 3];
+  Future<List<int>> list() async => [1, 2, 3];
 }
 
 class _Paged extends AgBaseController<List<int>> with AgLoadMore<int> {

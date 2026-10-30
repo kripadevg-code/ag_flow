@@ -15,9 +15,6 @@ class ProfileController extends AgBaseController<void> {
   String get displayName => AuthService.instance.displayName;
   int get userId => AuthService.instance.userId;
 
-  @override
-  Future<void> fetch() async {}
-
   void signOut() {
     AuthService.instance.logout();
     RouteManagement.goToLoginPage();

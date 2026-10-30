@@ -4,13 +4,14 @@ import 'package:sample_app/modules/product/repos/products_repo.dart';
 /// Loads the list through the Repo.
 /// Each write goes through the Repo and then refreshes the list. Add
 /// feature-specific methods (search, filter) alongside them freely.
-class ProductsController extends AgBaseController<List<dynamic>> {
+class ProductsController extends AgBaseController<List<dynamic>>
+    with AgList<dynamic> {
   ProductsController(this._repo);
 
   final ProductsRepo _repo;
 
   @override
-  Future<List<dynamic>> fetch() => _repo.list();
+  Future<List<dynamic>> list() => _repo.list();
 
   Future<void> create(dynamic item) async {
     await _repo.create(item);
