@@ -11,7 +11,8 @@ class TaskDetailsRepo extends AgBaseRepo {
 
   final TasksService _service;
 
-  Future<Task> retrieve(int id) => _service.retrieve(id);
+  Future<Task> retrieve(int id) => guard(() => _service.retrieve(id));
 
-  Future<Task> update(int id, Task item) => _service.update(id, item);
+  Future<Task> update(int id, Task item) =>
+      guard(() => _service.update(id, item));
 }

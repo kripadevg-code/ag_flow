@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- **Repos turn errors into app errors.** `AgBaseRepo.guard` now classifies
+  what it catches: `AgRepoException.kind` (`network`, `timeout`,
+  `cancelled`, `unauthorized`, `notFound`, `rejected`, `server`,
+  `badResponse`, `unknown`) and a readable `message`, with the original
+  error in `cause`. `AgError` shows that message by default.
+  `AgApiException.type` (`AgApiErrorType`) says whether a request failed
+  to connect, timed out, was cancelled or got an error status, without
+  exposing dio's types.
 - Requires Dart 3.13 / Flutter 3.47 (latest stable).
 - **Breaking: AG provides the architecture, never the bodies.** Every
   module is three plain classes — `XController extends AgBaseController<T>`,

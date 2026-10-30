@@ -9,9 +9,10 @@ class ProjectDetailsRepo extends AgBaseRepo {
 
   final ProjectsService _service;
 
-  Future<Project> retrieve(int id) => _service.retrieve(id);
+  Future<Project> retrieve(int id) => guard(() => _service.retrieve(id));
 
-  Future<Project> update(int id, Project item) => _service.update(id, item);
+  Future<Project> update(int id, Project item) =>
+      guard(() => _service.update(id, item));
 
-  Future<void> destroy(int id) => _service.destroy(id);
+  Future<void> destroy(int id) => guard(() => _service.destroy(id));
 }

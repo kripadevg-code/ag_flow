@@ -17,7 +17,7 @@ read the same, so a large codebase stays navigable.
 - [8. Detail modules and lookups](#8-detail-modules-and-lookups)
 - [9. Routing (your go_router)](#9-routing-your-go_router)
 - [10. Networking](#10-networking)
-- [11. Caching and offline support](#11-caching-and-offline-support)
+- [11. Errors, caching and offline](#11-errors-caching-and-offline)
 - [12. Custom actions and escape hatches](#12-custom-actions-and-escape-hatches)
 - [13. Large apps: structure and enforcement](#13-large-apps-structure-and-enforcement)
 - [14. Testing](#14-testing)
@@ -514,7 +514,42 @@ Future<List<Product>> search(String term) => get(
 );
 ```
 
-## 11. Caching and offline support
+## 11. Errors, caching and offline
+
+The Repo is the boundary between the app and its data sources. Two things
+live there: turning transport errors into app errors, and deciding where
+data comes from.
+
+### Errors
+
+Generated Repo methods wrap the Service call in `guard`:
+
+```dart
+Future<Product> retrieve(int id) => guard(() => _service.retrieve(id));
+```
+
+`guard` turns any error into an `AgRepoException` whose `kind` says what
+went wrong — `network`, `timeout`, `cancelled`, `unauthorized` (401/403),
+`notFound` (404), `rejected` (other 4xx), `server` (5xx), `badResponse`
+(the body didn't decode into the model) or `unknown`. The original error
+stays in `cause`. Controllers and pages react to `kind` and never see HTTP
+details; `AgError` shows `AgRepoException.message` by default. To show your
+own (localized) text, pass `message:` to `AgError` from the page's
+`errorBuilder`:
+
+```dart
+@override
+get errorBuilder => (context, error, stackTrace, retry) => AgError(
+  error: error,
+  onRetry: retry,
+  message: error is AgRepoException &&
+          error.kind == AgRepoErrorKind.network
+      ? context.l10n.offline
+      : null,
+);
+```
+
+### Caching and offline
 
 The Repo owns *where data comes from*, so that is where caching and offline
 support go. Its methods are plain delegation, so change the body:
@@ -528,11 +563,13 @@ class ProductsRepo extends AgBaseRepo {
 
   Future<List<Product>> list({int page = 1}) async {
     try {
-      final items = await _service.list(page: page);
+      final items = await guard(() => _service.list(page: page));
       await _cache.save(page, items);
       return items;
-    } on AgApiException {
-      final cached = await _cache.read(page);
+    } on AgRepoException catch (e) {
+      final cached = e.kind == AgRepoErrorKind.network
+          ? await _cache.read(page)
+          : null;
       if (cached == null) rethrow;
       return cached;
     }

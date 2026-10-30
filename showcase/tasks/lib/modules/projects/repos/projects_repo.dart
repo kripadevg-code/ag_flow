@@ -8,11 +8,12 @@ class ProjectsRepo extends AgBaseRepo {
 
   final ProjectsService _service;
 
-  Future<List<Project>> list({int page = 1}) => _service.list(page: page);
+  Future<List<Project>> list({int page = 1}) =>
+      guard(() => _service.list(page: page));
 
   bool isLastPage(List<Project> items) => _service.pagination.isLastPage(items);
 
-  Future<Project> create(Project item) => _service.create(item);
+  Future<Project> create(Project item) => guard(() => _service.create(item));
 
-  Future<void> destroy(int id) => _service.destroy(id);
+  Future<void> destroy(int id) => guard(() => _service.destroy(id));
 }

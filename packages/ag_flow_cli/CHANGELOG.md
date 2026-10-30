@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- **Generated Repo methods wrap their Service call in `guard`**, so
+  controllers get an `AgRepoException` with a `kind` instead of a raw
+  `AgApiException`.
 - Requires Dart 3.13. Supports `analyzer` 13 and 14 (was 7–12).
 - **Generated Services list one action mixin per generated method**
   instead of `AgCrudService`, and implement each one as a single
