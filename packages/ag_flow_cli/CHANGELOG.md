@@ -6,7 +6,7 @@
   `test/modules/<root>/<module>_test.dart`. It tests the Repo and the
   Controller against a fake Service, so it passes straight after
   generation, before any endpoint is set. Needs `ag_flow` with
-  `package:ag_flow/testing.dart`.
+  `package:ag_flow/testing.dart`. Pass `--no-test` to skip it.
 - **Generated Repo methods wrap their Service call in `guard`**, so
   controllers get an `AgRepoException` with a `kind` instead of a raw
   `AgApiException`.

@@ -56,6 +56,7 @@ class ModuleGenerator {
     this.methods = generatableMethods,
     this.model,
     this.paginate = false,
+    this.withTests = true,
   });
 
   final Project project;
@@ -87,6 +88,12 @@ class ModuleGenerator {
   /// default — paging is opt-in, the same as in the framework. Ignored
   /// for detail modules.
   final bool paginate;
+
+  /// Whether to write the module's starter test under
+  /// `test/modules/<root>/`. On by default; `--no-test` turns it off for
+  /// an app that keeps its tests elsewhere or doesn't depend on
+  /// `package:ag_flow/testing.dart`.
+  final bool withTests;
 
   static final _formatter = DartFormatter(
     languageVersion: DartFormatter.latestLanguageVersion,
@@ -149,7 +156,9 @@ class ModuleGenerator {
     for (final entry in target.files.entries) {
       // A brick's `test/` files are the module's starter tests; they go
       // under the app's own test/ directory, not inside lib/.
-      final outputPath = p.isWithin('test', entry.key)
+      final isTest = p.isWithin('test', entry.key);
+      if (isTest && !withTests) continue;
+      final outputPath = isTest
           ? p.join(testRoot, p.relative(entry.key, from: 'test'))
           : p.join(moduleRoot, entry.key);
       if (File(outputPath).existsSync()) {

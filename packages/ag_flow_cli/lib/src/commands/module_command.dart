@@ -45,6 +45,13 @@ class ModuleCommand extends Command<int> {
             'an AgPagination (?page=1&limit=20 by default) and the '
             'Controller mixes in AgLoadMore. Ignored for detail modules.',
       )
+      ..addFlag(
+        'test',
+        defaultsTo: true,
+        help:
+            'Write a starter test for the module under '
+            'test/modules/<root>/. Pass --no-test to skip it.',
+      )
       ..addOption(
         'model',
         help:
@@ -179,6 +186,7 @@ class ModuleCommand extends Command<int> {
       methods: methods,
       model: model,
       paginate: argResults!['paginate'] as bool,
+      withTests: argResults!['test'] as bool,
     );
 
     final List<FileOp> ops;

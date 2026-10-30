@@ -252,6 +252,15 @@ void main() {
         File(p.join(goldensDir.path, 'detail_module', testPath)).readAsStringSync(),
       );
     });
+
+    test('withTests: false plans no starter test', () async {
+      final ops = await ModuleGenerator(
+        project: Project(appDir),
+        withTests: false,
+      ).plan(ModulePath.parse('product'));
+      expect(ops.where((op) => p.isWithin(p.join(appDir.path, 'test'), op.path)), isEmpty);
+      expect(ops, isNotEmpty);
+    });
   });
 
   group('ModuleGenerator — aggregator file updates', () {
