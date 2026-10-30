@@ -144,9 +144,14 @@ class ModuleGenerator {
     await generator.generate(target, vars: vars);
 
     final moduleRoot = project.moduleRootDir(modulePath.rootSegment);
+    final testRoot = project.moduleTestDir(modulePath.rootSegment);
     final ops = <FileOp>[];
     for (final entry in target.files.entries) {
-      final outputPath = p.join(moduleRoot, entry.key);
+      // A brick's `test/` files are the module's starter tests; they go
+      // under the app's own test/ directory, not inside lib/.
+      final outputPath = p.isWithin('test', entry.key)
+          ? p.join(testRoot, p.relative(entry.key, from: 'test'))
+          : p.join(moduleRoot, entry.key);
       if (File(outputPath).existsSync()) {
         ops.add(FileOp.skipExisting(path: outputPath));
         continue;

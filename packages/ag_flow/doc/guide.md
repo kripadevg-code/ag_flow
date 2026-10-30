@@ -77,7 +77,7 @@ Set your API's base URL in `initial_binding.dart` and you are ready.
 ag g m product                                  # a collection (list) module
 ag g m product/details                          # a detail module under it
 ag g m order --from-json=order_sample.json      # typed from a real API response
-ag g m invoice --methods=add                    # read + create only
+ag g m invoice --methods=create                 # read + create only
 ag g m report --methods=none                    # read-only
 ```
 
@@ -647,17 +647,43 @@ to every module; how each method works is up to you.
 
 ## 14. Testing
 
-Every layer is constructor-injected, so each is testable on its own:
+`ag g m` writes a starter test for every module to
+`test/modules/<root>/<module>_test.dart`. It tests the Repo and the
+Controller against a fake Service, so it passes as soon as it is
+generated; add cases to it as the module grows.
+
+The helpers live in `package:ag_flow/testing.dart` — import it from tests
+only. `AgFakeApiProvider` stands in for the network: set up a reply per
+endpoint and the real Service, Repo and Controller run unchanged.
 
 ```dart
-class FakeApiProvider implements ApiProvider { ... }   // returns fixtures
+import 'package:ag_flow/testing.dart';
 
-final controller = ProductsController(
-  ProductsRepo(ProductsService(FakeApiProvider())),
-);
-await controller.loadInitial();
-expect(controller.state.dataOrNull, hasLength(20));
+test('loads the first page', () async {
+  final api = AgFakeApiProvider()
+    ..reply(ProductEndpoints.products, json: [{'id': 1, 'title': 'Pen'}]);
+  final controller = ProductsController(ProductsRepo(ProductsService(api)));
+
+  await controller.loadInitial();
+
+  expect(controller.state.dataOrNull, hasLength(1));
+  expect(api.requests.single.queryParams, {'page': 1, 'limit': 20});
+});
 ```
+
+- `reply(endpoint, json: ...)` answers every request to that endpoint
+  (GET by default; pass `method:` for others). `replyWith` builds the body
+  from the request, e.g. to echo a posted body. `fail(endpoint, error)`
+  throws an `AgApiException`, so a test can check the Repo's
+  `AgRepoException.kind`.
+- A request with no reply throws a `StateError` naming it.
+- To test through a binding, register the fake as the `ApiProvider` and
+  run the binding: `AgLocator.put<ApiProvider>(api)`, then
+  `ProductsBinding().dependencies()`. To swap a single layer instead,
+  `put` the fake: a registered instance wins over the binding's `lazyPut`
+  factory, whichever runs first.
+- AG's registries are static: call `setUp(resetAgFlow)` in any test that
+  uses `AgLocator` or `AgRouteData`.
 
 Widget tests construct a controller directly and pass it to the page's
 widgets — no locator setup needed. To exercise navigation, pump

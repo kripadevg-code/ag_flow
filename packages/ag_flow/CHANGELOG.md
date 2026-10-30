@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- **Test helpers: `package:ag_flow/testing.dart`.** `AgFakeApiProvider`
+  answers requests from replies set up per endpoint (`reply`, `replyWith`,
+  `fail`) and records every request, so a Service, Repo and Controller run
+  unchanged in a test with no network. `resetAgFlow()` clears AG's static
+  registries between tests.
 - **Breaking: controllers use the Repo's action names, not `fetch()`.** A
   list page's controller adds `with AgList<T>` and implements `list()`; a
   details page's controller adds `with AgRetrieve<T>` and implements

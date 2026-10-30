@@ -1,0 +1,5 @@
+# test/goldens/ holds what `ag g m` writes into an app, including each
+# module's starter *_test.dart. Those are compared byte for byte, never
+# run, so the runner only looks under test/src/.
+paths:
+  - test/src

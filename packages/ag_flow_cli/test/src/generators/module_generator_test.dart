@@ -217,6 +217,12 @@ void main() {
           ),
         ),
       );
+      _expectMatchesGolden(
+        Directory(p.join(appDir.path, 'test', 'modules', 'product')),
+        Directory(
+          p.join(goldensDir.path, 'collection_module', 'test', 'modules', 'product'),
+        ),
+      );
     });
 
     test('a fresh detail module matches the detail_module golden', () async {
@@ -239,6 +245,12 @@ void main() {
         ).readAsStringSync();
         expect(actual, expected, reason: 'content mismatch for $relativePath');
       }
+      // The module's starter test lands under the app's test/, not lib/.
+      const testPath = 'test/modules/product/product_details_test.dart';
+      expect(
+        File(p.join(appDir.path, testPath)).readAsStringSync(),
+        File(p.join(goldensDir.path, 'detail_module', testPath)).readAsStringSync(),
+      );
     });
   });
 
@@ -731,6 +743,9 @@ abstract class _Routes {
 
         for (final op in [...rootOps, ...detailOps]) {
           if (op.path.contains('${p.separator}core${p.separator}')) continue;
+          // A module's starter test builds an AgFakeApiProvider on purpose;
+          // the rule is about module code under lib/.
+          if (p.isWithin(p.join(appDir.path, 'test'), op.path)) continue;
           expect(p.basename(op.path), isNot(contains('endpoints')));
           expect(
             p.basename(op.path),

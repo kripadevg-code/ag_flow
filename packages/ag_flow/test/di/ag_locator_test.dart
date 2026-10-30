@@ -116,4 +116,19 @@ void main() {
     expect(service.disposeCallCount, 0);
     expect(AgLocator.find<_DisposableService>(), same(service));
   });
+
+  // How a test swaps one layer for a fake: the put instance wins whether
+  // the binding's lazyPut ran before it or runs after it.
+  test('a put instance wins over a lazyPut factory, in either order', () {
+    final fake = _Service();
+
+    AgLocator.lazyPut<_Service>(_Service.new);
+    AgLocator.put<_Service>(fake);
+    expect(AgLocator.find<_Service>(), same(fake));
+
+    AgLocator.reset();
+    AgLocator.put<_Service>(fake);
+    AgLocator.lazyPut<_Service>(_Service.new);
+    expect(AgLocator.find<_Service>(), same(fake));
+  });
 }
