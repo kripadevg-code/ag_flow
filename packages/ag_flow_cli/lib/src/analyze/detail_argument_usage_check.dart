@@ -44,8 +44,7 @@ Future<List<AnalyzeIssue>> checkDetailArgumentUsage(
       final result = await session.getResolvedUnit(entity.path);
       if (result is! ResolvedUnitResult) continue;
 
-      for (final declaration
-          in result.unit.declarations.whereType<ClassDeclaration>()) {
+      for (final declaration in result.unit.declarations.whereType<ClassDeclaration>()) {
         if (!_extendsAgBaseController(declaration)) continue;
 
         for (final field in _argumentFields(declaration)) {
@@ -88,9 +87,7 @@ Iterable<String> _argumentFields(ClassDeclaration declaration) sync* {
     final type = member.fields.type?.type;
     if (type is! InterfaceType) continue;
     final source = type.element.library.firstFragment.source.fullName;
-    if (!p.posix
-        .joinAll(p.split(source))
-        .endsWith('core/arguments/arguments.dart')) {
+    if (!p.posix.joinAll(p.split(source)).endsWith('core/arguments/arguments.dart')) {
       continue;
     }
     for (final variable in member.fields.variables) {

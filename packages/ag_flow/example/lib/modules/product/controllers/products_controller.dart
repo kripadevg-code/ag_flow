@@ -4,8 +4,7 @@ import 'package:ag_flow_example/modules/product/repos/products_repo.dart';
 /// Loads the list through the Repo, one page at a time.
 /// Each write goes through the Repo and then refreshes the list. Add
 /// feature-specific methods (search, filter) alongside them freely.
-class ProductsController extends AgBaseController<List<dynamic>>
-    with AgLoadMore<dynamic> {
+class ProductsController extends AgBaseController<List<dynamic>> with AgLoadMore<dynamic> {
   ProductsController(this._repo);
 
   final ProductsRepo _repo;

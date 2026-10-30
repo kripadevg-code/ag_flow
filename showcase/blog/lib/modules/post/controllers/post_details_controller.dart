@@ -3,8 +3,7 @@ import 'package:ag_showcase_blog/core/arguments/arguments.dart';
 import 'package:ag_showcase_blog/modules/post/models/post.dart';
 import 'package:ag_showcase_blog/modules/post/repos/post_details_repo.dart';
 
-class PostDetailsController extends AgBaseController<Post>
-    with AgRetrieve<Post> {
+class PostDetailsController extends AgBaseController<Post> with AgRetrieve<Post> {
   PostDetailsController(this._repo)
     : argument = PostDetailsPageArgument.fromPathParameters(
         AgRouteData.pathParameters,

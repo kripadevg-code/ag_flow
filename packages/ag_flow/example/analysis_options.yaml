@@ -27,4 +27,5 @@ analyzer:
 # does not exist once the package is published, and the formatter must
 # behave the same there (pana, pub.dev) as in this workspace.
 formatter:
+  page_width: 100
   trailing_commas: preserve

@@ -158,22 +158,19 @@ Directory _findPackageRoot(String packageName) {
   var dir = Directory.current;
   while (true) {
     final candidate = File(p.join(dir.path, 'pubspec.yaml'));
-    if (candidate.existsSync() &&
-        candidate.readAsStringSync().contains('name: $packageName')) {
+    if (candidate.existsSync() && candidate.readAsStringSync().contains('name: $packageName')) {
       return dir;
     }
     // Search up to 2 levels of subdirectories (handles workspace-root
     // invocation where packages live at packages/foo/).
     for (final entry1 in dir.listSync().whereType<Directory>()) {
       final sub1 = File(p.join(entry1.path, 'pubspec.yaml'));
-      if (sub1.existsSync() &&
-          sub1.readAsStringSync().contains('name: $packageName')) {
+      if (sub1.existsSync() && sub1.readAsStringSync().contains('name: $packageName')) {
         return entry1;
       }
       for (final entry2 in entry1.listSync().whereType<Directory>()) {
         final sub2 = File(p.join(entry2.path, 'pubspec.yaml'));
-        if (sub2.existsSync() &&
-            sub2.readAsStringSync().contains('name: $packageName')) {
+        if (sub2.existsSync() && sub2.readAsStringSync().contains('name: $packageName')) {
           return entry2;
         }
       }
@@ -793,10 +790,7 @@ abstract class _Routes {
         final controllersDir = Directory(
           p.join(appDir.path, 'lib', 'modules', 'product', 'controllers'),
         );
-        final fileNames = controllersDir
-            .listSync()
-            .map((f) => p.basename(f.path))
-            .toSet();
+        final fileNames = controllersDir.listSync().map((f) => p.basename(f.path)).toSet();
         expect(
           fileNames,
           containsAll([

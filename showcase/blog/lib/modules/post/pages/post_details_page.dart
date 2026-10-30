@@ -31,10 +31,8 @@ class PostDetailsPage extends AgBasePage<PostDetailsController> {
       (context) => const PostDetailsLoading();
 
   @override
-  Widget Function(BuildContext, Object, StackTrace?, VoidCallback)?
-  get errorBuilder =>
-      (context, error, stackTrace, retry) =>
-          PostDetailsError(error: error, onRetry: retry);
+  Widget Function(BuildContext, Object, StackTrace?, VoidCallback)? get errorBuilder =>
+      (context, error, stackTrace, retry) => PostDetailsError(error: error, onRetry: retry);
 
   @override
   WidgetBuilder? get emptyBuilder =>

@@ -58,12 +58,8 @@ class AgLoggingInterceptor extends Interceptor {
   void _logResult(RequestOptions requestOptions, int? statusCode) {
     if (!options.enabled) return;
     final start = requestOptions.extra[_startTimeKey];
-    final duration = start is DateTime
-        ? DateTime.now().difference(start)
-        : null;
-    final durationLabel = duration == null
-        ? 'n/a'
-        : '${duration.inMilliseconds}ms';
+    final duration = start is DateTime ? DateTime.now().difference(start) : null;
+    final durationLabel = duration == null ? 'n/a' : '${duration.inMilliseconds}ms';
     _log(
       '[API] ${requestOptions.method} ${_pathWithQuery(requestOptions)} '
       'Status: ${statusCode ?? '-'} Duration: $durationLabel',

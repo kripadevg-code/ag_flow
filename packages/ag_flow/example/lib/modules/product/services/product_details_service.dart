@@ -7,10 +7,7 @@ import 'package:ag_flow/ag_flow.dart';
 ///
 /// Replace `dynamic` with your real model type.
 class ProductDetailsService extends AgBaseService
-    with
-        AgRetrieveMixin<dynamic, Object>,
-        AgUpdateMixin<dynamic, Object>,
-        AgDestroyMixin<Object> {
+    with AgRetrieveMixin<dynamic, Object>, AgUpdateMixin<dynamic, Object>, AgDestroyMixin<Object> {
   ProductDetailsService(super.apiProvider);
 
   // TODO: point this at a real endpoint declared in core/endpoints.dart.
@@ -40,6 +37,5 @@ class ProductDetailsService extends AgBaseService
   );
 
   @override
-  Future<void> destroy(Object id) =>
-      delete(resourceEndpoint, pathParams: {'id': id});
+  Future<void> destroy(Object id) => delete(resourceEndpoint, pathParams: {'id': id});
 }

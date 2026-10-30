@@ -31,8 +31,7 @@ class TasksService extends AgBaseService
     TaskEndpoints.tasks,
     queryParams: pagination.query(page),
     decode: (json) => [
-      for (final item in json! as List<Object?>)
-        Task.fromJson(item! as Map<String, dynamic>),
+      for (final item in json! as List<Object?>) Task.fromJson(item! as Map<String, dynamic>),
     ],
   );
 
@@ -59,6 +58,5 @@ class TasksService extends AgBaseService
   );
 
   @override
-  Future<void> destroy(int id) =>
-      delete(TaskEndpoints.taskById, pathParams: {'id': id});
+  Future<void> destroy(int id) => delete(TaskEndpoints.taskById, pathParams: {'id': id});
 }

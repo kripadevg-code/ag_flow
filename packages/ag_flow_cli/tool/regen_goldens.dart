@@ -70,8 +70,7 @@ Future<void> _regen({
     final relative = p.relative(entity.path, from: libDir.path);
     if (relative.startsWith('core')) continue;
     if (keepOnly != null && !keepOnly(relative)) continue;
-    final destination = File(p.join(target.path, relative))
-      ..createSync(recursive: true);
+    final destination = File(p.join(target.path, relative))..createSync(recursive: true);
     entity.copySync(destination.path);
   }
   appDir.deleteSync(recursive: true);

@@ -88,9 +88,7 @@ String? _existingPathFor(ClassDeclaration routesImpl, String constantName) {
     for (final variable in member.fields.variables) {
       if (variable.name.lexeme != constantName) continue;
       final initializer = variable.initializer;
-      return initializer is SimpleStringLiteral
-          ? initializer.value
-          : initializer?.toSource();
+      return initializer is SimpleStringLiteral ? initializer.value : initializer?.toSource();
     }
   }
   return null;
@@ -98,8 +96,6 @@ String? _existingPathFor(ClassDeclaration routesImpl, String constantName) {
 
 Patch _insertMember(ClassDeclaration classDecl, String text) {
   final body = classDecl.body;
-  final offset = body.members.isEmpty
-      ? body.beginToken.end
-      : body.members.last.end;
+  final offset = body.members.isEmpty ? body.beginToken.end : body.members.last.end;
   return Patch.insertion(offset, text);
 }

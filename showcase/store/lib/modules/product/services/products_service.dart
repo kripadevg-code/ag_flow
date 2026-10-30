@@ -19,8 +19,7 @@ class ProductsService extends AgBaseService
   ProductsService(super.apiProvider);
 
   @override
-  Future<List<Product>> list() =>
-      get(ProductEndpoints.products, decode: _products);
+  Future<List<Product>> list() => get(ProductEndpoints.products, decode: _products);
 
   @override
   Future<Product> create(Product item) => post(
@@ -30,8 +29,7 @@ class ProductsService extends AgBaseService
   );
 
   @override
-  Future<void> destroy(int id) =>
-      delete(ProductEndpoints.productById, pathParams: {'id': id});
+  Future<void> destroy(int id) => delete(ProductEndpoints.productById, pathParams: {'id': id});
 
   // Feature-specific reads sit alongside the mixed-in actions, written
   // with the same verb methods as every action body.
@@ -48,7 +46,6 @@ class ProductsService extends AgBaseService
   );
 
   static List<Product> _products(Object? json) => [
-    for (final item in json! as List<Object?>)
-      Product.fromJson(item! as Map<String, dynamic>),
+    for (final item in json! as List<Object?>) Product.fromJson(item! as Map<String, dynamic>),
   ];
 }

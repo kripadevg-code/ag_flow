@@ -47,8 +47,7 @@ part 'ag_load_more.dart';
 ///
 /// Dart infers the type from the left-hand side. No `<LoginController>`
 /// needed at the call site.
-abstract class AgBaseController<T> extends ChangeNotifier
-    implements AgInitializable {
+abstract class AgBaseController<T> extends ChangeNotifier implements AgInitializable {
   AgBaseController({this.autoLoadOnInit = true});
 
   /// Whether [loadInitial] runs automatically once this controller is
@@ -160,9 +159,7 @@ abstract class AgBaseController<T> extends ChangeNotifier
       final data = await _load();
       if (!isCurrentRequest(token)) return;
       emit(
-        isEmptyData(data)
-            ? const AgPageState.empty()
-            : AgPageState.success(data),
+        isEmptyData(data) ? const AgPageState.empty() : AgPageState.success(data),
       );
       // A developer's list()/retrieve() may throw anything (Exception, Error, a bare
       // String, ...) — AG's contract is to turn all of it into

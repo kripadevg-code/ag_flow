@@ -77,8 +77,7 @@ class AgListView<T> extends StatelessWidget {
 
     // Scroll position only changes on these; start/end-of-drag and
     // user-scroll notifications carry no new offset to act on.
-    if (notification is! ScrollUpdateNotification &&
-        notification is! OverscrollNotification) {
+    if (notification is! ScrollUpdateNotification && notification is! OverscrollNotification) {
       return false;
     }
 
@@ -132,9 +131,7 @@ class AgListView<T> extends StatelessWidget {
           sliver = SliverList(
             delegate: SliverChildBuilderDelegate((context, index) {
               final itemIndex = index ~/ 2;
-              return index.isEven
-                  ? itemAt(context, itemIndex)
-                  : separator(context, itemIndex);
+              return index.isEven ? itemAt(context, itemIndex) : separator(context, itemIndex);
             }, childCount: math.max(0, itemCount * 2 - 1)),
           );
         }
@@ -145,10 +142,7 @@ class AgListView<T> extends StatelessWidget {
           child: CustomScrollView(
             physics: physics,
             slivers: [
-              if (padding == null)
-                sliver
-              else
-                SliverPadding(padding: padding, sliver: sliver),
+              if (padding == null) sliver else SliverPadding(padding: padding, sliver: sliver),
             ],
           ),
         );
@@ -164,8 +158,7 @@ class AgListView<T> extends StatelessWidget {
           _DefaultLoadMoreError(error: error, onRetry: pager.loadMore);
     }
     if (pager.isLoadingMore) {
-      return loadMoreBuilder?.call(context) ??
-          const _DefaultLoadMoreIndicator();
+      return loadMoreBuilder?.call(context) ?? const _DefaultLoadMoreIndicator();
     }
     if (pager.hasMore) return const SizedBox.shrink();
     return noMoreItemsBuilder?.call(context);

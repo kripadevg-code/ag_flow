@@ -6,8 +6,7 @@ class TaskDetailsPage extends AgBasePage<TaskDetailsController> {
   const TaskDetailsPage({super.key});
 
   @override
-  PreferredSizeWidget? appBar(BuildContext context) =>
-      AppBar(title: const Text('Task detail'));
+  PreferredSizeWidget? appBar(BuildContext context) => AppBar(title: const Text('Task detail'));
 
   @override
   Widget buildSuccess(BuildContext context) {
@@ -27,9 +26,7 @@ class TaskDetailsPage extends AgBasePage<TaskDetailsController> {
                 selected: task.completed,
                 onSelected: (_) => controller.toggleCompleted(),
                 avatar: Icon(
-                  task.completed
-                      ? Icons.check_circle_rounded
-                      : Icons.radio_button_unchecked,
+                  task.completed ? Icons.check_circle_rounded : Icons.radio_button_unchecked,
                   size: 18,
                 ),
               ),

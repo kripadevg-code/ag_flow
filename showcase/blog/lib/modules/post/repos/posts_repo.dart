@@ -7,8 +7,7 @@ class PostsRepo extends AgBaseRepo {
 
   final PostsService _service;
 
-  Future<List<Post>> list({int page = 1}) =>
-      guard(() => _service.list(page: page));
+  Future<List<Post>> list({int page = 1}) => guard(() => _service.list(page: page));
 
   bool isLastPage(List<Post> items) => _service.pagination.isLastPage(items);
 

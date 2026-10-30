@@ -51,8 +51,7 @@ class AgRepoException implements Exception {
       AgApiErrorType.connection => AgRepoErrorKind.network,
       AgApiErrorType.timeout => AgRepoErrorKind.timeout,
       AgApiErrorType.cancelled => AgRepoErrorKind.cancelled,
-      AgApiErrorType.response ||
-      AgApiErrorType.unknown => switch (error.statusCode) {
+      AgApiErrorType.response || AgApiErrorType.unknown => switch (error.statusCode) {
         401 || 403 => AgRepoErrorKind.unauthorized,
         404 => AgRepoErrorKind.notFound,
         final code? when code >= 500 => AgRepoErrorKind.server,

@@ -25,8 +25,7 @@ class ProjectsService extends AgBaseService
     ProjectEndpoints.projects,
     queryParams: pagination.query(page),
     decode: (json) => [
-      for (final item in json! as List<Object?>)
-        Project.fromJson(item! as Map<String, dynamic>),
+      for (final item in json! as List<Object?>) Project.fromJson(item! as Map<String, dynamic>),
     ],
   );
 
@@ -53,6 +52,5 @@ class ProjectsService extends AgBaseService
   );
 
   @override
-  Future<void> destroy(int id) =>
-      delete(ProjectEndpoints.projectById, pathParams: {'id': id});
+  Future<void> destroy(int id) => delete(ProjectEndpoints.projectById, pathParams: {'id': id});
 }

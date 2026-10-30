@@ -15,8 +15,7 @@ import 'package:flutter/material.dart';
 /// Subclasses provide [buildSuccess] and may independently override
 /// [loadingBuilder], [errorBuilder], and [emptyBuilder]; anything left
 /// null falls back to the AG default.
-abstract class AgBasePage<C extends AgBaseController<dynamic>>
-    extends StatelessWidget {
+abstract class AgBasePage<C extends AgBaseController<dynamic>> extends StatelessWidget {
   const AgBasePage({super.key});
 
   /// This page's controller, resolved from [AgLocator] — registered by

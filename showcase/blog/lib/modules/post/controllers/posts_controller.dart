@@ -2,8 +2,7 @@ import 'package:ag_flow/ag_flow.dart';
 import 'package:ag_showcase_blog/modules/post/models/post.dart';
 import 'package:ag_showcase_blog/modules/post/repos/posts_repo.dart';
 
-class PostsController extends AgBaseController<List<Post>>
-    with AgLoadMore<Post> {
+class PostsController extends AgBaseController<List<Post>> with AgLoadMore<Post> {
   PostsController(this._repo);
 
   final PostsRepo _repo;

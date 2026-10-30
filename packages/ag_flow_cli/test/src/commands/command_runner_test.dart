@@ -55,22 +55,19 @@ File _findPubspec(String packageName) {
   var dir = Directory.current;
   while (true) {
     final candidate = File(p.join(dir.path, 'pubspec.yaml'));
-    if (candidate.existsSync() &&
-        candidate.readAsStringSync().contains('name: $packageName')) {
+    if (candidate.existsSync() && candidate.readAsStringSync().contains('name: $packageName')) {
       return candidate;
     }
     // Search up to 2 levels of subdirectories (covers both package-root
     // and workspace-root invocations where packages live at packages/foo/).
     for (final entry1 in dir.listSync().whereType<Directory>()) {
       final sub1 = File(p.join(entry1.path, 'pubspec.yaml'));
-      if (sub1.existsSync() &&
-          sub1.readAsStringSync().contains('name: $packageName')) {
+      if (sub1.existsSync() && sub1.readAsStringSync().contains('name: $packageName')) {
         return sub1;
       }
       for (final entry2 in entry1.listSync().whereType<Directory>()) {
         final sub2 = File(p.join(entry2.path, 'pubspec.yaml'));
-        if (sub2.existsSync() &&
-            sub2.readAsStringSync().contains('name: $packageName')) {
+        if (sub2.existsSync() && sub2.readAsStringSync().contains('name: $packageName')) {
           return sub2;
         }
       }

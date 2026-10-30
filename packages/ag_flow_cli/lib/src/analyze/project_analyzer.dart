@@ -47,8 +47,7 @@ class ProjectAnalyzer {
   /// included) has its dependencies fully resolved, but the resolved
   /// config only ever lives at the workspace root's `.dart_tool/`, never
   /// duplicated into each member.
-  Future<bool> get dependenciesResolved async =>
-      await findPackageConfig(project.root) != null;
+  Future<bool> get dependenciesResolved async => await findPackageConfig(project.root) != null;
 
   Future<List<AnalyzeIssue>> analyze() async {
     final appRoutesFile = File(

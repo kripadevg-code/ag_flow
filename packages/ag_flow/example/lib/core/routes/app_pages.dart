@@ -38,8 +38,7 @@ abstract class AppPages {
     GoRoute(
       path: AppRoutes.login,
       name: AppRoutes.login,
-      redirect: (context, state) =>
-          AgGuard.check(const [GuestGuard()], state.fullPath!),
+      redirect: (context, state) => AgGuard.check(const [GuestGuard()], state.fullPath!),
       pageBuilder: (context, state) => AgRoutePage<void>(
         key: state.pageKey,
         pathParameters: state.pathParameters,
@@ -54,8 +53,7 @@ abstract class AppPages {
     GoRoute(
       path: AppRoutes.home,
       name: AppRoutes.home,
-      redirect: (context, state) =>
-          AgGuard.check(const [AuthGuard()], state.fullPath!),
+      redirect: (context, state) => AgGuard.check(const [AuthGuard()], state.fullPath!),
       pageBuilder: (context, state) => AgRoutePage<void>(
         key: state.pageKey,
         pathParameters: state.pathParameters,

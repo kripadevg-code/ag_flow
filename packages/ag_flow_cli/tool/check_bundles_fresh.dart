@@ -31,8 +31,7 @@ void main() {
     );
     final onDisk = _filesOnDisk(brickDir);
     final inBundle = <String, List<int>>{
-      for (final MasonBundledFile file in entry.value.files)
-        file.path: base64.decode(file.data),
+      for (final MasonBundledFile file in entry.value.files) file.path: base64.decode(file.data),
     };
 
     final onlyOnDisk = onDisk.keys.toSet().difference(inBundle.keys.toSet());
@@ -80,10 +79,7 @@ Map<String, List<int>> _filesOnDisk(Directory brickDir) {
   final files = <String, List<int>>{};
   for (final entity in brickDir.listSync(recursive: true)) {
     if (entity is! File) continue;
-    final relativePath = p
-        .relative(entity.path, from: brickDir.path)
-        .split(p.separator)
-        .join('/');
+    final relativePath = p.relative(entity.path, from: brickDir.path).split(p.separator).join('/');
     files[relativePath] = entity.readAsBytesSync();
   }
   return files;

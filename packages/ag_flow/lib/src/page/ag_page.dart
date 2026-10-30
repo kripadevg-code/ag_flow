@@ -56,8 +56,8 @@ class AgPage<T> extends StatelessWidget {
       builder: (context) {
         final currentState = controller.state;
         return switch (currentState) {
-          AgPageInitial<T>() || AgPageLoading<T>() =>
-            loadingBuilder?.call(context) ?? const AgLoading(),
+          AgPageInitial<T>() ||
+          AgPageLoading<T>() => loadingBuilder?.call(context) ?? const AgLoading(),
           AgPageError<T>(:final error, :final stackTrace) =>
             errorBuilder?.call(context, error, stackTrace, controller.retry) ??
                 AgError(

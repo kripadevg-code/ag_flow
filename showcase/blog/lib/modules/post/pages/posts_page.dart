@@ -21,10 +21,8 @@ class PostsPage extends AgBasePage<PostsController> {
       (context) => const PostLoading();
 
   @override
-  Widget Function(BuildContext, Object, StackTrace?, VoidCallback)?
-  get errorBuilder =>
-      (context, error, stackTrace, retry) =>
-          PostError(error: error, onRetry: retry);
+  Widget Function(BuildContext, Object, StackTrace?, VoidCallback)? get errorBuilder =>
+      (context, error, stackTrace, retry) => PostError(error: error, onRetry: retry);
 
   @override
   WidgetBuilder? get emptyBuilder =>

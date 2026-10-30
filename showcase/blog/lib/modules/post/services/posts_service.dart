@@ -22,8 +22,7 @@ class PostsService extends AgBaseService
     PostEndpoints.posts,
     queryParams: pagination.query(page),
     decode: (json) => [
-      for (final item in json! as List<Object?>)
-        Post.fromJson(item! as Map<String, dynamic>),
+      for (final item in json! as List<Object?>) Post.fromJson(item! as Map<String, dynamic>),
     ],
   );
 
@@ -35,6 +34,5 @@ class PostsService extends AgBaseService
   );
 
   @override
-  Future<void> destroy(int id) =>
-      delete(PostEndpoints.postById, pathParams: {'id': id});
+  Future<void> destroy(int id) => delete(PostEndpoints.postById, pathParams: {'id': id});
 }

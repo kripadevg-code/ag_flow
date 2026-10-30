@@ -18,10 +18,8 @@ class ProductsPage extends AgBasePage<ProductsController> {
       (context) => const ProductLoading();
 
   @override
-  Widget Function(BuildContext, Object, StackTrace?, VoidCallback)?
-  get errorBuilder =>
-      (context, error, stackTrace, retry) =>
-          ProductError(error: error, onRetry: retry);
+  Widget Function(BuildContext, Object, StackTrace?, VoidCallback)? get errorBuilder =>
+      (context, error, stackTrace, retry) => ProductError(error: error, onRetry: retry);
 
   @override
   WidgetBuilder? get emptyBuilder =>

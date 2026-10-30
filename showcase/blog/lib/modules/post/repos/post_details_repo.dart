@@ -9,8 +9,7 @@ class PostDetailsRepo extends AgBaseRepo {
 
   Future<Post> retrieve(int id) => guard(() => _service.retrieve(id));
 
-  Future<Post> update(int id, Post item) =>
-      guard(() => _service.update(id, item));
+  Future<Post> update(int id, Post item) => guard(() => _service.update(id, item));
 
   Future<void> destroy(int id) => guard(() => _service.destroy(id));
 }

@@ -69,10 +69,9 @@ class _LoginPageState extends State<LoginPage> {
                         Text(
                           'Sign in to your workspace',
                           textAlign: TextAlign.center,
-                          style: Theme.of(context).textTheme.bodyMedium
-                              ?.copyWith(
-                                color: Theme.of(context).colorScheme.outline,
-                              ),
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Theme.of(context).colorScheme.outline,
+                          ),
                         ),
                         const SizedBox(height: 40),
 
@@ -86,9 +85,7 @@ class _LoginPageState extends State<LoginPage> {
                             prefixIcon: Icon(Icons.email_outlined),
                             border: OutlineInputBorder(),
                           ),
-                          validator: (v) => (v == null || v.isEmpty)
-                              ? 'Enter your email'
-                              : null,
+                          validator: (v) => (v == null || v.isEmpty) ? 'Enter your email' : null,
                         ),
                         const SizedBox(height: 16),
 
@@ -102,9 +99,7 @@ class _LoginPageState extends State<LoginPage> {
                             prefixIcon: Icon(Icons.lock_outline_rounded),
                             border: OutlineInputBorder(),
                           ),
-                          validator: (v) => (v == null || v.isEmpty)
-                              ? 'Enter your password'
-                              : null,
+                          validator: (v) => (v == null || v.isEmpty) ? 'Enter your password' : null,
                           onFieldSubmitted: (_) => _submit(),
                         ),
                         const SizedBox(height: 8),
@@ -118,17 +113,13 @@ class _LoginPageState extends State<LoginPage> {
                               vertical: 8,
                             ),
                             decoration: BoxDecoration(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .errorContainer,
+                              color: Theme.of(context).colorScheme.errorContainer,
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
                               error,
                               style: TextStyle(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onErrorContainer,
+                                color: Theme.of(context).colorScheme.onErrorContainer,
                               ),
                             ),
                           ),
@@ -156,9 +147,7 @@ class _LoginPageState extends State<LoginPage> {
 
                         // ── Register link ─────────────────────────────
                         TextButton(
-                          onPressed: isLoading
-                              ? null
-                              : RouteManagement.goToRegisterPage,
+                          onPressed: isLoading ? null : RouteManagement.goToRegisterPage,
                           child: const Text("Don't have an account? Sign up"),
                         ),
                       ],

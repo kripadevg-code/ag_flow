@@ -47,8 +47,7 @@ class AgApiException implements Exception {
   final AgApiErrorType type;
 
   @override
-  String toString() =>
-      'AgApiException(statusCode: $statusCode, message: $message)';
+  String toString() => 'AgApiException(statusCode: $statusCode, message: $message)';
 }
 
 /// The kind of failure behind an [AgApiException].

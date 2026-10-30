@@ -39,6 +39,5 @@ class Project {
   /// `<root>/lib/modules/product`. Every module sharing this root
   /// segment — no matter how deeply nested — places its files here, flat
   /// by layer (see requirments/ag_framework.md §6/§72).
-  String moduleRootDir(String rootSegment) =>
-      p.join(modulesDir.path, rootSegment);
+  String moduleRootDir(String rootSegment) => p.join(modulesDir.path, rootSegment);
 }

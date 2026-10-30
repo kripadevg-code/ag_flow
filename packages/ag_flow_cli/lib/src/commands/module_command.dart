@@ -175,9 +175,7 @@ class ModuleCommand extends Command<int> {
 
     final generator = ModuleGenerator(
       project: project,
-      pluralizer: pluralOverride == null
-          ? defaultPluralizer
-          : (_) => pascalCase(pluralOverride),
+      pluralizer: pluralOverride == null ? defaultPluralizer : (_) => pascalCase(pluralOverride),
       methods: methods,
       model: model,
       paginate: argResults!['paginate'] as bool,

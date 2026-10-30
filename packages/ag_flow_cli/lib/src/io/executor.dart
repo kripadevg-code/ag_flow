@@ -59,6 +59,5 @@ class Executor {
     }
   }
 
-  String _relative(String path) =>
-      p.relative(path, from: Directory.current.path);
+  String _relative(String path) => p.relative(path, from: Directory.current.path);
 }

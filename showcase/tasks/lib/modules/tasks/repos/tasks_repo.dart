@@ -21,9 +21,7 @@ class TasksRepo extends AgBaseRepo {
       _store.savePage(page, items);
       return items;
     } on AgRepoException catch (e) {
-      final saved = e.kind == AgRepoErrorKind.network
-          ? _store.readPage(page)
-          : null;
+      final saved = e.kind == AgRepoErrorKind.network ? _store.readPage(page) : null;
       if (saved == null) rethrow;
       return saved;
     }

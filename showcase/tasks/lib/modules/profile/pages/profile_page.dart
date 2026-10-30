@@ -26,9 +26,7 @@ class ProfilePage extends StatelessWidget {
               Center(
                 child: CircleAvatar(
                   radius: 48,
-                  backgroundColor: Theme.of(context)
-                      .colorScheme
-                      .primaryContainer,
+                  backgroundColor: Theme.of(context).colorScheme.primaryContainer,
                   child: Text(
                     controller.displayName.isNotEmpty
                         ? controller.displayName[0].toUpperCase()

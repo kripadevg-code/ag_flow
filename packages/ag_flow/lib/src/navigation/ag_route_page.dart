@@ -178,14 +178,13 @@ class _AgPageRoute<T> extends PageRouteBuilder<T> {
   ) {
     switch (transition) {
       case AgTransition.rightToLeft:
-        return (context, animation, secondaryAnimation, child) =>
-            SlideTransition(
-              position: Tween<Offset>(
-                begin: const Offset(1, 0),
-                end: Offset.zero,
-              ).animate(CurvedAnimation(parent: animation, curve: Curves.ease)),
-              child: child,
-            );
+        return (context, animation, secondaryAnimation, child) => SlideTransition(
+          position: Tween<Offset>(
+            begin: const Offset(1, 0),
+            end: Offset.zero,
+          ).animate(CurvedAnimation(parent: animation, curve: Curves.ease)),
+          child: child,
+        );
       case AgTransition.fade:
         return (context, animation, secondaryAnimation, child) =>
             FadeTransition(opacity: animation, child: child);

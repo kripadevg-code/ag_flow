@@ -51,8 +51,7 @@ class FakeApi implements ApiProvider {
       json = ['tools', 'toys'];
     } else if (request.method == AgHttpMethod.post) {
       json = item(99); // a newly created resource gets a new id
-    } else if (request.method != AgHttpMethod.get ||
-        RegExp(r'/\d+$').hasMatch(path)) {
+    } else if (request.method != AgHttpMethod.get || RegExp(r'/\d+$').hasMatch(path)) {
       json = item(1);
     } else {
       json = [for (var i = 1; i <= 3; i++) item(i)];
