@@ -34,7 +34,7 @@ class AgListView<T> extends StatelessWidget {
   /// The controller whose `state` holds the items.
   final AgBaseController<List<T>> controller;
 
-  /// Builds the row for [item] at [index].
+  /// Builds the row for `item` at `index`.
   final Widget Function(BuildContext context, T item, int index) itemBuilder;
 
   /// Builds the separator after the item at the given index, if any.
