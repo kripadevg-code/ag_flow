@@ -110,6 +110,25 @@ void main() {
     expect(c.isLoadingMore, isFalse);
   });
 
+  test('a loadMore during a refresh is a no-op, so no page is skipped', () async {
+    final refreshed = Completer<List<int>>();
+    final c = _Pager({
+      1: [1],
+      2: [2],
+    });
+    await c.loadInitial();
+
+    c.pages[1] = refreshed;
+    final refresh = c.refresh();
+    await c.loadMore();
+    refreshed.complete([1]);
+    await refresh;
+    await c.loadMore();
+
+    expect(c.requested, [1, 1, 2]);
+    expect(c.state.dataOrNull, [1, 2]);
+  });
+
   test('a failed page keeps the list and records the error', () async {
     final c = _Pager({
       1: [1],

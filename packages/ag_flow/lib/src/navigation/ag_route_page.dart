@@ -178,11 +178,16 @@ class _AgPageRoute<T> extends PageRouteBuilder<T> {
   ) {
     switch (transition) {
       case AgTransition.rightToLeft:
+        // `drive` + `CurveTween`, never a `CurvedAnimation`: this runs on
+        // every rebuild of the route, and each `CurvedAnimation` registers a
+        // listener on `animation` that nothing would ever dispose.
         return (context, animation, secondaryAnimation, child) => SlideTransition(
-          position: Tween<Offset>(
-            begin: const Offset(1, 0),
-            end: Offset.zero,
-          ).animate(CurvedAnimation(parent: animation, curve: Curves.ease)),
+          position: animation.drive(
+            Tween<Offset>(
+              begin: const Offset(1, 0),
+              end: Offset.zero,
+            ).chain(CurveTween(curve: Curves.ease)),
+          ),
           child: child,
         );
       case AgTransition.fade:

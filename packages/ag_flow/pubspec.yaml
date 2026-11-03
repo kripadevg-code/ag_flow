@@ -26,6 +26,7 @@ dev_dependencies:
   # Tests only: they drive AgRoutePage through a real GoRouter, the way a
   # generated app does. The app itself owns its go_router dependency.
   go_router: ^17.2.1
+  leak_tracker_flutter_testing: any
   mocktail: ^1.0.5
   very_good_analysis: ^10.3.0
 

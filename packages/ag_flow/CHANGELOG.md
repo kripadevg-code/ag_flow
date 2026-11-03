@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+- **Fix: the default page transition leaked.** `AgTransition.rightToLeft`
+  created a `CurvedAnimation` on every rebuild and never disposed it, so
+  each push left listeners on the route's animation. It now uses
+  `animation.drive`, which allocates nothing to dispose. The package's own
+  tests now run under Flutter's leak tracker.
+- **Fix: a load-more during a refresh skipped a page.** `loadMore()` is now
+  a no-op while `refresh()` is in flight; before, a page fetched then
+  advanced the page counter past page 2.
+- **Retries are limited to idempotent methods.** `AgRetryPolicy` retries
+  only `GET`, `HEAD`, `OPTIONS`, `PUT` and `DELETE` by default, since a
+  `POST` or `PATCH` that timed out may already have been applied. Opt
+  others in with `retryableMethods`.
+- **Request logging is off by default in release builds.** `AgLogOptions`
+  defaults `enabled` to `!kReleaseMode`, so request URLs no longer reach
+  the device log of a shipped app. Pass `enabled: true` to keep them.
 - **Test helpers: `package:ag_flow/testing.dart`.** `AgFakeApiProvider`
   answers requests from replies set up per endpoint (`reply`, `replyWith`,
   `fail`) and records every request, so a Service, Repo and Controller run

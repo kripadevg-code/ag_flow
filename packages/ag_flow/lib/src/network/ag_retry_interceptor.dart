@@ -7,6 +7,7 @@ class AgRetryPolicy {
     this.retryableStatusCodes = const {502, 503, 504},
     this.retryOnConnectionError = true,
     this.backoff = const Duration(milliseconds: 300),
+    this.retryableMethods = const {'GET', 'HEAD', 'OPTIONS', 'PUT', 'DELETE'},
   });
 
   /// Maximum number of retry attempts (not counting the original try).
@@ -21,6 +22,12 @@ class AgRetryPolicy {
 
   /// Base delay before a retry; multiplied by the attempt number.
   final Duration backoff;
+
+  /// HTTP methods (upper case) that may be retried — by default only the
+  /// idempotent ones. A `POST` or `PATCH` that timed out at a gateway may
+  /// already have been applied, so retrying it can create a duplicate.
+  /// Add them only for endpoints that are idempotent on your backend.
+  final Set<String> retryableMethods;
 }
 
 /// Retries failed requests according to an [AgRetryPolicy]. Opt-in — only
@@ -41,6 +48,7 @@ class AgRetryInterceptor extends Interceptor {
     final attempt = (err.requestOptions.extra[_attemptKey] as int?) ?? 0;
     final shouldRetry =
         attempt < policy.maxAttempts &&
+        policy.retryableMethods.contains(err.requestOptions.method.toUpperCase()) &&
         (_isRetryableStatus(err) || (policy.retryOnConnectionError && _isConnectionError(err)));
 
     if (!shouldRetry) {
