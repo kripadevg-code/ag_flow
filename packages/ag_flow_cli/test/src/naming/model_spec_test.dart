@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:ag_flow_cli/src/generators/model_generator.dart';
 import 'package:ag_flow_cli/src/naming/model_spec.dart';
+import 'package:analyzer/dart/analysis/utilities.dart';
 import 'package:test/test.dart';
 
 ModelSpec specFor(String className, String json) =>
@@ -169,6 +170,21 @@ void main() {
 
       expect(source, contains('Object? deletedAt,'));
       expect(source, isNot(contains('Object??')));
+    });
+
+    test('a model with no fields is valid Dart (--model without a sample)', () {
+      final source = renderModel(const ModelSpec(className: 'Order', fields: []));
+
+      expect(parseString(content: source).errors, isEmpty);
+      expect(source, contains('const Order();'));
+      expect(source, contains('=> const Order();'));
+    });
+
+    test('a nested empty object renders a valid empty class', () {
+      final source = renderModel(specFor('Order', '{"id": 1, "meta": {}}'));
+
+      expect(parseString(content: source).errors, isEmpty);
+      expect(source, contains('class OrderMeta {'));
     });
   });
 }

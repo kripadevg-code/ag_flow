@@ -15,6 +15,10 @@
   An existing config only gains the `ag` entry; one that already has it, or
   is not plain JSON (comments), is left alone.
 
+- **Fix: `--model` without `--from-json` crashed** (`Order({})` is not valid
+  Dart). A model with no fields, or a nested empty object, now generates a
+  valid empty class to fill in.
+
 ## 0.4.0
 
 - **Routes build their page per route**: `child: XPage(key: state.pageKey)`
