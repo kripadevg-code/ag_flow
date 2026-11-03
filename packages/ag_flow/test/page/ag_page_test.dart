@@ -21,6 +21,7 @@ void main() {
         tester,
       ) async {
         final controller = _FakeController()..setState(const AgPageState.loading());
+        addTearDown(controller.dispose);
         await tester.pumpWidget(
           _harness(
             AgPage<String>(
@@ -37,6 +38,7 @@ void main() {
       'renders the AG default AgError when no errorBuilder is supplied',
       (tester) async {
         final controller = _FakeController()..setState(const AgPageState.error('boom'));
+        addTearDown(controller.dispose);
         await tester.pumpWidget(
           _harness(
             AgPage<String>(
@@ -53,6 +55,7 @@ void main() {
       'renders the AG default AgEmpty when no emptyBuilder is supplied',
       (tester) async {
         final controller = _FakeController()..setState(const AgPageState.empty());
+        addTearDown(controller.dispose);
         await tester.pumpWidget(
           _harness(
             AgPage<String>(
@@ -70,6 +73,7 @@ void main() {
       'independent-override guarantee',
       (tester) async {
         final controller = _FakeController();
+        addTearDown(controller.dispose);
         Widget build() => _harness(
           AgPage<String>(
             controller: controller,
@@ -106,6 +110,7 @@ void main() {
       'combination — Error and Empty stay AG defaults there instead',
       (tester) async {
         final controller = _FakeController();
+        addTearDown(controller.dispose);
         Widget build() => _harness(
           AgPage<String>(
             controller: controller,
@@ -134,6 +139,7 @@ void main() {
         tester,
       ) async {
         final controller = _FakeController()..setState(const AgPageState.success('hello'));
+        addTearDown(controller.dispose);
         await tester.pumpWidget(
           _harness(
             AgPage<String>(
@@ -153,6 +159,7 @@ void main() {
       tester,
     ) async {
       final controller = _FakeController()..setState(const AgPageState.error('boom'));
+      addTearDown(controller.dispose);
       await tester.pumpWidget(
         _harness(
           AgPage<String>(
@@ -174,6 +181,7 @@ void main() {
       tester,
     ) async {
       final controller = _FakeController()..setState(const AgPageState.success('data'));
+      addTearDown(controller.dispose);
 
       await tester.pumpWidget(
         _harness(
@@ -219,6 +227,7 @@ void main() {
       tester,
     ) async {
       final controller = _FakeController()..setState(const AgPageState.success('data'));
+      addTearDown(controller.dispose);
 
       await tester.pumpWidget(
         _harness(

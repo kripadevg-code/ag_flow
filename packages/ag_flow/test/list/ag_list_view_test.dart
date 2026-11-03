@@ -53,6 +53,7 @@ void main() {
     tester,
   ) async {
     final c = _Plain();
+    addTearDown(c.dispose);
     await c.loadInitial();
 
     await tester.pumpWidget(_host(c));
@@ -64,6 +65,7 @@ void main() {
   testWidgets('scrolling to the end of an AgLoadMore list loads the next '
       'page', (tester) async {
     final c = _Paged();
+    addTearDown(c.dispose);
     await c.loadInitial();
     await tester.pumpWidget(_host(c));
 
@@ -77,6 +79,7 @@ void main() {
     tester,
   ) async {
     final c = _Paged();
+    addTearDown(c.dispose);
     await c.loadInitial();
     final carousel = SizedBox(
       height: 40,
@@ -109,6 +112,7 @@ void main() {
   testWidgets('a failed page shows retry and never retries itself on '
       'scroll', (tester) async {
     final c = _Paged(failPage: 2);
+    addTearDown(c.dispose);
     await c.loadInitial();
     await tester.pumpWidget(_host(c));
 
@@ -128,6 +132,7 @@ void main() {
 
   testWidgets('separators sit between items only', (tester) async {
     final c = _Plain();
+    addTearDown(c.dispose);
     await c.loadInitial();
 
     await tester.pumpWidget(

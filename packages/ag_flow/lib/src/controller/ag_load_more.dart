@@ -55,7 +55,9 @@ mixin AgLoadMore<T> on AgBaseController<List<T>> {
   /// already loading. Safe to call on every scroll frame.
   Future<void> loadMore() async {
     final current = state;
-    if (current is! AgPageSuccess<List<T>> || !_hasMore || _isLoadingMore) {
+    // Not while refreshing: the refresh has already reset paging to page 2,
+    // so a page fetched now would advance past it before page 1 arrives.
+    if (current is! AgPageSuccess<List<T>> || current.isRefreshing || !_hasMore || _isLoadingMore) {
       return;
     }
     _isLoadingMore = true;
