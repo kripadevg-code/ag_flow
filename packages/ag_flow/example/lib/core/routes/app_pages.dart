@@ -44,7 +44,7 @@ abstract class AppPages {
         pathParameters: state.pathParameters,
         extra: state.extra,
         transition: AgTransition.fade,
-        child: const LoginPage(),
+        child: LoginPage(key: state.pageKey),
       ),
     ),
 
@@ -59,7 +59,7 @@ abstract class AppPages {
         pathParameters: state.pathParameters,
         extra: state.extra,
         transition: AgTransition.fade,
-        child: const HomePage(),
+        child: HomePage(key: state.pageKey),
       ),
     ),
 
@@ -79,7 +79,7 @@ abstract class AppPages {
         pathParameters: state.pathParameters,
         extra: state.extra,
         transition: AppPages.defaultTransition,
-        child: const AdminPanelPage(),
+        child: AdminPanelPage(key: state.pageKey),
       ),
     ),
 
@@ -95,7 +95,7 @@ abstract class AppPages {
         extra: state.extra,
         binding: ProductsBinding(),
         transition: AppPages.defaultTransition,
-        child: const ProductsPage(),
+        child: ProductsPage(key: state.pageKey),
       ),
     ),
     GoRoute(
@@ -107,7 +107,7 @@ abstract class AppPages {
         extra: state.extra,
         binding: ProductDetailsBinding(),
         transition: AppPages.defaultTransition,
-        child: const ProductDetailsPage(),
+        child: ProductDetailsPage(key: state.pageKey),
       ),
     ),
   ];

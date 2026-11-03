@@ -1,6 +1,8 @@
+import 'package:ag_flow/src/di/ag_locator.dart';
 import 'package:ag_flow/src/navigation/ag_binding.dart';
 import 'package:ag_flow/src/navigation/ag_route_data.dart';
 import 'package:ag_flow/src/navigation/ag_transition.dart';
+import 'package:ag_flow/src/page/ag_base_page.dart';
 import 'package:flutter/material.dart';
 
 /// The [Page] an AG module's route builds — the one piece of AG that sits
@@ -19,7 +21,7 @@ import 'package:flutter/material.dart';
 ///     pathParameters: state.pathParameters,
 ///     extra: state.extra,
 ///     binding: ProductsBinding(),
-///     child: const ProductsPage(),
+///     child: ProductsPage(key: state.pageKey),
 ///   ),
 /// )
 /// ```
@@ -30,9 +32,10 @@ import 'package:flutter/material.dart';
 ///   gone. Never from a `NavigatorObserver`: an observer's `didPop` fires
 ///   when the pop *begins*, while the outgoing page is still on screen and
 ///   still reading its controller for the whole exit transition.
-/// - Release is reference-counted per binding type (see
-///   [AgBinding.acquire]), so two stacked instances of one route share one
-///   controller and only the last pop tears it down.
+/// - Each route gets its own scope (see [AgBinding.acquire]), so two
+///   stacked instances of one route never share a controller. Build the
+///   page per route, not `const`: one shared `const` object cannot tell its
+///   routes apart.
 /// - [pathParameters] and [extra] are recorded in `AgRouteData`, which a
 ///   detail controller reads in its constructor.
 ///
@@ -72,7 +75,9 @@ class AgRoutePage<T> extends Page<T> {
     // constructed.
     _record();
     final binding = this.binding;
-    if (binding != null) AgBinding.acquire(binding);
+    final scope = binding == null ? null : AgBinding.acquire(binding, onCreate: _record);
+    final page = child;
+    if (scope != null && page is AgBasePage) AgLocator.attach(page, scope);
     return _AgPageRoute<T>(
       settings: this,
       // Recorded again as the page builds: a `lazyPut` controller is only
@@ -80,7 +85,7 @@ class AgRoutePage<T> extends Page<T> {
       // before any of them builds.
       child: _AgRouteDataScope(onBuild: _record, child: child),
       transition: transition,
-      onDispose: binding == null ? null : () => AgBinding.release(binding),
+      onDispose: scope == null ? null : () => AgBinding.release(scope),
     );
   }
 
@@ -115,19 +120,19 @@ class AgShellScope extends StatefulWidget {
 }
 
 class _AgShellScopeState extends State<AgShellScope> {
-  // The binding that was acquired, not whatever a rebuild passes later —
-  // the builder hands over a fresh instance each time.
-  late final AgBinding _binding = widget.binding;
+  // Acquired once, from the first binding: a rebuild hands over a fresh
+  // instance each time.
+  late final AgScope _scope;
 
   @override
   void initState() {
     super.initState();
-    AgBinding.acquire(_binding);
+    _scope = AgBinding.acquire(widget.binding);
   }
 
   @override
   void dispose() {
-    AgBinding.release(_binding);
+    AgBinding.release(_scope);
     super.dispose();
   }
 

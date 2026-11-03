@@ -189,7 +189,8 @@ with `AgRoutePage` (which registers the module's binding and releases it
 when the route is gone). Navigate via `RouteManagement.goToXPage(...)`. A
 detail route carries its id in the path (`/product/details/:id`) so the
 page is deep-linkable. Guards are `AgGuard`s run from a route's `redirect:`
-via `AgGuard.check`.
+via `AgGuard.check`. Build each route's page with `XPage(key: state.pageKey)`,
+never `const XPage()`: each route then gets its own controller.
 
 ## Tests
 

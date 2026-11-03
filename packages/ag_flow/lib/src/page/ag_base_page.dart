@@ -19,8 +19,10 @@ abstract class AgBasePage<C extends AgBaseController<dynamic>> extends Stateless
   const AgBasePage({super.key});
 
   /// This page's controller, resolved from [AgLocator] — registered by
-  /// the module's `AgBinding` when its route was pushed.
-  C get controller => AgLocator.find<C>();
+  /// the module's `AgBinding` when its route was pushed. Each route has its
+  /// own, as long as the route builds the page itself rather than sharing a
+  /// `const` one (`child: ProductsPage(key: state.pageKey)`).
+  C get controller => AgLocator.findFor<C>(this);
 
   /// Whether this page wraps its content in a [Scaffold]. Set to false to
   /// embed this page's content inside another Scaffold (e.g. as tab

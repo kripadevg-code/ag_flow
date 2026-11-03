@@ -401,13 +401,20 @@ GoRoute(
     extra: state.extra,
     binding: ProductDetailsBinding(),
     transition: AppPages.defaultTransition,
-    child: const ProductDetailsPage(),
+    child: ProductDetailsPage(key: state.pageKey),
   ),
 ),
 ```
 
 Everything else is ordinary go_router. Restructure freely — `ag g m` finds a
 route by its path wherever it sits and never adds it twice.
+
+**Each live route has its own controller.** Open product 7, then product 9
+from it: each page keeps its own Service, Repo and Controller, and going back
+shows product 7 exactly as it was. This relies on the page being built per
+route — `ProductDetailsPage(key: state.pageKey)`, as generated — never
+`const ProductDetailsPage()`, which is one shared object (AG reports it if
+two live routes share one).
 
 **Navigate only through `RouteManagement`.** Screens call
 `RouteManagement.goToProductDetailsPage(argument)`, never a literal path;

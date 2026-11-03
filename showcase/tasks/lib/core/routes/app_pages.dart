@@ -66,7 +66,7 @@ abstract class AppPages {
         extra: state.extra,
         binding: AuthBinding(),
         transition: AgTransition.fade,
-        child: const LoginPage(),
+        child: LoginPage(key: state.pageKey),
       ),
     ),
     GoRoute(
@@ -79,7 +79,7 @@ abstract class AppPages {
         extra: state.extra,
         binding: AuthBinding(),
         transition: AgTransition.fade,
-        child: const RegisterPage(),
+        child: RegisterPage(key: state.pageKey),
       ),
     ),
 
@@ -103,7 +103,7 @@ abstract class AppPages {
             extra: state.extra,
             binding: TasksBinding(),
             transition: AgTransition.none,
-            child: const TasksPage(),
+            child: TasksPage(key: state.pageKey),
           ),
         ),
         GoRoute(
@@ -116,7 +116,7 @@ abstract class AppPages {
             extra: state.extra,
             binding: TaskDetailsBinding(),
             transition: AppPages.defaultTransition,
-            child: const TaskDetailsPage(),
+            child: TaskDetailsPage(key: state.pageKey),
           ),
         ),
 
@@ -131,7 +131,7 @@ abstract class AppPages {
             extra: state.extra,
             binding: ProjectsBinding(),
             transition: AgTransition.none,
-            child: const ProjectsPage(),
+            child: ProjectsPage(key: state.pageKey),
           ),
         ),
         GoRoute(
@@ -144,7 +144,7 @@ abstract class AppPages {
             extra: state.extra,
             binding: ProjectDetailsBinding(),
             transition: AppPages.defaultTransition,
-            child: const ProjectDetailsPage(),
+            child: ProjectDetailsPage(key: state.pageKey),
           ),
         ),
         GoRoute(
@@ -157,7 +157,7 @@ abstract class AppPages {
             extra: state.extra,
             binding: ProjectTasksBinding(),
             transition: AppPages.defaultTransition,
-            child: const ProjectTasksPage(),
+            child: ProjectTasksPage(key: state.pageKey),
           ),
         ),
 
@@ -172,7 +172,7 @@ abstract class AppPages {
             extra: state.extra,
             binding: ProfileBinding(),
             transition: AgTransition.none,
-            child: const ProfilePage(),
+            child: ProfilePage(key: state.pageKey),
           ),
         ),
       ],

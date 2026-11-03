@@ -28,7 +28,7 @@ abstract class AppPages {
         extra: state.extra,
         binding: ProductsBinding(),
         transition: AppPages.defaultTransition,
-        child: const ProductsPage(),
+        child: ProductsPage(key: state.pageKey),
       ),
     ),
 
@@ -41,7 +41,7 @@ abstract class AppPages {
         extra: state.extra,
         binding: ProductDetailsBinding(),
         transition: AppPages.defaultTransition,
-        child: const ProductDetailsPage(),
+        child: ProductDetailsPage(key: state.pageKey),
       ),
     ),
   ];

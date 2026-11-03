@@ -12,7 +12,13 @@ import 'package:go_router/go_router.dart';
 int _bindingRuns = 0;
 int _bindingDisposals = 0;
 
-class _Marker {}
+class _Marker extends ChangeNotifier {
+  @override
+  void dispose() {
+    _bindingDisposals++;
+    super.dispose();
+  }
+}
 
 /// Registers one type, then fails — a controller constructor throwing, say.
 class _FailingBinding extends AgBinding {
@@ -27,13 +33,7 @@ class _CountingBinding extends AgBinding {
   @override
   void dependencies() {
     _bindingRuns++;
-    lazyPut<_Marker>(_Marker.new);
-  }
-
-  @override
-  void disposeAll() {
-    _bindingDisposals++;
-    super.disposeAll();
+    put(_Marker());
   }
 }
 
@@ -77,7 +77,7 @@ class _ProductBinding extends AgBinding {
 }
 
 class _ProductPage extends AgBasePage<_ProductController> {
-  const _ProductPage();
+  const _ProductPage({super.key});
 
   @override
   Widget buildSuccess(BuildContext context) =>
@@ -112,19 +112,24 @@ int _shellDisposals = 0;
 
 class _ShellBinding extends AgBinding {
   @override
-  void dependencies() => _shellRuns++;
+  void dependencies() {
+    _shellRuns++;
+    put(_ShellMarker());
+  }
+}
 
+class _ShellMarker extends ChangeNotifier {
   @override
-  void disposeAll() {
+  void dispose() {
     _shellDisposals++;
-    super.disposeAll();
+    super.dispose();
   }
 }
 
 /// One route, written the way the generator writes it.
 GoRoute _route(
   String path,
-  Widget Function() page, {
+  Widget Function(GoRouterState state) page, {
   AgBinding Function()? binding,
   List<AgGuard> guards = const [],
 }) {
@@ -137,7 +142,7 @@ GoRoute _route(
       pathParameters: state.pathParameters,
       extra: state.extra,
       binding: binding?.call(),
-      child: page(),
+      child: page(state),
     ),
   );
 }
@@ -173,7 +178,6 @@ void main() {
     _shellDisposals = 0;
     _RecordingGuard.ran.clear();
     AgLocator.reset();
-    AgBinding.resetLiveBindings();
     AgRouteData.reset();
   });
 
@@ -184,13 +188,13 @@ void main() {
 
   group('binding lifecycle', () {
     final routes = [
-      _route('/', () => const _Plain('home')),
+      _route('/', (_) => const _Plain('home')),
       _route(
         '/detail',
-        () => const _Plain('detail'),
+        (_) => const _Plain('detail'),
         binding: _CountingBinding.new,
       ),
-      _route('/other', () => const _Plain('other')),
+      _route('/other', (_) => const _Plain('other')),
     ];
 
     testWidgets('registers on push, tears down on pop, re-runs on re-push', (
@@ -212,7 +216,7 @@ void main() {
 
     testWidgets(
       'a rebuild handing over a fresh binding instance does not register '
-      'twice — counting is per binding type',
+      'twice — the route keeps its first scope',
       (tester) async {
         await _pumpApp(tester, routes);
         await _push(tester, '/detail');
@@ -230,19 +234,22 @@ void main() {
     );
 
     testWidgets(
-      'popping one of two stacked instances keeps the shared registration',
+      'two stacked instances each get their own registration, and popping '
+      'one releases only its own',
       (tester) async {
         await _pumpApp(tester, routes);
         await _push(tester, '/detail');
+        final first = AgLocator.find<_Marker>();
         await _push(tester, '/detail');
-        expect(_bindingRuns, 1, reason: 'shared, so registered once');
+        expect(_bindingRuns, 2);
+        expect(AgLocator.find<_Marker>(), isNot(same(first)));
 
         await _pop(tester);
-        expect(_bindingDisposals, 0);
-        expect(AgLocator.find<_Marker>(), isNotNull);
+        expect(_bindingDisposals, 1);
+        expect(AgLocator.find<_Marker>(), same(first));
 
         await _pop(tester);
-        expect(_bindingDisposals, 1, reason: 'last instance gone');
+        expect(_bindingDisposals, 2, reason: 'last instance gone');
         expect(AgLocator.find<_Marker>, throwsStateError);
       },
     );
@@ -266,10 +273,10 @@ void main() {
 
   group('teardown timing', () {
     final routes = [
-      _route('/', () => const _Plain('home')),
+      _route('/', (_) => const _Plain('home')),
       _route(
         '/tracked',
-        () => const _TrackedPage(),
+        (_) => const _TrackedPage(),
         binding: _TrackedBinding.new,
       ),
     ];
@@ -330,10 +337,10 @@ void main() {
 
   group('route data', () {
     final routes = [
-      _route('/', () => const _Plain('home')),
+      _route('/', (_) => const _Plain('home')),
       _route(
         '/product/:id',
-        () => const _ProductPage(),
+        (state) => _ProductPage(key: state.pageKey),
         binding: _ProductBinding.new,
       ),
     ];
@@ -358,6 +365,39 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('product 7'), findsOneWidget);
     });
+
+    testWidgets('product 7 under product 9: each page keeps its own controller', (
+      tester,
+    ) async {
+      await _pumpApp(tester, routes);
+      await _push(tester, '/product/7');
+      final seven = AgLocator.find<_ProductController>();
+      await _push(tester, '/product/9');
+      final nine = AgLocator.find<_ProductController>();
+      expect(nine, isNot(same(seven)));
+      expect(find.text('product 9'), findsOneWidget);
+
+      // The covered page rebuilds while 9 is on top: it must still read 7.
+      await seven.refresh();
+      await tester.pump();
+
+      await _pop(tester);
+      expect(find.text('product 7'), findsOneWidget);
+      expect(seven.isDisposed, isFalse);
+      expect(nine.isDisposed, isTrue);
+      expect(AgLocator.find<_ProductController>(), same(seven));
+    });
+
+    testWidgets('one const page shown by two live routes is reported', (tester) async {
+      await _pumpApp(tester, [
+        _route('/', (_) => const _Plain('home')),
+        _route('/tracked', (_) => const _TrackedPage(), binding: _TrackedBinding.new),
+      ]);
+      await _push(tester, '/tracked');
+      await _push(tester, '/tracked');
+
+      expect(tester.takeException().toString(), contains('two routes at once'));
+    });
   });
 
   group('AgGuard.check', () {
@@ -365,10 +405,10 @@ void main() {
       tester,
     ) async {
       await _pumpApp(tester, [
-        _route('/', () => const _Plain('home')),
+        _route('/', (_) => const _Plain('home')),
         _route(
           '/admin',
-          () => const _Plain('admin'),
+          (_) => const _Plain('admin'),
           guards: const [
             _RecordingGuard('auth'),
             _RecordingGuard('role', redirectTo: '/'),
@@ -386,10 +426,10 @@ void main() {
 
     testWidgets('a blocked route never registers its binding', (tester) async {
       await _pumpApp(tester, [
-        _route('/', () => const _Plain('home')),
+        _route('/', (_) => const _Plain('home')),
         _route(
           '/product/:id',
-          () => const _ProductPage(),
+          (state) => _ProductPage(key: state.pageKey),
           binding: _ProductBinding.new,
           guards: const [_RecordingGuard('block', redirectTo: '/')],
         ),
@@ -417,11 +457,11 @@ void main() {
             ),
           ),
           routes: [
-            _route('/a', () => const Text('page-a')),
-            _route('/b', () => const Text('page-b')),
+            _route('/a', (_) => const Text('page-a')),
+            _route('/b', (_) => const Text('page-b')),
           ],
         ),
-        _route('/outside', () => const _Plain('outside')),
+        _route('/outside', (_) => const _Plain('outside')),
       ]);
       expect(find.text('page-a'), findsOneWidget);
       expect(_shellRuns, 1);

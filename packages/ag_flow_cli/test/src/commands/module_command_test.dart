@@ -327,4 +327,40 @@ void main() {
       );
     },
   );
+
+  group('a child module with no --model', () {
+    String read(String layer, String file) => File(
+      p.join(appDir.path, 'lib', 'modules', 'product', layer, file),
+    ).readAsStringSync();
+
+    test("reuses its root's model and id type", () async {
+      final sample = File(p.join(appDir.path, 'product.json'))
+        ..writeAsStringSync('[{"id": 1, "title": "Pen"}]');
+      expect(await run(['init']), 0);
+      expect(await run(['g', 'm', 'product', '--from-json=${sample.path}']), 0);
+      final model = read('models', 'product.dart');
+
+      expect(await run(['g', 'm', 'product/details']), 0);
+
+      expect(read('models', 'product.dart'), model, reason: 'never rewritten');
+      expect(
+        read('controllers', 'product_details_controller.dart'),
+        allOf(
+          contains('AgBaseController<Product>'),
+          contains('int get lookupId => int.parse(argument.id)'),
+        ),
+      );
+    });
+
+    test('stays dynamic when the root has no model', () async {
+      expect(await run(['init']), 0);
+      expect(await run(['g', 'm', 'product']), 0);
+      expect(await run(['g', 'm', 'product/details']), 0);
+
+      expect(
+        read('controllers', 'product_details_controller.dart'),
+        contains('AgBaseController<dynamic>'),
+      );
+    });
+  });
 }

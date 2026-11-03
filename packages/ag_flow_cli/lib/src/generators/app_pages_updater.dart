@@ -124,7 +124,7 @@ AggregatorUpdateResult updateAppPages(
       '        extra: state.extra,\n'
       '        binding: ${spec.bindingClass}(),\n'
       '        transition: AppPages.defaultTransition,\n'
-      '        child: const ${spec.pageClass}(),\n'
+      '        child: ${spec.pageClass}(key: state.pageKey),\n'
       '      ),\n'
       '    ),',
     ),

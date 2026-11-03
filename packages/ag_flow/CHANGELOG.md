@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- **Each live route has its own controller.** A route's binding now
+  registers into a scope of its own, so `/product/7` under `/product/9`
+  no longer share one controller, and going back shows product 7 as it
+  was. A page finds its route's controller through its own widget
+  instance, so build it per route: `child: XPage(key: state.pageKey)`
+  (what `ag g m` now writes), not `const XPage()` — a shared const page
+  on two live routes is reported. Migrate: drop `const` from the `child:`
+  of each `AgRoutePage`. `AgBinding.resetLiveBindings` is removed;
+  `resetAgFlow()` clears route scopes.
 - **Fix: the default page transition leaked.** `AgTransition.rightToLeft`
   created a `CurvedAnimation` on every rebuild and never disposed it, so
   each push left listeners on the route's animation. It now uses

@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- **Routes build their page per route**: `child: XPage(key: state.pageKey)`
+  instead of `const XPage()`, so each live route gets its own controller.
+  The generated `AGENTS.md` says the same.
+- **A child module reuses its root's model.** `ag g m product/details`
+  with no `--model` now types the module with the root's existing model
+  (`Product`, and its `id` type) when `models/` holds exactly one,
+  instead of `dynamic`. The model file is never rewritten.
 - **`ag g m` writes a starter test for each module** to
   `test/modules/<root>/<module>_test.dart`. It tests the Repo and the
   Controller against a fake Service, so it passes straight after
