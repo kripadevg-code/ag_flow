@@ -5,11 +5,14 @@
 [![Generator Integration](https://github.com/kripadevg-code/ag_flow/actions/workflows/generator-integration.yaml/badge.svg)](https://github.com/kripadevg-code/ag_flow/actions/workflows/generator-integration.yaml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-**An opinionated Flutter framework and CLI for large apps — Django REST Framework's declarative style, brought to Flutter — that turns "write a new feature module" into a single command.**
+**The opinionated clean-architecture framework for Flutter — no manual setup.**
+One command generates a fully layered feature module, page to service, and
+`ag analyze` keeps every module in shape as your app grows.
 
 Every module has the same shape, and its Service declares the backend
 actions it supports with one typed mixin each (`AgCreateMixin`,
-`AgDestroyMixin`, ...), the way DRF composes `CreateModelMixin` into a view. State and DI are AG's own
+`AgDestroyMixin`, ...). Every generated file is plain code you own, and any
+module can be hand-written instead. State and DI are AG's own
 primitives, with no third-party state-management dependency. Routing is
 your app's own [`go_router`](https://pub.dev/packages/go_router) — AG adds
 one page class that scopes each module's dependencies to its route — and the
@@ -32,7 +35,10 @@ Open-source, free to use, adopt, and adapt.
 
 ## Why AG Flow
 
-- **Simple, like DRF.** A Service lists the actions its backend supports —
+- **Clean architecture, no setup.** Page → Controller → Repo → Service
+  layers come generated and wired; `ag analyze` and the CI check stop them
+  drifting.
+- **Simple, declarative Services.** A Service lists the actions its backend supports —
   `with AgCreateMixin<Product>, AgDestroyMixin<int>` — and implements each
   one, so an unusual backend never fights a built-in default. The Repo and
   Controller are plain classes, one of each per module.
@@ -192,8 +198,7 @@ class ProductsPage extends AgBasePage<ProductsController> {
 
 ### One mixin per Service action
 
-The way Django REST Framework splits its views into `ListModelMixin`,
-`CreateModelMixin`, and so on. Each mixin is a typed contract — it fixes
+A Service mixes in only the actions its backend supports. Each mixin is a typed contract — it fixes
 the method and its types — and the Service writes the body:
 
 ```dart

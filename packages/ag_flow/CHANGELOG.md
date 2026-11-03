@@ -55,7 +55,7 @@
   module is three plain classes — `XController extends AgBaseController<T>`,
   `XRepo extends AgBaseRepo`, `XService extends AgBaseService with` only the
   action mixins it needs — and the developer writes every method.
-  - **Service action mixins use DRF names and only declare their method:**
+  - **Service action mixins use the five action names and only declare their method:**
     `AgListMixin<T>` (`list`), `AgCreateMixin<T>` (`create`),
     `AgRetrieveMixin<T, ID>` (`retrieve`), `AgUpdateMixin<T, ID>` (`update`),
     `AgDestroyMixin<ID>` (`destroy`). They replace `AgCrudService`.

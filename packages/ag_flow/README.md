@@ -1,7 +1,7 @@
 # ag_flow
 
-The runtime half of [AG Flow](../../README.md): a layered Flutter framework
-for large apps, in the spirit of Django REST Framework. Every feature module
+The runtime half of [AG Flow](../../README.md): opinionated
+clean architecture for Flutter, with no manual setup. Every feature module
 has the same shape — Page → Controller → Repo → Service → ApiProvider — and
 the Service declares which backend actions it supports, one mixin each.
 

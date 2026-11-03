@@ -1,6 +1,7 @@
 # ag_flow_cli
 
-The `ag` CLI — the generator half of [AG Flow](../../README.md). Scaffolds and
+The `ag` CLI — the generator half of [AG Flow](../../README.md): clean
+architecture for Flutter with no manual setup. Scaffolds and
 wires [`ag_flow`](../ag_flow) feature modules so a developer runs one
 command instead of hand-writing a page/controller/repo/service/binding set
 — and its routing/argument wiring — every time.
@@ -80,8 +81,8 @@ ag g m company --plural=companies   # ClassPrefix becomes "Companies", not the d
 `update`/`destroy` methods** — a generator's whole point is to hand over more
 working boilerplate than a developer would start from by hand, not less.
 (A detail module never gets `create`: there's no "create a new one"
-concept on a page that's about one existing entity.) The names are the
-Service action mixins' DRF names, and each body is one plain
+concept on a page that's about one existing entity.) The names match
+the Service action mixins, and each body is one plain
 `get` / `post` / `put` / `delete` call against the endpoint getters (a `TODO` points at
 `core/endpoints.dart`), exactly like the always-present read method
 (`list`/`retrieve`) — delete whichever ones a module doesn't need, exactly
