@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 
 /// Nested tasks page — the detail-shaped module whose data is a list.
 ///
-/// Demonstrates using [AgDetailController] as the base for a collection
+/// Demonstrates a detail-shaped [AgBaseController] loading a collection
 /// filtered by a parent argument, rather than a standalone paginated list.
 class ProjectTasksPage extends AgBasePage<ProjectTasksController> {
   const ProjectTasksPage({super.key});

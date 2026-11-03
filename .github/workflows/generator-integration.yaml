@@ -48,12 +48,12 @@ jobs:
         working-directory: /tmp/generator_smoke_app
         run: ag g m product/details
 
-      - name: ag g m order (typed from JSON, create only) + order/details (delete only)
+      - name: ag g m order (typed from JSON, create only) + order/details (destroy only)
         working-directory: /tmp/generator_smoke_app
         run: |
           echo '{"id": 1, "total": 9.5, "note": "x"}' > order.json
-          ag g m order --from-json=order.json --methods=add
-          ag g m order/details --methods=delete
+          ag g m order --from-json=order.json --methods=create
+          ag g m order/details --methods=destroy
 
       - name: ag analyze (freshly generated — expect zero issues)
         working-directory: /tmp/generator_smoke_app

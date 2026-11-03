@@ -9,7 +9,7 @@ dart pub add --dev ag_flow_cli
 dart run ag_flow_cli:ag init                    # lib/core/ skeleton, AGENTS.md, CI check
 dart run ag_flow_cli:ag g m product             # a list module
 dart run ag_flow_cli:ag g m product/details     # a detail module under it
-dart run ag_flow_cli:ag g m order --from-json=order.json --methods=add
+dart run ag_flow_cli:ag g m order --from-json=order.json --methods=create
 dart run ag_flow_cli:ag analyze                 # check the project's structure
 ```
 

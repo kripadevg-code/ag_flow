@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- `@AgInject()` no longer looks for the removed `AgListController` /
+  `AgDetailController`; a controller is any `AgBaseController` subclass.
+
 ## 0.3.0
 
 - `ag_flow` dependency updated to `^0.3.0`.

@@ -20,10 +20,10 @@ void main() {
 ///   AgStateService     — AuthService holds session state, readable anywhere
 ///   Service mixins     — AgCreateMixin / AgRetrieveMixin / AgUpdateMixin /
 ///                         AgDestroyMixin as typed contracts the Services
-///                         implement, with AgPagedService for paging
+///                         implement, with AgPagination for paging
 ///   Plain Repos        — one per module, delegating to its Service
-///   AgListController   — paging, plus writes made optimistic via updateItems
-///   AgDetailController — deep-linkable detail pages (argument from the path
+///   AgLoadMore         — paging, plus writes made optimistic via emit
+///   AgRetrieve         — deep-linkable detail pages (argument from the path
 ///                         parameters), including an optimistic toggle and a
 ///                         detail page whose data is a filtered list
 ///   AgBuilder          — lightweight reactive rebuild for the Profile screen
