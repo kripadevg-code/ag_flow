@@ -17,6 +17,7 @@ executables:
 dependencies:
   analyzer: ">=13.0.0 <15.0.0"
   args: ^2.7.0
+  dart_mcp: ^0.5.2
   dart_style: ^3.1.0
   io: ^1.0.4
   mason: ^0.1.0
@@ -29,5 +30,6 @@ dependencies:
 
 dev_dependencies:
   mocktail: ^1.0.5
+  stream_channel: ^2.1.4
   test: ^1.25.0
   very_good_analysis: ^10.3.0

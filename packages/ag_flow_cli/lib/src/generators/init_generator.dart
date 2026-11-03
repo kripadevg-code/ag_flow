@@ -102,7 +102,7 @@ class InitialBinding extends AgBinding {
 /// This is the whole point of `ag init` writing more than code: an agent
 /// that knows the standard uses `ag g m` instead of inventing a module
 /// layout, which is both more consistent and dramatically cheaper.
-const _agentsSkeleton = '''
+const agentsStandard = '''
 # AG Flow — architecture standard
 
 This project is built on **AG Flow**. Its architecture is fixed and the
@@ -342,7 +342,7 @@ class InitGenerator {
         p.join('core', 'bindings', 'initial_binding.dart'),
         _initialBindingSkeleton,
       ),
-      _planAtRoot('AGENTS.md', _agentsSkeleton),
+      _planAtRoot('AGENTS.md', agentsStandard),
       _planAtRoot('CLAUDE.md', _claudeSkeleton),
       _planAtRoot(
         p.join('.github', 'workflows', 'ag.yaml'),

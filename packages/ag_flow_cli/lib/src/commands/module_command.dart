@@ -1,9 +1,9 @@
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:ag_flow_cli/src/generators/aggregator_updater.dart';
 import 'package:ag_flow_cli/src/generators/app_routes_updater.dart';
 import 'package:ag_flow_cli/src/generators/module_generator.dart';
+import 'package:ag_flow_cli/src/generators/module_options.dart';
 import 'package:ag_flow_cli/src/io/executor.dart';
 import 'package:ag_flow_cli/src/io/file_op.dart';
 import 'package:ag_flow_cli/src/io/project.dart';
@@ -13,7 +13,6 @@ import 'package:ag_flow_cli/src/naming/module_path.dart';
 import 'package:ag_flow_cli/src/naming/pluralizer.dart';
 import 'package:args/command_runner.dart';
 import 'package:mason_logger/mason_logger.dart';
-import 'package:path/path.dart' as p;
 
 /// `ag generate module <module_path>` (aliased `ag g m <module_path>`).
 class ModuleCommand extends Command<int> {
@@ -87,79 +86,6 @@ class ModuleCommand extends Command<int> {
   @override
   String get invocation => 'ag generate module <module_path>';
 
-  /// Builds the module's [ModelSpec] from `--model`/`--from-json`. With
-  /// neither, a child module reuses its root's model when the root has
-  /// exactly one; otherwise this is null and the stack is typed `dynamic`.
-  ModelSpec? _resolveModel(ModulePath modulePath, Project project) {
-    final modelOption = argResults!['model'] as String?;
-    final fromJson = argResults!['from-json'] as String?;
-    if (modelOption == null && fromJson == null) {
-      return modulePath.isRoot ? null : _rootModel(modulePath, project);
-    }
-
-    // Default the class name to the module's *root* segment, not its last
-    // one: `product/details` addresses the same resource as `product`, so
-    // it must reuse `Product` rather than inventing a second `Details`
-    // model alongside it. Layer files live in flat per-root folders for
-    // the same reason.
-    final className = modelOption == null
-        ? pascalCase(modulePath.rootSegment)
-        : pascalCase(modelOption);
-
-    if (fromJson == null) {
-      // --model alone: no payload to infer fields from, so the model is
-      // an empty shell the developer fills in. The win is still the type
-      // threading across five files.
-      return ModelSpec(className: className, fields: const []);
-    }
-
-    final file = File(fromJson);
-    if (!file.existsSync()) {
-      throw FileSystemException('No such file', fromJson);
-    }
-    final Object? decoded;
-    try {
-      decoded = jsonDecode(file.readAsStringSync());
-    } on FormatException catch (e) {
-      throw FormatException(
-        '--from-json file is not valid JSON (${e.message}): $fromJson',
-      );
-    }
-    return ModelSpec.fromJsonSample(className, decoded);
-  }
-
-  /// The model already in `<root>/models/`, when there is exactly one —
-  /// `product/details` addresses the same resource as `product`. Only its
-  /// class name and `id` type are read; the file itself is never rewritten.
-  ModelSpec? _rootModel(ModulePath modulePath, Project project) {
-    final dir = Directory(p.join(project.moduleRootDir(modulePath.rootSegment), 'models'));
-    if (!dir.existsSync()) return null;
-    final files = dir.listSync().whereType<File>().where((f) => f.path.endsWith('.dart')).toList();
-    if (files.length != 1) return null;
-    final source = files.single.readAsStringSync();
-    final className = RegExp(r'^class (\w+)', multiLine: true).firstMatch(source)?.group(1);
-    // Only a file named the way the generator names it: anything else would
-    // make the generator write a second model file beside it.
-    if (className == null || p.basename(files.single.path) != '${snakeCase(className)}.dart') {
-      return null;
-    }
-    final idType = RegExp(r'final (\w+\??) id;').firstMatch(source)?.group(1);
-    logger.info("Using the root module's model $className (pass --model to choose another).");
-    return ModelSpec(
-      className: className,
-      fields: [
-        if (idType != null)
-          AgModelField(
-            jsonKey: 'id',
-            dartName: 'id',
-            dartType: idType,
-            fromJsonExpression: '',
-            toJsonExpression: '',
-          ),
-      ],
-    );
-  }
-
   @override
   Future<int> run() async {
     final rest = argResults!.rest;
@@ -186,27 +112,24 @@ class ModuleCommand extends Command<int> {
     final project = Project(Directory.current);
     final pluralOverride = argResults!['plural'] as String?;
 
-    final methodsOption = argResults!['methods'] as String?;
     final Set<String> methods;
-    if (methodsOption == null) {
-      methods = generatableMethods;
-    } else if (methodsOption == 'none') {
-      methods = const {};
-    } else {
-      methods = methodsOption.split(',').map((m) => m.trim()).toSet();
-      final unknown = methods.difference(generatableMethods);
-      if (unknown.isNotEmpty) {
-        usageException(
-          'Unrecognized --methods value(s): ${unknown.join(', ')}. '
-          'Expected a comma-separated subset of '
-          '${generatableMethods.join(', ')}, or "none".',
-        );
-      }
+    try {
+      methods = parseMethods(argResults!['methods'] as String?);
+    } on FormatException catch (e) {
+      usageException(e.message);
     }
 
     final ModelSpec? model;
     try {
-      model = _resolveModel(modulePath, project);
+      final fromJson = argResults!['from-json'] as String?;
+      model = resolveModel(
+        modulePath,
+        project,
+        model: argResults!['model'] as String?,
+        jsonText: fromJson == null ? null : File(fromJson).readAsStringSync(),
+        jsonLabel: '--from-json file $fromJson',
+        onInfo: logger.info,
+      );
     } on FormatException catch (e) {
       logger.err(e.message);
       return ExitCode.usage.code;

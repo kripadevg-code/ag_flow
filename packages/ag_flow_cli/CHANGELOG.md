@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+- **`ag mcp`: an MCP server for coding agents** (local stdio only, built on
+  the Dart team's `dart_mcp`). Five tools: `ag_rules` (the architecture
+  standard), `ag_init`, `ag_generate_module` (model, JSON sample, methods,
+  paginate, dry run), `ag_analyze` (structured violations) and
+  `ag_list_modules`. Each tool declares an `outputSchema`; the project
+  defaults to the client's workspace root. Existing files are never
+  overwritten.
+
 ## 0.4.0
 
 - **Routes build their page per route**: `child: XPage(key: state.pageKey)`
