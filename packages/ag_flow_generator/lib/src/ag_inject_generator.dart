@@ -25,8 +25,6 @@ class AgInjectGenerator extends GeneratorForAnnotation<AgInject> {
   // here means the annotated class is a controller and gets `.find`.
   static const _controllerBases = {
     'AgBaseController',
-    'AgListController',
-    'AgDetailController',
   };
 
   // Service base-class names — any hit here means `.instance`.
@@ -73,7 +71,7 @@ class AgInjectGenerator extends GeneratorForAnnotation<AgInject> {
       current = superElement is ClassElement ? superElement.supertype : null;
     }
 
-    // AgListController uses a mixin — check those too.
+    // A controller base may also arrive as a mixin — check those too.
     for (final mixin in element.mixins) {
       final name = mixin.element.name;
       if (name != null && _controllerBases.contains(name)) return 'find';
@@ -81,8 +79,7 @@ class AgInjectGenerator extends GeneratorForAnnotation<AgInject> {
 
     throw InvalidGenerationSourceError(
       '@AgInject() can only be placed on classes that extend '
-      'AgBaseController, AgListController, AgDetailController, '
-      'AgBaseService, or AgStateService. '
+      'AgBaseController, AgBaseService, or AgStateService. '
       '"$className" does not extend any of these.',
       element: element,
     );

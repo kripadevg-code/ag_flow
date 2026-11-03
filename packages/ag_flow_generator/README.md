@@ -50,7 +50,7 @@ dart run build_runner build
 
 | Base class | Generated getter |
 |---|---|
-| `AgBaseController` / `AgListController` / `AgDetailController` | `.find` |
+| `AgBaseController` | `.find` |
 | `AgBaseService` / `AgStateService` | `.instance` |
 
 The correct getter name is determined automatically from the supertype

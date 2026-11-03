@@ -45,7 +45,7 @@ void main() {
     expect(AgLocator.find<ProductDetailsController>, throwsStateError);
     expect(AgLocator.find<ProductsController>(), isNotNull);
 
-    // A typed, trimmed module (--from-json, --methods=add).
+    // A typed, trimmed module (--from-json, --methods=create).
     RouteManagement.goToOrdersPage();
     await tester.pumpAndSettle();
     expect(AgLocator.find<OrdersController>(), isNotNull);
