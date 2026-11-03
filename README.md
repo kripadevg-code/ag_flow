@@ -82,7 +82,6 @@ Dart pub workspaces.
 |---|---|---|
 | [`ag_flow`](packages/ag_flow) | [![pub.dev](https://img.shields.io/pub/v/ag_flow.svg)](https://pub.dev/packages/ag_flow) | Runtime framework: `AgBasePage`, `AgBaseController`, `AgListView`, `AgBaseRepo`, `AgBaseService`, `ApiProvider`, routing, DI, and everything every generated module is built from. |
 | [`ag_flow_cli`](packages/ag_flow_cli) | [![pub.dev](https://img.shields.io/pub/v/ag_flow_cli.svg)](https://pub.dev/packages/ag_flow_cli) | The `ag` CLI. `ag init` bootstraps `lib/core/`; `ag g m <module>` generates a complete module and wires it in idempotently; `ag analyze` validates the whole project against AG's structural rules. |
-| [`ag_flow_generator`](packages/ag_flow_generator) | [![pub.dev](https://img.shields.io/pub/v/ag_flow_generator.svg)](https://pub.dev/packages/ag_flow_generator) | Optional `build_runner` companion — auto-generates static `find` / `instance` accessors on controllers and services from the `@AgInject()` annotation. |
 
 ---
 
@@ -104,30 +103,6 @@ Or add it as a dev dependency and run it via `dart run`:
 
 ```bash
 dart pub add --dev ag_flow_cli
-```
-
-### Optional: auto-generated accessors
-
-If you want `LoginController.find` and `AuthService.instance` without
-writing a one-liner per class, add the generator:
-
-```yaml
-dev_dependencies:
-  ag_flow_generator: ^0.1.0
-  build_runner: ^2.4.0
-```
-
-Then annotate your classes and run `build_runner`:
-
-```dart
-@AgInject()
-class LoginController extends AgBaseController<User> with _$LoginControllerAgInject {
-  // LoginController.find is generated — never write it by hand.
-}
-```
-
-```bash
-dart run build_runner build
 ```
 
 ---

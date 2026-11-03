@@ -5,8 +5,7 @@ name: Publish to pub.dev
 # Runs on the *tag* ref, so the OIDC token's ref claim
 # (`refs/tags/ag_flow-v0.2.0`) matches the tag pattern configured in each
 # package's pub.dev trusted-publishing settings
-# (`ag_flow-v{{version}}` / `ag_flow_cli-v{{version}}` /
-# `ag_flow_generator-v{{version}}`). A branch-triggered job never can,
+# (`ag_flow-v{{version}}` / `ag_flow_cli-v{{version}}`). A branch-triggered job never can,
 # which is why publishing is split out of release.yaml.
 #
 # One-time setup per package in the pub.dev admin panel → Automated
@@ -31,7 +30,6 @@ on:
     tags:
       - "ag_flow-v[0-9]+.[0-9]+.[0-9]+"
       - "ag_flow_cli-v[0-9]+.[0-9]+.[0-9]+"
-      - "ag_flow_generator-v[0-9]+.[0-9]+.[0-9]+"
 
 # Declaring any permission defaults all others to `none`, so `contents:
 # read` must be explicit or checkout fails with "Repository not found".
@@ -73,7 +71,6 @@ jobs:
           case "$name" in
             ag_flow)           dir="packages/ag_flow" ;;
             ag_flow_cli)       dir="packages/ag_flow_cli" ;;
-            ag_flow_generator) dir="packages/ag_flow_generator" ;;
             *)
               echo "::error::Unrecognized package name '$name' from tag '$tag'."
               exit 1
