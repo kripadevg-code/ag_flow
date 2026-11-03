@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.5.0
 
 - **`ag mcp`: an MCP server for coding agents** (local stdio only, built on
   the Dart team's `dart_mcp`). Five tools: `ag_rules` (the architecture
