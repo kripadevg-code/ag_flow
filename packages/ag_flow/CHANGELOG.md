@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.4.0
 
 - **Each live route has its own controller.** A route's binding now
   registers into a scope of its own, so `/product/7` under `/product/9`

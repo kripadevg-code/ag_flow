@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.4.0
 
 - `@AgInject()` no longer looks for the removed `AgListController` /
   `AgDetailController`; a controller is any `AgBaseController` subclass.
