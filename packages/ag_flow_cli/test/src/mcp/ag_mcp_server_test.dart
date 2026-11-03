@@ -199,6 +199,8 @@ void main() {
     addTearDown(() async {
       await client.shutdown();
       process.kill();
+      // Wait for the exit, so the server is gone before the app dir is deleted.
+      await process.exitCode;
     });
     await _handshake(stdio, client);
 

@@ -99,7 +99,9 @@ dependencies:
       logger: _quietLogger,
     ).execute(await generator.plan(ModulePath.parse('product/details')));
 
-    final pubGet = await Process.run('dart', [
+    // The running SDK, not whatever `dart` is first on PATH: a different
+    // SDK there resolves the fixture against the wrong version.
+    final pubGet = await Process.run(Platform.resolvedExecutable, [
       'pub',
       'get',
     ], workingDirectory: _baseProjectDir.path);
