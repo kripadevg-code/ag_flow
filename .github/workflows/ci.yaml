@@ -35,3 +35,40 @@ jobs:
 
       - name: Test
         run: melos run test
+
+  pub-score:
+    # Both published packages must keep the full pub.dev score. pana is what
+    # pub.dev itself runs, so a drop shows up here before release, not after.
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        package: [ag_flow, ag_flow_cli]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Activate pana
+        run: dart pub global activate pana
+
+      - name: Copy the package out of the workspace
+        # pub.dev scores the published archive: no workspace, and none of
+        # the package's `.pubignore`d files (the CLI's bricks/ are mustache
+        # templates, not Dart).
+        run: |
+          src="packages/${{ matrix.package }}"
+          ignore=()
+          [ -f "$src/.pubignore" ] && ignore=(--exclude-from "$src/.pubignore")
+          rsync -a --exclude .dart_tool --exclude build "${ignore[@]}" \
+            "$src/" "$RUNNER_TEMP/pkg/"
+          find "$RUNNER_TEMP/pkg" -name pubspec.yaml \
+            -exec sed -i '/^resolution: workspace$/d' {} +
+
+      - name: Score must be 160/160
+        run: |
+          dart pub global run pana --no-warning "$RUNNER_TEMP/pkg" | tee pana.txt
+          grep -q '^Points: 160/160\.$' pana.txt
