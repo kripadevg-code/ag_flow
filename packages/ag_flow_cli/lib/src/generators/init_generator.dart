@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:ag_flow_cli/src/generators/mcp_config.dart';
 import 'package:ag_flow_cli/src/io/file_op.dart';
 import 'package:ag_flow_cli/src/io/project.dart';
 import 'package:dart_style/dart_style.dart';
@@ -102,7 +103,7 @@ class InitialBinding extends AgBinding {
 /// This is the whole point of `ag init` writing more than code: an agent
 /// that knows the standard uses `ag g m` instead of inventing a module
 /// layout, which is both more consistent and dramatically cheaper.
-const _agentsSkeleton = '''
+const agentsStandard = '''
 # AG Flow — architecture standard
 
 This project is built on **AG Flow**. Its architecture is fixed and the
@@ -124,6 +125,12 @@ components, **and** registers the route, argument class and navigation
 method. Hand-writing that is slower, costs far more tokens, and fails
 `ag analyze`. Paste a real API response into `--from-json` and the model is
 generated and threaded through every layer, so nothing is typed `dynamic`.
+
+When the `ag` MCP server is connected (`ag init` registers it in
+`.mcp.json`, `.cursor/mcp.json` and `.vscode/mcp.json`), call its tools
+instead of the shell: `ag_generate_module` for `ag g m` (`json_sample` for
+`--from-json`), `ag_analyze` for `ag analyze`, and `ag_list_modules` to see
+what exists.
 
 ## The layer contract
 
@@ -342,7 +349,7 @@ class InitGenerator {
         p.join('core', 'bindings', 'initial_binding.dart'),
         _initialBindingSkeleton,
       ),
-      _planAtRoot('AGENTS.md', _agentsSkeleton),
+      _planAtRoot('AGENTS.md', agentsStandard),
       _planAtRoot('CLAUDE.md', _claudeSkeleton),
       _planAtRoot(
         p.join('.github', 'workflows', 'ag.yaml'),
@@ -353,6 +360,7 @@ class InitGenerator {
         _preCommitHookSkeleton,
         executable: true,
       ),
+      for (final config in mcpClientConfigs) planMcpConfig(project.root, config),
     ];
   }
 

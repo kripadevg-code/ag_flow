@@ -55,7 +55,8 @@ lib/core/
 ```
 
 plus `AGENTS.md` (the architecture standard, read automatically by coding
-agents), a CI workflow, and an opt-in pre-commit hook that run `ag analyze`.
+agents), a CI workflow, and an opt-in pre-commit hook that run `ag analyze`,
+and MCP configs that register `ag mcp` for Claude Code, Cursor and VS Code.
 
 Then wire `main.dart`:
 

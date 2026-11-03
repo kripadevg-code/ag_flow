@@ -21,6 +21,23 @@ void _writeClass(StringBuffer buffer, ModelSpec spec) {
   final name = spec.className;
   final fields = spec.fields;
 
+  // `--model` without a sample, or an empty JSON object: Dart rejects an
+  // empty `{}` parameter list, so write a valid shell to fill in instead.
+  if (fields.isEmpty) {
+    buffer
+      ..writeln('class $name {')
+      ..writeln('  const $name();')
+      ..writeln()
+      ..writeln('  // Add the fields from your API response here.')
+      ..writeln('  // ignore: avoid_unused_constructor_parameters')
+      ..writeln('  factory $name.fromJson(Map<String, dynamic> json) => const $name();')
+      ..writeln()
+      ..writeln('  Map<String, dynamic> toJson() => {};')
+      ..writeln('}')
+      ..writeln();
+    return;
+  }
+
   buffer
     ..writeln('class $name {')
     ..writeln('  const $name({');

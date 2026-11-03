@@ -151,8 +151,9 @@ the same architecture without being told:
 | `CLAUDE.md` | A pointer to `AGENTS.md`, not a second copy that can drift. |
 | `.github/workflows/ag.yaml` | Runs `ag analyze` + analysis + tests on every push. |
 | `.githooks/pre-commit` | The same check locally. Opt in with `git config core.hooksPath .githooks`. |
+| `.mcp.json`, `.cursor/mcp.json`, `.vscode/mcp.json` | Register the `ag` MCP server (`dart run ag_flow_cli:ag mcp`) for Claude Code, Cursor and VS Code. An existing config only gains the `ag` entry. |
 
-Instructions are advisory; the workflow and hook are the gate. All four are
+Instructions are advisory; the workflow and hook are the gate. The first four are
 skipped if they already exist, so re-running `ag init` never overwrites an
 edited standard.
 

@@ -39,10 +39,10 @@ void main() {
       ).execute(initOps);
       expect(
         initWritten,
-        10,
+        13,
         reason:
             'a bare project gets the core/ skeleton plus the agent '
-            'standard, CI gate and pre-commit hook',
+            'standard, CI gate, pre-commit hook and three MCP configs',
       );
 
       final generator = ModuleGenerator(project: project);
