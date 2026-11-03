@@ -7,9 +7,8 @@ class TaskDetailsBinding extends AgBinding {
   @override
   void dependencies() {
     // The details page reuses TasksService (it already has
-    // getById/update). Binding lifetimes are reference-counted per
-    // binding type by AgRoutePage, so this registration is released when
-    // the last details route is disposed.
+    // getById/update). Each details route registers its own, released
+    // when that route is disposed.
     lazyPut(() => TasksService(AgLocator.find()));
     lazyPut(() => TaskDetailsRepo(AgLocator.find(), AgLocator.find()));
     lazyPut(() => TaskDetailsController(AgLocator.find()));

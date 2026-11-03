@@ -9,7 +9,7 @@ export 'src/arguments/ag_arguments.dart';
 export 'src/controller/ag_base_controller.dart';
 export 'src/di/ag_initializable.dart';
 export 'src/di/ag_inject.dart';
-export 'src/di/ag_locator.dart';
+export 'src/di/ag_locator.dart' show AgLocator;
 export 'src/list/ag_list_view.dart';
 export 'src/navigation/ag_binding.dart';
 export 'src/navigation/ag_guard.dart';

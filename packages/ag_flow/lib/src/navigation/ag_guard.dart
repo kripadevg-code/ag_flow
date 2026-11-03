@@ -32,7 +32,7 @@
 ///   pageBuilder: (context, state) => AgRoutePage(
 ///     key: state.pageKey,
 ///     binding: HomeBinding(),
-///     child: const HomePage(),
+///     child: HomePage(key: state.pageKey),
 ///   ),
 /// )
 /// ```

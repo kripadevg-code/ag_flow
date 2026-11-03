@@ -134,7 +134,7 @@ class ProductsPage extends AgBasePage<ProductsController> {
   or a test fake without touching a Service.
 - **Your router.** `AgRoutePage` scopes a module's binding to its go_router
   route — registered when the route is created, released when it is gone,
-  reference-counted across stacked instances. `AgGuard.check` runs guards
+  with its own controller per live route. `AgGuard.check` runs guards
   from `redirect:`, and `AgShellScope` gives a `ShellRoute` its own binding.
 - **Enforced, not suggested.** `ag analyze` catches layer violations,
   missing wiring and hard-coded routes; `ag init` puts it in CI.

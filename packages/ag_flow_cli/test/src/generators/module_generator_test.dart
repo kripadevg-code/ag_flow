@@ -288,7 +288,7 @@ void main() {
         final appPages = _coreFile(appDir, p.join('routes', 'app_pages.dart'));
         expect(appPages, contains('path: AppRoutes.product,'));
         expect(appPages, contains('name: AppRoutes.product,'));
-        expect(appPages, contains('child: const ProductsPage(),'));
+        expect(appPages, contains('child: ProductsPage(key: state.pageKey),'));
         expect(appPages, contains('binding: ProductsBinding(),'));
         expect(
           appPages,
@@ -351,7 +351,7 @@ void main() {
 
         final appPages = _coreFile(appDir, p.join('routes', 'app_pages.dart'));
         expect(appPages, contains('path: AppRoutes.productDetails,'));
-        expect(appPages, contains('child: const ProductDetailsPage(),'));
+        expect(appPages, contains('child: ProductDetailsPage(key: state.pageKey),'));
         expect(appPages, contains('pathParameters: state.pathParameters,'));
         expect(appPages, contains('binding: ProductDetailsBinding(),'));
         expect(

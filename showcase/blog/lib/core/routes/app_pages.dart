@@ -28,7 +28,7 @@ abstract class AppPages {
         extra: state.extra,
         binding: PostsBinding(),
         transition: AppPages.defaultTransition,
-        child: const PostsPage(),
+        child: PostsPage(key: state.pageKey),
       ),
     ),
 
@@ -41,7 +41,7 @@ abstract class AppPages {
         extra: state.extra,
         binding: PostDetailsBinding(),
         transition: AppPages.defaultTransition,
-        child: const PostDetailsPage(),
+        child: PostDetailsPage(key: state.pageKey),
       ),
     ),
 
@@ -54,7 +54,7 @@ abstract class AppPages {
         extra: state.extra,
         binding: PostDetailsCommentsBinding(),
         transition: AppPages.defaultTransition,
-        child: const PostDetailsCommentsPage(),
+        child: PostDetailsCommentsPage(key: state.pageKey),
       ),
     ),
   ];
