@@ -101,7 +101,7 @@ class DioApiProvider implements ApiProvider {
     // Before retry and logging: a retried request re-reads the token, and
     // the log line shows the header (masked) exactly as it was sent.
     if (auth != null) {
-      _dio.interceptors.add(AgAuthInterceptor(auth));
+      _dio.interceptors.add(AgAuthInterceptor(auth, _dio));
     }
     if (retryPolicy != null) {
       _dio.interceptors.add(AgRetryInterceptor(_dio, retryPolicy));

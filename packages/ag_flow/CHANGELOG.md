@@ -8,6 +8,11 @@
   calls opt out with `AgEndpoint('/login', auth: false)`, and a header the
   request sets itself is never overwritten. Without `auth`, nothing
   changes.
+- **Token refresh:** a `401` on a request that carried the token runs
+  `AgAuth.refreshToken()` once — requests that fail together share it —
+  and sends each request again with the new token. A failed refresh runs
+  `clearToken()` then `onLoggedOut()`, and the requests fail with their
+  `401`. A request is re-sent at most once.
 
 ## 0.4.0
 
