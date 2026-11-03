@@ -193,7 +193,7 @@ class ModuleGenerator {
   }
 
   /// How a detail Controller turns its page argument into the lookup —
-  /// DRF's `lookup_field`.
+  /// the value the Service's `retrieve` takes.
   ///
   /// Path parameters are always strings, so a model whose id is an `int`
   /// needs the parse written for it — that conversion is the one piece a

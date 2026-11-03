@@ -1,5 +1,5 @@
-/// How a backend pages its collections — the paging dialect, the way
-/// Django REST Framework's `pagination_class` names it once per view.
+/// How a backend pages its collections — the paging dialect, named once
+/// per Service.
 ///
 /// It only *describes* paging: [query] says which query parameters request
 /// a page, and [isLastPage] says when to stop. It never sends a request —

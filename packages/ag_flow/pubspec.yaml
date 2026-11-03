@@ -1,8 +1,8 @@
 name: ag_flow
 description: >-
-  Layered Flutter framework for large apps, DRF-style: typed Service action
-  mixins, page state, paginated lists, DI, go_router bindings and a
-  swappable network layer.
+  Opinionated clean architecture for Flutter: layered feature modules with
+  built-in state, DI, route-scoped controllers, paging and a swappable
+  network layer.
 version: 0.3.0
 repository: https://github.com/kripadevg-code/ag_flow
 homepage: https://github.com/kripadevg-code/ag_flow

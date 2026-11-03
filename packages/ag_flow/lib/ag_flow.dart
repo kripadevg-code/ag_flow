@@ -1,4 +1,4 @@
-/// AG Flow — an opinionated Flutter framework.
+/// AG Flow — opinionated clean architecture for Flutter, with no manual setup.
 ///
 /// See `ag_framework.md`, `routes.md`, and `ag_endpoint_rules.md` in the
 /// repository's `requirments/` directory for the binding specification

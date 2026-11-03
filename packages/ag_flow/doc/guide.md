@@ -1,7 +1,7 @@
 # AG Flow — developer guide
 
-AG Flow gives every feature in a Flutter app the same shape, the way Django
-REST Framework gives every endpoint in a Django app the same shape. Every
+AG Flow is opinionated clean architecture for Flutter: it gives every
+feature in an app the same shape, with no manual setup. Every
 module is Page → Controller → Repo → Service → ApiProvider, the Service
 declares which actions its backend supports with one mixin each, and the
 rest is ordinary Dart you own. Two modules written by two different teams
@@ -333,8 +333,8 @@ Future<void> filterByCategory(String? category) {
 A detail route carries what it needs in its URL (`/product/details/:id`),
 so it opens from a deep link, a notification or a browser reload — not only
 from an in-app push. The controller reads its argument from
-`AgRouteData.pathParameters` and turns it into a **lookup**, the way a DRF
-view declares `lookup_field`:
+`AgRouteData.pathParameters` and turns it into a **lookup** — the value the
+Service's `retrieve` takes:
 
 ```dart
 class ProductDetailsController extends AgBaseController<Product>

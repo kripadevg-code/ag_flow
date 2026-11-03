@@ -25,7 +25,7 @@
   `AgDestroyMixin` as `--methods=` selects; a detail Service is
   `AgRetrieveMixin` plus `AgUpdateMixin`/`AgDestroyMixin`. The bodies are
   plain code in the developer's file, a starting point to change freely.
-- **Breaking: DRF method names at every layer** — `list` / `create` /
+- **Breaking: the same five action names at every layer** — `list` / `create` /
   `retrieve` / `update` / `destroy` in the Service, Repo and Controller.
   `--methods=` takes `create,update,destroy` (was `add,update,delete`).
 - Generated Repos and Controllers are plain classes — `AgBaseRepo` and
