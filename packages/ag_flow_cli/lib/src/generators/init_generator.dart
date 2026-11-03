@@ -126,6 +126,12 @@ method. Hand-writing that is slower, costs far more tokens, and fails
 `ag analyze`. Paste a real API response into `--from-json` and the model is
 generated and threaded through every layer, so nothing is typed `dynamic`.
 
+When the `ag` MCP server is connected (`ag init` registers it in
+`.mcp.json`, `.cursor/mcp.json` and `.vscode/mcp.json`), call its tools
+instead of the shell: `ag_generate_module` for `ag g m` (`json_sample` for
+`--from-json`), `ag_analyze` for `ag analyze`, and `ag_list_modules` to see
+what exists.
+
 ## The layer contract
 
 ```
