@@ -1,7 +1,12 @@
 # Changelog
 
-## Unreleased
+## 0.4.0
 
+- **Breaking: `@AgInject` is removed**, together with the
+  `ag_flow_generator` package. The accessor it promised
+  (`LoginController.find`) never compiled — Dart does not expose a
+  mixin's static members through the class that mixes it in. Inside a
+  page use `controller`; elsewhere `AgLocator.find<T>()`.
 - **Each live route has its own controller.** A route's binding now
   registers into a scope of its own, so `/product/7` under `/product/9`
   no longer share one controller, and going back shows product 7 as it

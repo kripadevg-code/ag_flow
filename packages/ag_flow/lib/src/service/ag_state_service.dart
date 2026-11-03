@@ -18,10 +18,7 @@ import 'package:flutter/foundation.dart';
 /// ### Usage
 ///
 /// ```dart
-/// part 'auth_service.g.dart';
-///
-/// @AgInject()
-/// class AuthService extends AgStateService with _$AuthServiceAgInject {
+/// class AuthService extends AgStateService {
 ///   bool get isLoggedIn => _isLoggedIn;
 ///   bool _isLoggedIn = false;
 ///
@@ -32,10 +29,11 @@ import 'package:flutter/foundation.dart';
 /// }
 /// ```
 ///
-/// Resolving it anywhere:
+/// Register it once (`AgLocator.put(AuthService(), permanent: true)` in the
+/// initial binding) and resolve it anywhere:
 ///
 /// ```dart
-/// final authService = AuthService.instance;
+/// final authService = AgLocator.find<AuthService>();
 /// ```
 abstract class AgStateService extends ChangeNotifier {
   AgStateService();

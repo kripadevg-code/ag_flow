@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.4.0
 
 - **Routes build their page per route**: `child: XPage(key: state.pageKey)`
   instead of `const XPage()`, so each live route gets its own controller.

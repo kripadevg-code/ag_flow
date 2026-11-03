@@ -8,7 +8,6 @@ workspace:
   - packages/ag_flow
   - packages/ag_flow/example
   - packages/ag_flow_cli
-  - packages/ag_flow_generator
   - showcase/blog
   - showcase/store
   - showcase/tasks
@@ -37,7 +36,6 @@ melos:
         packages/ag_flow/example/lib packages/ag_flow/example/test
         packages/ag_flow_cli/bin packages/ag_flow_cli/lib
         packages/ag_flow_cli/test packages/ag_flow_cli/tool
-        packages/ag_flow_generator/lib
         showcase/blog/lib showcase/store/lib showcase/tasks/lib
         showcase/blog/test showcase/store/test showcase/tasks/test
 

@@ -66,7 +66,7 @@ jobs:
           set -euo pipefail
           # Releasable packages only. The example and showcase apps are
           # demos and must never be tagged or published.
-          packages="packages/ag_flow packages/ag_flow_cli packages/ag_flow_generator"
+          packages="packages/ag_flow packages/ag_flow_cli"
           pending=""
           for dir in $packages; do
             name=$(grep -m1 '^name:' "$dir/pubspec.yaml" | sed 's/^name: *//')
