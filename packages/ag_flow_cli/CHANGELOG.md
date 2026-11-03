@@ -9,6 +9,11 @@
   `ag_list_modules`. Each tool declares an `outputSchema`; the project
   defaults to the client's workspace root. Existing files are never
   overwritten.
+- **`ag init` registers the MCP server** in `.mcp.json` (Claude Code),
+  `.cursor/mcp.json` (Cursor) and `.vscode/mcp.json` (VS Code), launched
+  through the project's own dev_dependency (`dart run ag_flow_cli:ag mcp`).
+  An existing config only gains the `ag` entry; one that already has it, or
+  is not plain JSON (comments), is left alone.
 
 ## 0.4.0
 

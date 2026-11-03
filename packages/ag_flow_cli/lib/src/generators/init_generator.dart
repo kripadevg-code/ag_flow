@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:ag_flow_cli/src/generators/mcp_config.dart';
 import 'package:ag_flow_cli/src/io/file_op.dart';
 import 'package:ag_flow_cli/src/io/project.dart';
 import 'package:dart_style/dart_style.dart';
@@ -353,6 +354,7 @@ class InitGenerator {
         _preCommitHookSkeleton,
         executable: true,
       ),
+      for (final config in mcpClientConfigs) planMcpConfig(project.root, config),
     ];
   }
 

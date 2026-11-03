@@ -72,6 +72,12 @@ class InitCommand extends Command<int> {
           "framework's patterns instead of inventing their own. "
           '.github/workflows/ag.yaml runs "ag analyze" on every push, so '
           'code that breaks the architecture cannot merge.',
+        )
+        ..info(
+          '\n.mcp.json, .cursor/mcp.json and .vscode/mcp.json register the '
+          '"ag" MCP server for Claude Code, Cursor and VS Code, so an agent '
+          'can call the generator directly (your editor may ask you to '
+          'approve it first).',
         );
     }
     return ExitCode.success.code;

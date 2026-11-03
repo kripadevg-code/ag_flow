@@ -1,6 +1,8 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:ag_flow_cli/src/generators/init_generator.dart';
+import 'package:ag_flow_cli/src/generators/mcp_config.dart';
 import 'package:ag_flow_cli/src/io/executor.dart';
 import 'package:ag_flow_cli/src/io/file_op.dart';
 import 'package:ag_flow_cli/src/io/project.dart';
@@ -31,7 +33,7 @@ void main() {
         logger: quietLogger,
       ).execute(ops);
 
-      expect(written, 10);
+      expect(written, 13);
       for (final relativePath in [
         'core/arguments/arguments.dart',
         'core/endpoints.dart',
@@ -209,5 +211,77 @@ void main() {
         expect(Directory(p.join(appDir.path, 'lib')).existsSync(), isFalse);
       },
     );
+  });
+
+  group('MCP client configs', () {
+    Future<void> init() => Executor(
+      dryRun: false,
+      logger: quietLogger,
+    ).execute(InitGenerator(project: Project(appDir)).plan());
+    Map<String, Object?> read(String relativePath) =>
+        jsonDecode(File(p.join(appDir.path, relativePath)).readAsStringSync())
+            as Map<String, Object?>;
+    const launch = {
+      'command': 'dart',
+      'args': ['run', 'ag_flow_cli:ag', 'mcp'],
+    };
+
+    test('registers the ag server for Claude Code, Cursor and VS Code', () async {
+      await init();
+
+      expect(read('.mcp.json'), {
+        'mcpServers': {'ag': launch},
+      });
+      expect(read('.cursor/mcp.json'), {
+        'mcpServers': {'ag': launch},
+      });
+      expect(read('.vscode/mcp.json'), {
+        'servers': {
+          'ag': {'type': 'stdio', ...launch, 'cwd': r'${workspaceFolder}'},
+        },
+      });
+    });
+
+    test('adds ag to an existing config and keeps every other key', () async {
+      File(p.join(appDir.path, '.mcp.json')).writeAsStringSync(
+        jsonEncode({
+          'mcpServers': {
+            'other': {'command': 'other'},
+          },
+          'extra': true,
+        }),
+      );
+
+      final ops = InitGenerator(project: Project(appDir)).plan();
+      final op = ops.singleWhere((o) => o.path.endsWith('${p.separator}.mcp.json'));
+      expect(op.kind, FileOpKind.update);
+
+      await init();
+      expect(read('.mcp.json'), {
+        'mcpServers': {
+          'other': {'command': 'other'},
+          'ag': launch,
+        },
+        'extra': true,
+      });
+    });
+
+    test('leaves a config alone when it already has ag or is not plain JSON', () {
+      File(
+        p.join(appDir.path, '.mcp.json'),
+      ).writeAsStringSync('{"mcpServers": {"ag": {"command": "custom"}}}');
+      File(p.join(appDir.path, '.vscode', 'mcp.json'))
+        ..createSync(recursive: true)
+        ..writeAsStringSync('// mine\n{"servers": {}}');
+
+      FileOpKind kindFor(String relativePath) => planMcpConfig(
+        appDir,
+        mcpClientConfigs.singleWhere((c) => c.relativePath == relativePath),
+      ).kind;
+
+      expect(kindFor('.mcp.json'), FileOpKind.skipExisting);
+      expect(kindFor(p.join('.vscode', 'mcp.json')), FileOpKind.skipExisting);
+      expect(kindFor(p.join('.cursor', 'mcp.json')), FileOpKind.create);
+    });
   });
 }
