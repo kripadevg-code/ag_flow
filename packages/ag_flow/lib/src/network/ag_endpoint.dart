@@ -13,6 +13,7 @@ class AgEndpoint {
     this.path, {
     this.methods = const {AgHttpMethod.get},
     this.baseUrlOverride,
+    this.auth = true,
   });
 
   /// The path template, e.g. `/products/{id}`.
@@ -25,6 +26,11 @@ class AgEndpoint {
   /// (e.g. a third-party or legacy host). Must not have a trailing slash —
   /// it's concatenated directly with [path], which always starts with one.
   final String? baseUrlOverride;
+
+  /// Whether requests to this endpoint carry the `AgAuth` token header.
+  /// `false` for public calls — login, sign-up, token refresh. Has no
+  /// effect when `ApiProvider` has no `auth`.
+  final bool auth;
 
   /// Whether this endpoint supports [method].
   bool supports(AgHttpMethod method) => methods.contains(method);

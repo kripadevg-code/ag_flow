@@ -1,4 +1,6 @@
 import 'package:ag_flow/src/network/ag_api_exception.dart';
+import 'package:ag_flow/src/network/ag_auth.dart';
+import 'package:ag_flow/src/network/ag_auth_interceptor.dart';
 import 'package:ag_flow/src/network/ag_cancel_token.dart';
 import 'package:ag_flow/src/network/ag_log_options.dart';
 import 'package:ag_flow/src/network/ag_logging_interceptor.dart';
@@ -54,6 +56,7 @@ abstract interface class ApiProvider {
     AgLogOptions logOptions,
     AgRetryPolicy? retryPolicy,
     Map<String, String> defaultHeaders,
+    AgAuth? auth,
   }) = DioApiProvider;
 
   /// Sends [request], returning a decoded [AgResponse] or throwing an
@@ -85,6 +88,7 @@ class DioApiProvider implements ApiProvider {
     AgLogOptions logOptions = const AgLogOptions(),
     AgRetryPolicy? retryPolicy,
     Map<String, String> defaultHeaders = const {},
+    AgAuth? auth,
   }) : _dio = Dio(
          BaseOptions(
            baseUrl: baseUrl,
@@ -94,6 +98,11 @@ class DioApiProvider implements ApiProvider {
          ),
        ) {
     _dio.interceptors.addAll(interceptors);
+    // Before retry and logging: a retried request re-reads the token, and
+    // the log line shows the header (masked) exactly as it was sent.
+    if (auth != null) {
+      _dio.interceptors.add(AgAuthInterceptor(auth));
+    }
     if (retryPolicy != null) {
       _dio.interceptors.add(AgRetryInterceptor(_dio, retryPolicy));
     }
@@ -134,7 +143,11 @@ class DioApiProvider implements ApiProvider {
         path,
         data: request.isMultipart ? await _buildFormData(request) : request.body,
         queryParameters: request.queryParams,
-        options: Options(method: request.method.name, headers: request.headers),
+        options: Options(
+          method: request.method.name,
+          headers: request.headers,
+          extra: {AgAuthInterceptor.authKey: request.endpoint.auth},
+        ),
         cancelToken: cancelToken?.dioToken,
         onSendProgress: onSendProgress,
         onReceiveProgress: onReceiveProgress,

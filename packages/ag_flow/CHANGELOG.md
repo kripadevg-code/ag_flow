@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+- **`AgAuth` (opt-in):** pass `ApiProvider(auth: AppAuth())` and every
+  request gets `Authorization: Bearer <token>` from the app's own
+  `readToken()`; `headerName`/`headerValue` change the header. Public
+  calls opt out with `AgEndpoint('/login', auth: false)`, and a header the
+  request sets itself is never overwritten. Without `auth`, nothing
+  changes.
+
 ## 0.4.0
 
 - **Breaking: `@AgInject` is removed**, together with the

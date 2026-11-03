@@ -16,6 +16,7 @@ export 'src/navigation/ag_route_data.dart';
 export 'src/navigation/ag_route_page.dart';
 export 'src/navigation/ag_transition.dart';
 export 'src/network/ag_api_exception.dart';
+export 'src/network/ag_auth.dart';
 export 'src/network/ag_cancel_token.dart';
 export 'src/network/ag_endpoint.dart';
 export 'src/network/ag_http_method.dart';
