@@ -1,8 +1,9 @@
 name: ag_showcase_store
 description: >-
   A real, running showcase app built end-to-end with ag_flow_cli against
-  fakestoreapi.com — AgCrudService wired to a real collection+resource
-  endpoint pair, category-filtered refetching, and AgRetryPolicy.
+  fakestoreapi.com — per-action Service/Repo/Controller mixins over a
+  collection+resource endpoint pair, category-filtered reloading, and
+  AgRetryPolicy.
 publish_to: none
 resolution: workspace
 
@@ -21,7 +22,7 @@ resolution: workspace
 version: 1.0.0+1
 
 environment:
-  sdk: ^3.12.2
+  sdk: ^3.13.0
 
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
@@ -39,6 +40,7 @@ dependencies:
 
   ag_flow:
     path: ../../packages/ag_flow
+  go_router: ^17.2.1
 
 dev_dependencies:
   flutter_test:

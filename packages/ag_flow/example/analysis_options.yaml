@@ -12,11 +12,20 @@ analyzer:
     # group-aware" note.
     always_use_package_imports: ignore
     # RouteManagement's generated nav methods are intentionally
-    # fire-and-forget: `AgNavigator.toNamed(...)`'s return value (what the
-    # pushed route eventually pops with) is never the caller's concern.
+    # fire-and-forget: `AppPages.router.pushNamed(...)`'s return value (what
+    # the pushed route eventually pops with) is never the caller's concern.
     discarded_futures: ignore
-    # Every generated AgRoute entry explicitly passes `transition:
+    # Every generated AgRoutePage entry explicitly passes `transition:
     # AppPages.defaultTransition` — a configurable single source of truth,
     # not a hardcoded value — even though it currently happens to equal
-    # AgRoute's own default. The lint compares values, not intent.
+    # AgRoutePage's own default. The lint compares values, not intent.
     avoid_redundant_argument_values: ignore
+  exclude:
+    - build/**
+
+# Stated here as well as in very_good_analysis: the root-config include
+# does not exist once the package is published, and the formatter must
+# behave the same there (pana, pub.dev) as in this workspace.
+formatter:
+  page_width: 100
+  trailing_commas: preserve

@@ -7,10 +7,11 @@ class PostsRepo extends AgBaseRepo {
 
   final PostsService _service;
 
-  Future<AgListPage<Post, int>> getPage(int pageKey) =>
-      _service.getPage(pageKey);
+  Future<List<Post>> list({int page = 1}) => guard(() => _service.list(page: page));
 
-  Future<Post> add(Post item) => _service.add(item);
+  bool isLastPage(List<Post> items) => _service.pagination.isLastPage(items);
 
-  Future<void> delete(int id) => _service.delete(id);
+  Future<Post> create(Post item) => guard(() => _service.create(item));
+
+  Future<void> destroy(int id) => guard(() => _service.destroy(id));
 }

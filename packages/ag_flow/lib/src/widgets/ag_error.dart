@@ -1,3 +1,4 @@
+import 'package:ag_flow/src/repo/ag_repo_exception.dart';
 import 'package:flutter/material.dart';
 
 /// AG's default error display.
@@ -16,6 +17,9 @@ class AgError extends StatelessWidget {
   final Object error;
   final StackTrace? stackTrace;
   final VoidCallback? onRetry;
+
+  /// Text to show. Defaults to [AgRepoException.message] for a Repo
+  /// failure, otherwise `error.toString()`.
   final String? message;
 
   @override
@@ -28,7 +32,14 @@ class AgError extends StatelessWidget {
           children: [
             const Icon(Icons.error_outline, size: 48),
             const SizedBox(height: 16),
-            Text(message ?? error.toString(), textAlign: TextAlign.center),
+            Text(
+              message ??
+                  switch (error) {
+                    final AgRepoException e => e.message,
+                    _ => error.toString(),
+                  },
+              textAlign: TextAlign.center,
+            ),
             if (onRetry != null) ...[
               const SizedBox(height: 16),
               OutlinedButton(onPressed: onRetry, child: const Text('Retry')),

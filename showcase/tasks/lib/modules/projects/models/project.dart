@@ -1,5 +1,5 @@
 /// A project — backed by /posts from jsonplaceholder.
-/// Repurposed to demonstrate AgCrudService + AgPagedService on a second
+/// Repurposed to demonstrate the Service mixins + AgPagedService on a second
 /// resource in the same app, independent of the Tasks module.
 class Project {
   const Project({

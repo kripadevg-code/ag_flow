@@ -2,27 +2,32 @@ import 'package:ag_flow/ag_flow.dart';
 import 'package:sample_app/core/arguments/arguments.dart';
 import 'package:sample_app/modules/product/repos/product_details_repo.dart';
 
-class ProductDetailsController
-    extends AgDetailController<dynamic, ProductDetailsPageArgument> {
-  ProductDetailsController(this._repo);
+/// Loads one resource through the Repo; each write goes to the same
+/// resource and shows the result.
+class ProductDetailsController extends AgBaseController<dynamic>
+    with AgRetrieve<dynamic> {
+  ProductDetailsController(this._repo)
+    : argument = ProductDetailsPageArgument.fromPathParameters(
+        AgRouteData.pathParameters,
+      );
 
   final ProductDetailsRepo _repo;
 
-  /// Rebuilds this page's argument from the route's path parameters, so
-  /// it opens correctly from a deep link, a notification, or a reloaded
-  /// web URL — not only from an in-app push.
-  @override
-  ProductDetailsPageArgument? argumentsFromPath(
-    Map<String, String> pathParameters,
-  ) => ProductDetailsPageArgument.fromPathParameters(pathParameters);
+  /// This page's argument, read from the route's path parameters — so it
+  /// opens correctly from a deep link, a notification, or a reloaded web
+  /// URL, not only from an in-app push.
+  final ProductDetailsPageArgument argument;
+
+  /// Which resource this page shows: an id, a slug, or a record for a
+  /// composite key — whatever the Service's lookup type is.
+  Object get lookupId => argument.id;
 
   @override
-  Future<dynamic> fetch() => _repo.getByArgument(arguments);
+  Future<dynamic> retrieve() => _repo.retrieve(lookupId);
 
   Future<void> update(dynamic item) async {
-    final updated = await _repo.update(arguments, item);
-    emit(AgPageState.success(updated));
+    emit(AgPageState.success(await _repo.update(lookupId, item)));
   }
 
-  Future<void> delete() => _repo.delete(arguments);
+  Future<void> destroy() => _repo.destroy(lookupId);
 }

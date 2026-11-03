@@ -5,7 +5,7 @@
 ///   • the navigation argument (called from RouteManagement)
 ///   • the route name (go_router uses path as name in AG)
 ///
-/// Never pass a string literal to AgNavigator. Always use a constant here.
+/// Never pass a string literal to the router. Always use a constant here.
 abstract class AppRoutes {
   // ── Shell wrapper (hosts the bottom nav) ─────────────────────────────
   static const String shell = '/';

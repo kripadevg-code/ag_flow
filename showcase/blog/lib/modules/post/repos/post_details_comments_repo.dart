@@ -8,7 +8,6 @@ class PostDetailsCommentsRepo extends AgBaseRepo {
 
   final PostDetailsCommentsService _service;
 
-  Future<List<Comment>> getByArgument(
-    PostDetailsCommentsPageArgument argument,
-  ) => _service.getByArgument(argument);
+  Future<List<Comment>> listFor(PostDetailsCommentsPageArgument argument) =>
+      guard(() => _service.listFor(argument));
 }

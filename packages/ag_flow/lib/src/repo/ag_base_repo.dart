@@ -9,10 +9,10 @@ import 'package:meta/meta.dart';
 abstract class AgBaseRepo {
   const AgBaseRepo();
 
-  /// Runs [action], translating any exception that isn't already an
-  /// [AgRepoException] into one. Optional — call this from repository
-  /// methods that want centralized exception translation; passing Service
-  /// exceptions straight through untouched is also valid.
+  /// Runs [action], turning any error into an [AgRepoException] with a
+  /// [AgRepoException.kind], so callers above the Repo never see the
+  /// Service's transport errors. Generated repositories wrap every method
+  /// in it.
   @protected
   Future<R> guard<R>(Future<R> Function() action) async {
     try {
@@ -20,7 +20,7 @@ abstract class AgBaseRepo {
     } on AgRepoException {
       rethrow;
     } catch (error, stackTrace) {
-      Error.throwWithStackTrace(AgRepoException(error), stackTrace);
+      Error.throwWithStackTrace(AgRepoException.from(error), stackTrace);
     }
   }
 }

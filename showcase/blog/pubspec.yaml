@@ -22,7 +22,7 @@ resolution: workspace
 version: 1.0.0+1
 
 environment:
-  sdk: ^3.12.2
+  sdk: ^3.13.0
 
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
@@ -40,6 +40,7 @@ dependencies:
 
   ag_flow:
     path: ../../packages/ag_flow
+  go_router: ^17.2.1
 
 dev_dependencies:
   flutter_test:

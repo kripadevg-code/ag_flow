@@ -1,6 +1,7 @@
 # ag_flow_cli
 
-The `ag` CLI — the generator half of [AG Flow](../../README.md). Scaffolds and
+The `ag` CLI — the generator half of [AG Flow](../../README.md): clean
+architecture for Flutter with no manual setup. Scaffolds and
 wires [`ag_flow`](../ag_flow) feature modules so a developer runs one
 command instead of hand-writing a page/controller/repo/service/binding set
 — and its routing/argument wiring — every time.
@@ -63,7 +64,7 @@ for that slot.
 ...and idempotently wires it into the shared aggregator files:
 
 - `lib/core/routes/app_routes.dart` — a new `AppRoutes`/`_Routes` constant pair.
-- `lib/core/routes/app_pages.dart` — a new `AgRoute(...)` entry (plus the imports it needs).
+- `lib/core/routes/app_pages.dart` — a new `GoRoute(...)` entry built with `AgRoutePage` (plus the imports it needs).
 - `lib/core/routes/route_management.dart` — a new `goToXPage(...)` navigation method.
 - `lib/core/arguments/arguments.dart` — (detail modules only) a new `<ClassPrefix>PageArgument` class, generated empty — add fields yourself; the generated controller/repo/service pass the whole argument object through rather than guessing field names.
 
@@ -76,23 +77,34 @@ default pluralizer gets a root module's name wrong, override it:
 ag g m company --plural=companies   # ClassPrefix becomes "Companies", not the default guess
 ```
 
-**By default, every module's Service/Repo/Controller also get `add`/
-`update`/`delete` stubs** — a generator's whole point is to hand over more
+**By default, every module's Service/Repo/Controller also get `create`/
+`update`/`destroy` methods** — a generator's whole point is to hand over more
 working boilerplate than a developer would start from by hand, not less.
-(A detail module never gets `add`: there's no "create a new one" concept
-on a page that's about one existing entity.) Every stub is a plain
-`UnimplementedError` placeholder with a `TODO` pointing at
-`core/endpoints.dart`, exactly like the always-present read method
-(`getPage`/`getByArgument`) already is — not a mixin, not framework-owned:
-delete whichever ones a module doesn't need, exactly as freely as any
-other generated code. All three keep the same name across Service, Repo,
+(A detail module never gets `create`: there's no "create a new one"
+concept on a page that's about one existing entity.) The names match
+the Service action mixins, and each body is one plain
+`get` / `post` / `put` / `delete` call against the endpoint getters (a `TODO` points at
+`core/endpoints.dart`), exactly like the always-present read method
+(`list`/`retrieve`) — delete whichever ones a module doesn't need, exactly
+as freely as any other generated code. All three keep the same name across Service, Repo,
 and Controller, so a change reads the same at every layer. Control which
 get generated with `--methods=`:
 
 ```bash
-ag g m product                          # add, update, delete — all three
-ag g m product --methods=add,delete     # only these two
-ag g m product --methods=none           # only the read method
+ag g m product                            # create, update, destroy — all three
+ag g m product --methods=create,destroy   # only these two
+ag g m product --methods=none             # only the read method
+```
+
+**Paging is opt-in.** `--paginate` makes a collection module's list page:
+the Service declares `AgPagination get pagination` (`?page=1&limit=20` by
+default — swap in `AgLimitOffsetPagination` or a subclass) and takes a
+`page` in `list`, the Repo passes it through, and the Controller mixes in
+`AgLoadMore` and implements `list({int page = 1})`. Without it the
+Controller mixes in `AgList` and implements `list()`.
+
+```bash
+ag g m product --paginate
 ```
 
 Running `ag g m` again for a module that already exists is always safe —
@@ -164,13 +176,13 @@ Mechanical/structural checks — always run, derived from re-parsing
 
 - a module missing one of its five architectural-layer files
   (page/controller/repo/service/binding)
-- a route with no `AgRoute` entry in `app_pages.dart`
+- a route with no `GoRoute` entry in `app_pages.dart`
 - a route with no navigation method in `route_management.dart`
 - a detail route missing its argument class in `arguments.dart`
 - two different route constants pointing at the identical path
 - a nested subfolder under an architectural-layer or component-namespace
   folder (both must stay flat)
-- a hard-coded route string (`AgNavigator.toNamed('/literal')`) anywhere outside
+- a hard-coded route string (`context.push('/literal')`, `pushNamed`, `go`, ... with a literal path) anywhere outside
   `route_management.dart`
 
 Resolved-model checks — need a *resolved* element model (`analyzer`'s
@@ -185,10 +197,10 @@ resolved (`dart pub get` / `flutter pub get`):
   referenced type's full supertype chain, so a concrete `ProductsRepo`
   is caught the same way a raw `AgBaseRepo` reference would be
   (requirments/ag_framework.md §11/§70).
-- **Unused detail argument**: a detail module's controller (one extending
-  `AgDetailController`) that never reads its inherited `arguments`
-  anywhere in the class — the navigation argument that route exists to
-  carry is going unread.
+- **Unused detail argument**: a controller holding a field typed by one of
+  the app's navigation argument classes (from `core/arguments/arguments.dart`)
+  that never reads it anywhere in the class — the navigation argument that
+  route exists to carry is going unread.
 
 If dependencies haven't been resolved yet, these two are silently skipped
 (everything else still runs) and `ag analyze` prints a note telling you to

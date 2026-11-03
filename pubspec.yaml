@@ -2,7 +2,7 @@ name: ag_workspace
 publish_to: none
 
 environment:
-  sdk: ^3.11.0
+  sdk: ^3.13.0
 
 workspace:
   - packages/ag_flow
@@ -34,11 +34,12 @@ melos:
       run: >-
         dart format --output=none --set-exit-if-changed
         packages/ag_flow/lib packages/ag_flow/test
-        packages/ag_flow/example/lib
+        packages/ag_flow/example/lib packages/ag_flow/example/test
         packages/ag_flow_cli/bin packages/ag_flow_cli/lib
         packages/ag_flow_cli/test packages/ag_flow_cli/tool
         packages/ag_flow_generator/lib
         showcase/blog/lib showcase/store/lib showcase/tasks/lib
+        showcase/blog/test showcase/store/test showcase/tasks/test
 
     analyze:
       description: >-
@@ -61,9 +62,20 @@ melos:
       packageFilters:
         scope: ag_flow_cli
 
+    test:apps:
+      description: >-
+        Run the showcase apps' offline smoke tests and the example app's
+        generated starter tests (Flutter).
+      exec:
+        command: flutter test
+      packageFilters:
+        scope:
+          - ag_showcase_*
+          - ag_flow_example
+
     test:
-      description: Run every package's tests.
-      run: melos run test:flow && melos run test:cli
+      description: Run every package's and app's tests.
+      run: melos run test:flow && melos run test:cli && melos run test:apps
 
     check-bundles-fresh:
       description: >-

@@ -22,15 +22,13 @@ enum FileOpKind {
 class FileOp {
   const FileOp.create({
     required this.path,
-    required String content,
+    required this._content,
     this.executable = false,
-  }) : kind = FileOpKind.create,
-       _content = content;
+  }) : kind = FileOpKind.create;
 
-  const FileOp.update({required this.path, required String content})
+  const FileOp.update({required this.path, required this._content})
     : kind = FileOpKind.update,
-      executable = false,
-      _content = content;
+      executable = false;
 
   const FileOp.skipExisting({required this.path})
     : kind = FileOpKind.skipExisting,

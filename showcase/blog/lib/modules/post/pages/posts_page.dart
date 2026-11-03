@@ -21,10 +21,8 @@ class PostsPage extends AgBasePage<PostsController> {
       (context) => const PostLoading();
 
   @override
-  Widget Function(BuildContext, Object, StackTrace?, VoidCallback)?
-  get errorBuilder =>
-      (context, error, stackTrace, retry) =>
-          PostError(error: error, onRetry: retry);
+  Widget Function(BuildContext, Object, StackTrace?, VoidCallback)? get errorBuilder =>
+      (context, error, stackTrace, retry) => PostError(error: error, onRetry: retry);
 
   @override
   WidgetBuilder? get emptyBuilder =>
@@ -39,14 +37,14 @@ class PostsPage extends AgBasePage<PostsController> {
 
   @override
   Widget buildSuccess(BuildContext context) {
-    return AgListBuilder<Post, int>(
+    return AgListView<Post>(
       controller: controller,
       itemBuilder: (context, item, index) => PostItem(
         item: item,
         onTap: () => RouteManagement.goToPostDetailsPage(
           PostDetailsPageArgument(postId: item.id),
         ),
-        onDelete: () => controller.delete(item.id),
+        onDelete: () => controller.destroy(item.id),
       ),
     );
   }
@@ -82,7 +80,7 @@ class PostsPage extends AgBasePage<PostsController> {
             ),
             FilledButton(
               onPressed: () {
-                controller.add(
+                controller.create(
                   Post(
                     id: 0,
                     userId: 1,

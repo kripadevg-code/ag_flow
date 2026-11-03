@@ -13,6 +13,7 @@ import 'package:ag_flow_cli/src/naming/module_path.dart';
 import 'package:ag_flow_cli/src/naming/pluralizer.dart';
 import 'package:args/command_runner.dart';
 import 'package:mason_logger/mason_logger.dart';
+import 'package:path/path.dart' as p;
 
 /// `ag generate module <module_path>` (aliased `ag g m <module_path>`).
 class ModuleCommand extends Command<int> {
@@ -32,10 +33,25 @@ class ModuleCommand extends Command<int> {
         help:
             'Which mutation-method stubs to generate across '
             'Service/Repo/Controller, beyond the always-present read '
-            'method — a comma-separated subset of add,update,delete '
-            '(add is silently dropped for detail modules, which have '
+            'method — a comma-separated subset of create,update,destroy '
+            '(create is silently dropped for detail modules, which have '
             'no "create a new one" concept). Defaults to all of them; '
             'pass --methods=none to generate only the read method.',
+      )
+      ..addFlag(
+        'paginate',
+        negatable: false,
+        help:
+            'Make a collection module page its list: the Service declares '
+            'an AgPagination (?page=1&limit=20 by default) and the '
+            'Controller mixes in AgLoadMore. Ignored for detail modules.',
+      )
+      ..addFlag(
+        'test',
+        defaultsTo: true,
+        help:
+            'Write a starter test for the module under '
+            'test/modules/<root>/. Pass --no-test to skip it.',
       )
       ..addOption(
         'model',
@@ -71,13 +87,15 @@ class ModuleCommand extends Command<int> {
   @override
   String get invocation => 'ag generate module <module_path>';
 
-  /// Builds the module's [ModelSpec] from `--model`/`--from-json`, or
-  /// null when neither was given (in which case the generated stack is
-  /// typed `dynamic`, exactly as before).
-  ModelSpec? _resolveModel(ModulePath modulePath) {
+  /// Builds the module's [ModelSpec] from `--model`/`--from-json`. With
+  /// neither, a child module reuses its root's model when the root has
+  /// exactly one; otherwise this is null and the stack is typed `dynamic`.
+  ModelSpec? _resolveModel(ModulePath modulePath, Project project) {
     final modelOption = argResults!['model'] as String?;
     final fromJson = argResults!['from-json'] as String?;
-    if (modelOption == null && fromJson == null) return null;
+    if (modelOption == null && fromJson == null) {
+      return modulePath.isRoot ? null : _rootModel(modulePath, project);
+    }
 
     // Default the class name to the module's *root* segment, not its last
     // one: `product/details` addresses the same resource as `product`, so
@@ -108,6 +126,38 @@ class ModuleCommand extends Command<int> {
       );
     }
     return ModelSpec.fromJsonSample(className, decoded);
+  }
+
+  /// The model already in `<root>/models/`, when there is exactly one —
+  /// `product/details` addresses the same resource as `product`. Only its
+  /// class name and `id` type are read; the file itself is never rewritten.
+  ModelSpec? _rootModel(ModulePath modulePath, Project project) {
+    final dir = Directory(p.join(project.moduleRootDir(modulePath.rootSegment), 'models'));
+    if (!dir.existsSync()) return null;
+    final files = dir.listSync().whereType<File>().where((f) => f.path.endsWith('.dart')).toList();
+    if (files.length != 1) return null;
+    final source = files.single.readAsStringSync();
+    final className = RegExp(r'^class (\w+)', multiLine: true).firstMatch(source)?.group(1);
+    // Only a file named the way the generator names it: anything else would
+    // make the generator write a second model file beside it.
+    if (className == null || p.basename(files.single.path) != '${snakeCase(className)}.dart') {
+      return null;
+    }
+    final idType = RegExp(r'final (\w+\??) id;').firstMatch(source)?.group(1);
+    logger.info("Using the root module's model $className (pass --model to choose another).");
+    return ModelSpec(
+      className: className,
+      fields: [
+        if (idType != null)
+          AgModelField(
+            jsonKey: 'id',
+            dartName: 'id',
+            dartType: idType,
+            fromJsonExpression: '',
+            toJsonExpression: '',
+          ),
+      ],
+    );
   }
 
   @override
@@ -156,7 +206,7 @@ class ModuleCommand extends Command<int> {
 
     final ModelSpec? model;
     try {
-      model = _resolveModel(modulePath);
+      model = _resolveModel(modulePath, project);
     } on FormatException catch (e) {
       logger.err(e.message);
       return ExitCode.usage.code;
@@ -167,11 +217,11 @@ class ModuleCommand extends Command<int> {
 
     final generator = ModuleGenerator(
       project: project,
-      pluralizer: pluralOverride == null
-          ? defaultPluralizer
-          : (_) => pascalCase(pluralOverride),
+      pluralizer: pluralOverride == null ? defaultPluralizer : (_) => pascalCase(pluralOverride),
       methods: methods,
       model: model,
+      paginate: argResults!['paginate'] as bool,
+      withTests: argResults!['test'] as bool,
     );
 
     final List<FileOp> ops;

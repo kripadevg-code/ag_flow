@@ -1,5 +1,107 @@
 # Changelog
 
+## Unreleased
+
+- **Each live route has its own controller.** A route's binding now
+  registers into a scope of its own, so `/product/7` under `/product/9`
+  no longer share one controller, and going back shows product 7 as it
+  was. A page finds its route's controller through its own widget
+  instance, so build it per route: `child: XPage(key: state.pageKey)`
+  (what `ag g m` now writes), not `const XPage()` — a shared const page
+  on two live routes is reported. Migrate: drop `const` from the `child:`
+  of each `AgRoutePage`. `AgBinding.resetLiveBindings` is removed;
+  `resetAgFlow()` clears route scopes.
+- **Fix: the default page transition leaked.** `AgTransition.rightToLeft`
+  created a `CurvedAnimation` on every rebuild and never disposed it, so
+  each push left listeners on the route's animation. It now uses
+  `animation.drive`, which allocates nothing to dispose. The package's own
+  tests now run under Flutter's leak tracker.
+- **Fix: a load-more during a refresh skipped a page.** `loadMore()` is now
+  a no-op while `refresh()` is in flight; before, a page fetched then
+  advanced the page counter past page 2.
+- **Retries are limited to idempotent methods.** `AgRetryPolicy` retries
+  only `GET`, `HEAD`, `OPTIONS`, `PUT` and `DELETE` by default, since a
+  `POST` or `PATCH` that timed out may already have been applied. Opt
+  others in with `retryableMethods`.
+- **Request logging is off by default in release builds.** `AgLogOptions`
+  defaults `enabled` to `!kReleaseMode`, so request URLs no longer reach
+  the device log of a shipped app. Pass `enabled: true` to keep them.
+- **Test helpers: `package:ag_flow/testing.dart`.** `AgFakeApiProvider`
+  answers requests from replies set up per endpoint (`reply`, `replyWith`,
+  `fail`) and records every request, so a Service, Repo and Controller run
+  unchanged in a test with no network. `resetAgFlow()` clears AG's static
+  registries between tests.
+- **Breaking: controllers use the Repo's action names, not `fetch()`.** A
+  list page's controller adds `with AgList<T>` and implements `list()`; a
+  details page's controller adds `with AgRetrieve<T>` and implements
+  `retrieve()`. `AgLoadMore` is unchanged. A controller that loads
+  nothing (a form) drops its empty `fetch()` and mixes in neither.
+  Migrate: rename `fetch()` and add the mixin.
+- **`decode` may be async.** The `get`/`post`/`put`/`patch`/`delete` verb
+  methods accept a `decode` that returns a Future, so a Service can build
+  a very large response's objects off the UI thread with `compute`.
+  Existing synchronous `decode` functions are unchanged. `ApiProvider`'s
+  interface is unchanged.
+- **Repos turn errors into app errors.** `AgBaseRepo.guard` now classifies
+  what it catches: `AgRepoException.kind` (`network`, `timeout`,
+  `cancelled`, `unauthorized`, `notFound`, `rejected`, `server`,
+  `badResponse`, `unknown`) and a readable `message`, with the original
+  error in `cause`. `AgError` shows that message by default.
+  `AgApiException.type` (`AgApiErrorType`) says whether a request failed
+  to connect, timed out, was cancelled or got an error status, without
+  exposing dio's types.
+- Requires Dart 3.13 / Flutter 3.47 (latest stable).
+- **Breaking: AG provides the architecture, never the bodies.** Every
+  module is three plain classes — `XController extends AgBaseController<T>`,
+  `XRepo extends AgBaseRepo`, `XService extends AgBaseService with` only the
+  action mixins it needs — and the developer writes every method.
+  - **Service action mixins use the five action names and only declare their method:**
+    `AgListMixin<T>` (`list`), `AgCreateMixin<T>` (`create`),
+    `AgRetrieveMixin<T, ID>` (`retrieve`), `AgUpdateMixin<T, ID>` (`update`),
+    `AgDestroyMixin<ID>` (`destroy`). They replace `AgCrudService`.
+    Feature methods (`filterProducts`, `search`) are ordinary methods.
+  - **New HTTP verb methods on `AgBaseService`:** `get`, `post`, `put`,
+    `patch` and `delete` take an `AgEndpoint` plus `pathParams` /
+    `queryParams` / `headers` / `body` / `decode` and return the decoded
+    data, so an action body is one call:
+    `Future<Task> retrieve(int id) => get(TaskEndpoints.taskById, pathParams: {'id': id}, decode: ...)`.
+    `send` stays for the full `AgResponse` (status code, headers) or form
+    data.
+  - **Removed:** `AgListController`, `AgPaginationMixin`, `AgListPage`,
+    `AgPaginationState`, `AgListBuilder`, `AgDetailController`,
+    `AgPagedService`, the `AgPageStrategy` family, `AgEnvelope`,
+    `fetchList` / `fetchItem` / `decodeListPayload` / `decodeItemPayload`,
+    and `AgNotifier`.
+  - **Opt-in pagination, one line per layer.** A Service declares
+    `AgPagination? get pagination => const AgPageNumberPagination();`
+    (or `AgLimitOffsetPagination`, or its own subclass) and uses
+    `pagination!.query(page)` in its own `list({int page = 1})`. A
+    Controller adds `with AgLoadMore<T>` and implements `list({int page = 1})`.
+  - **New `AgListView<T>`** lists any `AgBaseController<List<T>>`; with
+    `AgLoadMore` it pages on scroll and shows a load-more footer.
+  - **Migration:**
+    - `AgListController<T, K>` → `AgBaseController<List<T>>`, plus
+      `with AgLoadMore<T>` if it paged; `list` returns `List<T>`.
+    - `updateItems(...)` → `emit(AgPageState.success(newList))`.
+    - `AgDetailController<T, A>` → `AgBaseController<T>`; read the id in the
+      constructor from `AgRouteData.pathParameters`.
+    - `AgListBuilder` → `AgListView`.
+    - `getAll` / `add` / `getById` / `delete` → `list` / `create` /
+      `retrieve` / `destroy`; write the bodies with `send`.
+- **Breaking: the app owns go_router.** `AgApp`, `AgRoute`, `AgShellRoute`
+  and `AgNavigator` are removed, and `go_router` is no longer a dependency.
+  New: `AgRoutePage` (a `Page` that registers a module's binding on route
+  creation and releases it from the route's `dispose`, reference-counted per
+  binding *type* so go_router's page rebuilds are safe), `AgShellScope`,
+  `AgGuard.check`, and `AgRouteData` (replaces `AgNavigator.extra` /
+  `.pathParameters`).
+- **`ApiProvider` is an interface.** The dio implementation is
+  `DioApiProvider`; `ApiProvider(baseUrl: ...)` still builds one. Implement
+  `send` to plug in any other transport. **Breaking:** `addInterceptor` and
+  `debugDio` are dio-specific, so they moved to `DioApiProvider` — construct
+  `DioApiProvider(...)` directly where you add interceptors.
+- New [developer guide](doc/guide.md) with a migration table.
+
 ## 0.3.0
 
 - Automated release pipeline verification — no runtime code changes.

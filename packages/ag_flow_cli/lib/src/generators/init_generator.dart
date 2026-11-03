@@ -30,27 +30,43 @@ abstract class AppRoutes {
 }
 
 abstract class _Routes {
+  // Where the app starts. No module claims '/', so point this at your
+  // first screen once it's generated, e.g. '/product'.
   static const String initial = '/';
 }
 ''';
 
 const _appPagesSkeleton = '''
 import 'package:ag_flow/ag_flow.dart';
+import 'package:go_router/go_router.dart';
 
 import 'app_routes.dart';
 
+/// Every route in the app, on plain go_router — the app owns the router
+/// and its go_router version. `ag g m` adds one `GoRoute` per module; move
+/// one into a `ShellRoute` (with `AgShellScope` for a shell binding), give
+/// it a `redirect:` guard (`AgGuard.check`), or nest it under another
+/// route freely — the generator finds an entry by its path wherever it
+/// sits, and never adds it twice.
 abstract class AppPages {
   static const AgTransition defaultTransition = AgTransition.rightToLeft;
 
-  static final List<AgRoute> pages = [];
+  /// Hand this to `MaterialApp.router(routerConfig: AppPages.router)`.
+  static final GoRouter router = GoRouter(
+    initialLocation: AppRoutes.initial,
+    routes: pages,
+  );
+
+  static final List<RouteBase> pages = [];
 }
 ''';
 
 const _routeManagementSkeleton = '''
-import 'package:ag_flow/ag_flow.dart';
-
+import 'app_pages.dart';
 import 'app_routes.dart';
 
+/// The only place the app navigates by route — every screen calls a
+/// `goToXPage(...)` method here, never a literal path.
 abstract class RouteManagement {}
 ''';
 
@@ -98,6 +114,7 @@ enforces it and CI fails on any violation.
 ```bash
 ag g m <path>                            # collection module
 ag g m <path> --from-json=sample.json    # ... typed from a real API response
+ag g m <path> --paginate                 # ... whose list pages (AgLoadMore)
 ag g m <parent>/<child>                  # detail module
 ag analyze                               # verify the project still conforms
 ```
@@ -119,15 +136,25 @@ Each layer talks only to the next. Never skip one, never reach backwards.
 | Layer | Base class | Responsibility |
 |---|---|---|
 | Page | `AgBasePage<C>` | Rendering only. No business logic, no Repo/Service access. |
-| Controller | `AgBaseController` / `AgListController` / `AgDetailController` | Page state. Calls **only** its Repo. |
-| Repo | `AgBaseRepo` | Calls **only** its Service. |
-| Service | `AgBaseService` | **Declarative.** Declares endpoints, `AgPageStrategy`, `AgEnvelope`. |
-| Network | `ApiProvider` | The only thing that touches HTTP. |
+| Controller | `AgBaseController<T>` (`<List<T>>` for a list) | Page state. Calls **only** its Repo. |
+| Repo | `AgBaseRepo` | Calls **only** its Service, inside `guard` (errors become `AgRepoException`). Caching / offline live here. |
+| Service | `AgBaseService` + action mixins | Talks to the backend through `ApiProvider`. |
+| Network | `ApiProvider` (`DioApiProvider` by default) | The only thing that touches the network. |
 
-A Service contains **no request plumbing** — no query-param building, no
-manual decoding, no `hasMore` arithmetic. Everything that differs between
-backends is a value it declares. Use `AgCrudService` / `AgPagedService`, or
-`fetchList`/`fetchItem` for feature-specific reads.
+Only the Service has action mixins — `AgListMixin`, `AgCreateMixin`,
+`AgRetrieveMixin`, `AgUpdateMixin`, `AgDestroyMixin`. Each is a typed
+contract: it fixes the method name (`list` / `create` / `retrieve` /
+`update` / `destroy`) and types, and the Service writes the body with
+`get` / `post` / `put` / `patch` / `delete`. Mix in only the actions the backend supports. A paging backend
+declares `AgPagination get pagination` (`AgPageNumberPagination`,
+`AgLimitOffsetPagination`, or a subclass) and builds its query with
+`pagination.query(page)`.
+
+Each module has one plain Repo and one plain Controller, with ordinary
+methods that delegate down one layer. A detail Controller reads its
+navigation argument in its constructor from `AgRouteData.pathParameters`
+and derives `lookupId` from it. To add caching or offline
+support, change the Repo's method body.
 
 ## Folder structure
 
@@ -148,14 +175,30 @@ folders.
 
 Use `AgPageState` — `initial` / `loading` / `success` / `empty` / `error`.
 Never ad-hoc `isLoading` / `errorMessage` fields. `emit()` is the only write
-path. For lists, implement `fetchPage` and let `AgPaginationMixin` own
-load-more; pagination state is deliberately separate from page state.
+path. A Controller loads its data with the Repo's action name: mix in
+`AgList<T>` and implement `list()`, or `AgRetrieve<T>` and `retrieve()`.
+Render a list with `AgListView`. For a paged list, mix `AgLoadMore<T>` into
+the Controller instead and implement `list({int page})`; it owns load-more,
+separately from page state (`ag g m <module> --paginate` generates this).
 
 ## Routing
 
-Routes live in `core/routes/` and the CLI maintains them. Navigate via
-`RouteManagement.goToXPage(...)`. A detail route carries its id in the path
-(`/product/details/:id`) so the page is deep-linkable.
+Routing is plain go_router, owned by this app: `AppPages.router` in
+`core/routes/app_pages.dart`. The CLI adds one `GoRoute` per module, built
+with `AgRoutePage` (which registers the module's binding and releases it
+when the route is gone). Navigate via `RouteManagement.goToXPage(...)`. A
+detail route carries its id in the path (`/product/details/:id`) so the
+page is deep-linkable. Guards are `AgGuard`s run from a route's `redirect:`
+via `AgGuard.check`. Build each route's page with `XPage(key: state.pageKey)`,
+never `const XPage()`: each route then gets its own controller.
+
+## Tests
+
+`ag g m` writes each module's starter test to
+`test/modules/<root>/<module>_test.dart`; add cases there. Use
+`package:ag_flow/testing.dart`: `AgFakeApiProvider` answers per endpoint
+so the real Service, Repo and Controller run without a network, and
+`setUp(resetAgFlow)` clears `AgLocator` between tests.
 
 ## You MUST NOT
 
@@ -164,9 +207,10 @@ Routes live in `core/routes/` and the CLI maintains them. Navigate via
 - call a Service from a Controller, or a Repo from a Page
 - import `dio` or `package:http` anywhere in feature code
 - add `isLoading` / `hasError` booleans to a controller
-- call `AgNavigator.toNamed('/literal')` outside `route_management.dart`
+- navigate with a literal path (`context.push('/x')`) outside `route_management.dart`
 - create folders outside the structure above
-- hand-edit `core/routes/*` for a generated module
+- leave a page with go_router's `replace` (use `pushReplacement`: `replace`
+  reuses the page key, so the new module's binding never registers)
 
 ## Before you finish
 

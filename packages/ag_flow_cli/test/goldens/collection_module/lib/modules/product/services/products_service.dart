@@ -1,45 +1,59 @@
 import 'package:ag_flow/ag_flow.dart';
 
-/// Declarative by design — this Service contains no request plumbing.
-///
-/// Everything that differs between backends is a *value* you declare:
-/// [pageStrategy] (the paging dialect) and [envelope] (where the payload
-/// sits inside a response body). AG owns the requests, the decoding, and
-/// the paging arithmetic — so this file reads the same in every module of
-/// every app, no matter how unusual the API behind it is.
+/// Each mixin is a typed contract for one backend action, and this
+/// Service lists only the actions its backend supports. The bodies below
+/// are yours: a starting point written with `get` / `post` / `put` /
+/// `delete`, so change any of them freely when the backend does something
+/// unusual.
 ///
 /// Replace `dynamic` with your real model type.
 class ProductsService extends AgBaseService
-    with AgCrudService<dynamic, Object>, AgPagedService<dynamic, int> {
+    with
+        AgListMixin<dynamic>,
+        AgCreateMixin<dynamic>,
+        AgUpdateMixin<dynamic, Object>,
+        AgDestroyMixin<Object> {
   ProductsService(super.apiProvider);
 
   // TODO: point these at real endpoints declared in core/endpoints.dart.
-  @override
   AgEndpoint get collectionEndpoint =>
       throw UnimplementedError('ProductsService.collectionEndpoint');
 
-  @override
   AgEndpoint get resourceEndpoint =>
       throw UnimplementedError('ProductsService.resourceEndpoint');
 
-  /// How this backend paginates. Swap in [AgOffsetStrategy],
-  /// [AgCursorStrategy], or [AgSinglePageStrategy] (for a backend that
-  /// returns the whole collection in one response) to match yours.
-  @override
-  AgPageStrategy<int> get pageStrategy => const AgPageNumberStrategy();
-
-  /// Where the payload sits in a response body. Delete this override if
-  /// the body *is* the payload; use `AgEnvelope.key('data')` for
-  /// `{"data": [...]}`, or `AgEnvelope.path([...])` when it's nested.
-  @override
-  AgEnvelope get envelope => AgEnvelope.raw;
-
   // TODO: replace `dynamic` with your model type, then decode/encode it.
-  @override
   dynamic fromJson(Map<String, dynamic> json) =>
       throw UnimplementedError('ProductsService.fromJson');
 
-  @override
   Map<String, dynamic> toJson(dynamic item) =>
       throw UnimplementedError('ProductsService.toJson');
+
+  @override
+  Future<List<dynamic>> list() => get(
+    collectionEndpoint,
+    decode: (json) => [
+      for (final item in json! as List<Object?>)
+        fromJson(item! as Map<String, dynamic>),
+    ],
+  );
+
+  @override
+  Future<dynamic> create(dynamic item) => post(
+    collectionEndpoint,
+    body: toJson(item),
+    decode: (json) => fromJson(json! as Map<String, dynamic>),
+  );
+
+  @override
+  Future<dynamic> update(Object id, dynamic item) => put(
+    resourceEndpoint,
+    pathParams: {'id': id},
+    body: toJson(item),
+    decode: (json) => fromJson(json! as Map<String, dynamic>),
+  );
+
+  @override
+  Future<void> destroy(Object id) =>
+      delete(resourceEndpoint, pathParams: {'id': id});
 }

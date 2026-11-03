@@ -1,5 +1,57 @@
 # Changelog
 
+## Unreleased
+
+- **Routes build their page per route**: `child: XPage(key: state.pageKey)`
+  instead of `const XPage()`, so each live route gets its own controller.
+  The generated `AGENTS.md` says the same.
+- **A child module reuses its root's model.** `ag g m product/details`
+  with no `--model` now types the module with the root's existing model
+  (`Product`, and its `id` type) when `models/` holds exactly one,
+  instead of `dynamic`. The model file is never rewritten.
+- **`ag g m` writes a starter test for each module** to
+  `test/modules/<root>/<module>_test.dart`. It tests the Repo and the
+  Controller against a fake Service, so it passes straight after
+  generation, before any endpoint is set. Needs `ag_flow` with
+  `package:ag_flow/testing.dart`. Pass `--no-test` to skip it.
+- **Generated Repo methods wrap their Service call in `guard`**, so
+  controllers get an `AgRepoException` with a `kind` instead of a raw
+  `AgApiException`.
+- Requires Dart 3.13. Supports `analyzer` 13 and 14 (was 7–12).
+- **Generated Services list one action mixin per generated method**
+  instead of `AgCrudService`, and implement each one as a single
+  `get` / `post` / `put` / `delete` call: a
+  collection Service is `AgListMixin` plus `AgCreateMixin`/`AgUpdateMixin`/
+  `AgDestroyMixin` as `--methods=` selects; a detail Service is
+  `AgRetrieveMixin` plus `AgUpdateMixin`/`AgDestroyMixin`. The bodies are
+  plain code in the developer's file, a starting point to change freely.
+- **Breaking: the same five action names at every layer** — `list` / `create` /
+  `retrieve` / `update` / `destroy` in the Service, Repo and Controller.
+  `--methods=` takes `create,update,destroy` (was `add,update,delete`).
+- Generated Repos and Controllers are plain classes — `AgBaseRepo` and
+  `AgBaseController<List<T>>` / `AgBaseController<T>` — with one delegating
+  method per generated action. A list page renders with `AgListView`. A
+  detail Controller reads its argument in its constructor from
+  `AgRouteData.pathParameters` and derives `lookupId` from it (the
+  `int.parse` for an int id already written); detail Services lose their
+  `idOf`/`*ByArgument` adapters.
+- **New `--paginate`** for collection modules: the Service declares an
+  `AgPagination` and takes a `page`, the Controller mixes in `AgLoadMore`.
+  Without it a list loads in one request.
+- `ag analyze`'s unused-detail-argument check now looks for a controller
+  field typed by a navigation argument class that is never read (it
+  looked for `AgDetailController.arguments`, which no longer exists).
+- The generated `AGENTS.md` describes this layer contract.
+- **Routing is generated as plain go_router.** `ag init` writes
+  `AppPages.router` (a `GoRouter`) and `RouteManagement` navigating through
+  it; `ag g m` adds a `GoRoute` + `AgRoutePage` per module, and finds an
+  existing one anywhere in the file — inside a `ShellRoute` included — so it
+  never adds a duplicate. Apps add `go_router` themselves (`ag init` prints
+  the step).
+- `ag analyze` checks `GoRoute` wiring, and flags literal paths passed to
+  go_router navigation (`context.push('/x')`, `router.go('/x')`, ...)
+  outside `route_management.dart`.
+
 ## 0.3.0
 
 - Automated release pipeline verification — no CLI behavior changes.

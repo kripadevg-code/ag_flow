@@ -11,15 +11,12 @@ class AuthController extends AgBaseController<void> {
   static AuthController get find => AgLocator.find<AuthController>();
 
   @override
-  // Auth screens load instantly — no initial fetch needed.
+  // Auth screens load instantly — nothing to load.
   bool get autoLoadOnInit => false;
 
   // Suppress the default AgBasePage scaffold — auth pages own their layout.
   String? _errorMessage;
   String? get errorMessage => _errorMessage;
-
-  @override
-  Future<void> fetch() async {}
 
   Future<void> login({required String email, required String password}) async {
     _errorMessage = null;

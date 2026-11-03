@@ -1,7 +1,9 @@
+import 'package:flutter/foundation.dart';
+
 /// Configures `AgLoggingInterceptor`'s output and sensitive-value masking.
 class AgLogOptions {
   const AgLogOptions({
-    this.enabled = true,
+    this.enabled = !kReleaseMode,
     this.logRequestBody = false,
     this.logResponseBody = false,
     this.maskedHeaderKeys = const {'authorization', 'cookie', 'set-cookie'},
@@ -15,7 +17,9 @@ class AgLogOptions {
     this.logger,
   });
 
-  /// Whether request/response logging is on at all.
+  /// Whether request/response logging is on at all. Off by default in release
+  /// builds: `debugPrint` is not stripped there, so request URLs (query
+  /// strings included) would reach the device log.
   final bool enabled;
 
   /// Whether to include the request body in logs (masked per

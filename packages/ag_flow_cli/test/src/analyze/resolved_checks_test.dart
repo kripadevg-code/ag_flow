@@ -269,14 +269,16 @@ dependencies:
   );
 
   test(
-    'flags a detail controller that never uses its inherited arguments',
+    'flags a detail controller that stores its argument but never reads it',
     () async {
       appDir = await _freshResolvedProject();
-      // Replaces the whole file (rather than patching fetch() in place)
+      // Replaces the whole file (rather than patching retrieve() in place)
       // because the default-generated controller also has update()/
-      // delete() methods that legitimately reference arguments — a
+      // destroy() methods that legitimately read the argument — a
       // partial patch leaving those in place would no longer produce a
       // genuinely zero-usage class, and the "unused" issue wouldn't fire.
+      // The constructor still *assigns* the field: an assignment is not
+      // a read.
       File(
         p.join(
           appDir.path,
@@ -291,14 +293,19 @@ import 'package:ag_flow/ag_flow.dart';
 import 'package:sample_app/core/arguments/arguments.dart';
 import 'package:sample_app/modules/product/repos/product_details_repo.dart';
 
-class ProductDetailsController
-    extends AgDetailController<dynamic, ProductDetailsPageArgument> {
-  ProductDetailsController(this._repo);
+class ProductDetailsController extends AgBaseController<dynamic>
+    with AgRetrieve<dynamic> {
+  ProductDetailsController(this.repo)
+    : argument = ProductDetailsPageArgument.fromPathParameters(
+        AgRouteData.pathParameters,
+      );
 
-  final ProductDetailsRepo _repo;
+  final ProductDetailsRepo repo;
+
+  final ProductDetailsPageArgument argument;
 
   @override
-  Future<dynamic> fetch() async => 'stub';
+  Future<dynamic> retrieve() async => 'stub';
 }
 ''');
 
@@ -309,7 +316,7 @@ class ProductDetailsController
       expect(violations, hasLength(1));
       expect(
         violations.single.message,
-        contains('ProductDetailsController'),
+        allOf(contains('ProductDetailsController'), contains('"argument"')),
       );
       expect(
         violations.single.file,
@@ -320,7 +327,7 @@ class ProductDetailsController
 
   test(
     'does NOT flag the freshly generated detail controller — it already '
-    'reads "arguments" via _repo.getByArgument(arguments)',
+    'reads its argument through lookupId',
     () async {
       appDir = await _freshResolvedProject();
       final issues = await _analyze(appDir);

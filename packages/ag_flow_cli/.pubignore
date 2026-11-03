@@ -2,3 +2,8 @@
 # sample_app package — none of which are in ag_flow_cli's own pubspec.
 # They are test-only reference files and must not be scanned by pub.
 test/goldens/
+
+# Mustache templates, not Dart: the CLI runs from the committed bundles in
+# lib/src/templates/generated/, so the sources are not needed by consumers
+# (and pana would try to format them).
+bricks/

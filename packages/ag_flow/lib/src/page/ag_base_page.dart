@@ -9,21 +9,20 @@ import 'package:flutter/material.dart';
 /// Base class for a full-screen AG page.
 ///
 /// Works for both collection and detail modules: `C` already carries all
-/// the type information AG needs, including navigation arguments for
-/// detail pages (see `AgDetailController.arguments`) — there is no
-/// separate "detail" variant of this class, and no argument type to state
-/// a second time on the page itself.
+/// the type information AG needs — there is no separate "detail" variant
+/// of this class.
 ///
 /// Subclasses provide [buildSuccess] and may independently override
 /// [loadingBuilder], [errorBuilder], and [emptyBuilder]; anything left
 /// null falls back to the AG default.
-abstract class AgBasePage<C extends AgBaseController<dynamic>>
-    extends StatelessWidget {
+abstract class AgBasePage<C extends AgBaseController<dynamic>> extends StatelessWidget {
   const AgBasePage({super.key});
 
   /// This page's controller, resolved from [AgLocator] — registered by
-  /// the module's `AgBinding` when its route was pushed.
-  C get controller => AgLocator.find<C>();
+  /// the module's `AgBinding` when its route was pushed. Each route has its
+  /// own, as long as the route builds the page itself rather than sharing a
+  /// `const` one (`child: ProductsPage(key: state.pageKey)`).
+  C get controller => AgLocator.findFor<C>(this);
 
   /// Whether this page wraps its content in a [Scaffold]. Set to false to
   /// embed this page's content inside another Scaffold (e.g. as tab

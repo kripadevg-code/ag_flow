@@ -19,8 +19,7 @@ sealed class AgPageState<T> {
 
   const factory AgPageState.loading() = AgPageLoading<T>;
 
-  const factory AgPageState.success(T data, {bool isRefreshing}) =
-      AgPageSuccess<T>;
+  const factory AgPageState.success(T data, {bool isRefreshing}) = AgPageSuccess<T>;
 
   const factory AgPageState.empty() = AgPageEmpty<T>;
 
@@ -76,7 +75,7 @@ class AgPageSuccess<T> extends AgPageState<T> {
   }
 
   // Uses deep equality (not plain `==`) so `T` being a List/Map/Set of
-  // value objects — the common case, e.g. AgListController's `List<Item>`
+  // value objects — the common case, e.g. a list controller's `List<Item>`
   // — compares by content rather than identity.
   @override
   bool operator ==(Object other) =>
@@ -88,8 +87,7 @@ class AgPageSuccess<T> extends AgPageState<T> {
   int get hashCode => Object.hash(_dataEquality.hash(data), isRefreshing);
 
   @override
-  String toString() =>
-      'AgPageState<$T>.success($data, isRefreshing: $isRefreshing)';
+  String toString() => 'AgPageState<$T>.success($data, isRefreshing: $isRefreshing)';
 }
 
 /// The load succeeded but produced no data to show.
@@ -107,8 +105,8 @@ class AgPageEmpty<T> extends AgPageState<T> {
 }
 
 /// The load failed. [previousData] preserves whatever was on screen before
-/// the failing load/refresh, if any — a load-more or refresh failure is a
-/// distinct concept and never reaches this state (see `AgPaginationState`).
+/// the failing load/refresh, if any — a load-more failure is a distinct
+/// concept and never reaches this state (see `AgLoadMore.loadMoreError`).
 class AgPageError<T> extends AgPageState<T> {
   const AgPageError(this.error, [this.stackTrace, this.previousData]);
 

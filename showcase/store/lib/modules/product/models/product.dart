@@ -43,15 +43,14 @@ class Product {
     'image': image,
   };
 
-  Product copyWith({String? title, double? price, String? description}) =>
-      Product(
-        id: id,
-        title: title ?? this.title,
-        price: price ?? this.price,
-        description: description ?? this.description,
-        category: category,
-        image: image,
-        ratingRate: ratingRate,
-        ratingCount: ratingCount,
-      );
+  Product copyWith({String? title, double? price, String? description}) => Product(
+    id: id,
+    title: title ?? this.title,
+    price: price ?? this.price,
+    description: description ?? this.description,
+    category: category,
+    image: image,
+    ratingRate: ratingRate,
+    ratingCount: ratingCount,
+  );
 }

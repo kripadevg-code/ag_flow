@@ -1,17 +1,20 @@
 import 'package:ag_flow/ag_flow.dart';
 import 'package:sample_app/modules/product/repos/products_repo.dart';
 
-class ProductsController extends AgListController<dynamic, int> {
-  ProductsController(this._repo) : super(initialPageKey: 1);
+/// Loads the list through the Repo.
+/// Each write goes through the Repo and then refreshes the list. Add
+/// feature-specific methods (search, filter) alongside them freely.
+class ProductsController extends AgBaseController<List<dynamic>>
+    with AgList<dynamic> {
+  ProductsController(this._repo);
 
   final ProductsRepo _repo;
 
   @override
-  Future<AgListPage<dynamic, int>> fetchPage(int pageKey) =>
-      _repo.getPage(pageKey);
+  Future<List<dynamic>> list() => _repo.list();
 
-  Future<void> add(dynamic item) async {
-    await _repo.add(item);
+  Future<void> create(dynamic item) async {
+    await _repo.create(item);
     await refresh();
   }
 
@@ -20,8 +23,8 @@ class ProductsController extends AgListController<dynamic, int> {
     await refresh();
   }
 
-  Future<void> delete(Object id) async {
-    await _repo.delete(id);
+  Future<void> destroy(Object id) async {
+    await _repo.destroy(id);
     await refresh();
   }
 }

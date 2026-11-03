@@ -24,11 +24,11 @@ class _FakeHttpClientAdapter implements HttpClientAdapter {
   void close({bool force = false}) {}
 }
 
-ApiProvider _providerWith(
+DioApiProvider _providerWith(
   ResponseBody Function(RequestOptions options) handler, {
   AgLogOptions logOptions = const AgLogOptions(),
 }) {
-  final provider = ApiProvider(
+  final provider = DioApiProvider(
     baseUrl: 'https://api.test',
     logOptions: logOptions,
   );

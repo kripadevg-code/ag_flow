@@ -1,7 +1,11 @@
+import 'dart:async';
+
+import 'package:ag_flow/src/network/ag_endpoint.dart';
+import 'package:ag_flow/src/network/ag_http_method.dart';
 import 'package:ag_flow/src/network/ag_request.dart';
 import 'package:ag_flow/src/network/ag_response.dart';
 import 'package:ag_flow/src/network/api_provider.dart';
-import 'package:ag_flow/src/service/ag_envelope.dart';
+import 'package:ag_flow/src/service/ag_pagination.dart';
 import 'package:meta/meta.dart';
 
 /// Base class for every AG service.
@@ -11,12 +15,10 @@ import 'package:meta/meta.dart';
 /// [ApiProvider]. A service must never construct a raw URL or use an HTTP
 /// client directly.
 ///
-/// [envelope], [decodeListPayload], and [decodeItemPayload] exist so that
-/// *every* read decodes the same way — including the feature-specific
-/// methods (`searchProducts`, `getByCategory`, ...) that no mixin can
-/// anticipate. Without them, each bespoke method re-implements unwrapping
-/// and casting by hand, and modules drift apart exactly where the
-/// framework stops looking.
+/// AG provides the shape, never the bodies: a Service mixes in the action
+/// contracts its backend supports (`AgListMixin`, `AgCreateMixin`, ...),
+/// writes each body itself, and adds feature-specific methods
+/// (`filterProducts`, `search`, ...) as ordinary methods.
 ///
 /// ---
 /// ### Accessing a service anywhere — no generics
@@ -52,80 +54,167 @@ abstract class AgBaseService {
   @protected
   final ApiProvider apiProvider;
 
-  /// Where the payload sits inside this backend's response bodies.
-  /// Defaults to "the body is the payload" — correct for most REST APIs.
+  /// How this backend pages its collections, or null (the default) when
+  /// it returns everything at once.
   ///
-  /// Override once per Service, or once app-wide by putting it on your
-  /// own intermediate `AgBaseService` subclass that every Service extends.
-  AgEnvelope get envelope => AgEnvelope.raw;
+  /// Opt in with one line, and use it from your own `list` body:
+  ///
+  /// ```dart
+  /// @override
+  /// AgPagination? get pagination => const AgPageNumberPagination();
+  ///
+  /// @override
+  /// Future<List<Post>> list({int page = 1}) => get(
+  ///   PostEndpoints.posts,
+  ///   queryParams: pagination!.query(page),
+  ///   decode: (json) => [
+  ///     for (final item in json! as List<Object?>)
+  ///       Post.fromJson(item! as Map<String, dynamic>),
+  ///   ],
+  /// );
+  /// ```
+  AgPagination? get pagination => null;
 
-  /// Sends [request] through the shared [ApiProvider].
+  /// Sends a GET to [endpoint] and returns the decoded body.
+  ///
+  /// The five verb methods are how an action body talks to the backend:
+  /// each builds the `AgRequest`, sends it through [apiProvider] and
+  /// returns only the data. [decode] turns the JSON body into [D] — unwrap
+  /// an enveloped response there. It may return a Future, so a large body
+  /// can be decoded off the UI thread with Flutter's `compute`:
+  ///
+  /// ```dart
+  /// Future<List<Post>> list({int page = 1}) => get(
+  ///   PostEndpoints.posts,
+  ///   decode: (json) => compute(Post.listFromJson, json),
+  /// );
+  /// ```
+  ///
+  /// dio already parses large JSON text in a background isolate, so this
+  /// is only worth it when building the objects is itself slow. Use [send]
+  /// when you need the full response (status code, headers) or form data.
+  @protected
+  Future<D> get<D>(
+    AgEndpoint endpoint, {
+    Map<String, dynamic> pathParams = const {},
+    Map<String, dynamic> queryParams = const {},
+    Map<String, String> headers = const {},
+    FutureOr<D> Function(Object? json)? decode,
+  }) => _data(
+    AgHttpMethod.get,
+    endpoint,
+    pathParams: pathParams,
+    queryParams: queryParams,
+    headers: headers,
+    decode: decode,
+  );
+
+  /// Sends a POST of [body] to [endpoint] and returns the decoded body.
+  @protected
+  Future<D> post<D>(
+    AgEndpoint endpoint, {
+    Object? body,
+    Map<String, dynamic> pathParams = const {},
+    Map<String, dynamic> queryParams = const {},
+    Map<String, String> headers = const {},
+    FutureOr<D> Function(Object? json)? decode,
+  }) => _data(
+    AgHttpMethod.post,
+    endpoint,
+    body: body,
+    pathParams: pathParams,
+    queryParams: queryParams,
+    headers: headers,
+    decode: decode,
+  );
+
+  /// Sends a PUT of [body] to [endpoint] and returns the decoded body.
+  @protected
+  Future<D> put<D>(
+    AgEndpoint endpoint, {
+    Object? body,
+    Map<String, dynamic> pathParams = const {},
+    Map<String, dynamic> queryParams = const {},
+    Map<String, String> headers = const {},
+    FutureOr<D> Function(Object? json)? decode,
+  }) => _data(
+    AgHttpMethod.put,
+    endpoint,
+    body: body,
+    pathParams: pathParams,
+    queryParams: queryParams,
+    headers: headers,
+    decode: decode,
+  );
+
+  /// Sends a PATCH of [body] to [endpoint] and returns the decoded body.
+  @protected
+  Future<D> patch<D>(
+    AgEndpoint endpoint, {
+    Object? body,
+    Map<String, dynamic> pathParams = const {},
+    Map<String, dynamic> queryParams = const {},
+    Map<String, String> headers = const {},
+    FutureOr<D> Function(Object? json)? decode,
+  }) => _data(
+    AgHttpMethod.patch,
+    endpoint,
+    body: body,
+    pathParams: pathParams,
+    queryParams: queryParams,
+    headers: headers,
+    decode: decode,
+  );
+
+  /// Sends a DELETE to [endpoint] and returns the decoded body, if any.
+  @protected
+  Future<D> delete<D>(
+    AgEndpoint endpoint, {
+    Object? body,
+    Map<String, dynamic> pathParams = const {},
+    Map<String, dynamic> queryParams = const {},
+    Map<String, String> headers = const {},
+    FutureOr<D> Function(Object? json)? decode,
+  }) => _data(
+    AgHttpMethod.delete,
+    endpoint,
+    body: body,
+    pathParams: pathParams,
+    queryParams: queryParams,
+    headers: headers,
+    decode: decode,
+  );
+
+  Future<D> _data<D>(
+    AgHttpMethod method,
+    AgEndpoint endpoint, {
+    required Map<String, dynamic> pathParams,
+    required Map<String, dynamic> queryParams,
+    required Map<String, String> headers,
+    required FutureOr<D> Function(Object? json)? decode,
+    Object? body,
+  }) async {
+    final response = await send<Object?>(
+      AgRequest(
+        endpoint: endpoint,
+        method: method,
+        pathParams: pathParams,
+        queryParams: queryParams,
+        headers: headers,
+        body: body,
+      ),
+    );
+    final json = response.data;
+    return decode != null ? await decode(json) : json as D;
+  }
+
+  /// Sends [request] through the shared [ApiProvider] and returns the
+  /// full response — for when the data alone is not enough.
   @protected
   Future<AgResponse<D>> send<D>(
     AgRequest request, {
     D Function(Object? json)? decode,
   }) {
     return apiProvider.send<D>(request, decode: decode);
-  }
-
-  /// Unwraps [body] via [envelope] and decodes the resulting JSON array
-  /// with [fromJson].
-  @protected
-  List<D> decodeListPayload<D>(
-    Object? body,
-    D Function(Map<String, dynamic> json) fromJson,
-  ) {
-    final payload = envelope.payloadOf(body);
-    if (payload is! List) {
-      throw AgEnvelopeException(
-        'Expected a JSON array payload but found ${payload.runtimeType}. '
-        'If this backend wraps its collections (e.g. {"data": [...]}), '
-        'declare that by overriding `envelope` on this Service.',
-      );
-    }
-    return payload
-        .cast<Map<String, dynamic>>()
-        .map(fromJson)
-        .toList(growable: false);
-  }
-
-  /// Unwraps [body] via [envelope] and decodes the resulting JSON object
-  /// with [fromJson].
-  @protected
-  D decodeItemPayload<D>(
-    Object? body,
-    D Function(Map<String, dynamic> json) fromJson,
-  ) {
-    final payload = envelope.payloadOf(body);
-    if (payload is! Map<String, dynamic>) {
-      throw AgEnvelopeException(
-        'Expected a JSON object payload but found ${payload.runtimeType}. '
-        'If this backend wraps single resources (e.g. {"data": {...}}), '
-        'declare that by overriding `envelope` on this Service.',
-      );
-    }
-    return fromJson(payload);
-  }
-
-  /// Sends [request] and decodes the response as a list — the one-liner
-  /// every feature-specific "fetch many" method should be.
-  @protected
-  Future<List<D>> fetchList<D>(
-    AgRequest request,
-    D Function(Map<String, dynamic> json) fromJson,
-  ) async {
-    final response = await send<Object?>(request, decode: (json) => json);
-    return decodeListPayload(response.data, fromJson);
-  }
-
-  /// Sends [request] and decodes the response as a single object — the
-  /// one-liner every feature-specific "fetch one" method should be.
-  @protected
-  Future<D> fetchItem<D>(
-    AgRequest request,
-    D Function(Map<String, dynamic> json) fromJson,
-  ) async {
-    final response = await send<Object?>(request, decode: (json) => json);
-    return decodeItemPayload(response.data, fromJson);
   }
 }

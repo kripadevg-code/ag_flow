@@ -3,33 +3,24 @@ import 'package:ag_showcase_blog/core/arguments/arguments.dart';
 import 'package:ag_showcase_blog/modules/post/models/post.dart';
 import 'package:ag_showcase_blog/modules/post/repos/post_details_repo.dart';
 
-class PostDetailsController
-    extends AgDetailController<Post, PostDetailsPageArgument> {
-  PostDetailsController(this._repo);
+class PostDetailsController extends AgBaseController<Post> with AgRetrieve<Post> {
+  PostDetailsController(this._repo)
+    : argument = PostDetailsPageArgument.fromPathParameters(
+        AgRouteData.pathParameters,
+      );
 
   final PostDetailsRepo _repo;
 
-  /// Rebuilds this page's argument from the route's path parameters,
-  /// so it opens correctly from a deep link as well as an in-app push.
-  @override
-  PostDetailsPageArgument? argumentsFromPath(
-    Map<String, String> pathParameters,
-  ) => PostDetailsPageArgument.fromPathParameters(pathParameters);
+  final PostDetailsPageArgument argument;
+
+  int get lookupId => argument.postId;
 
   @override
-  Future<Post> fetch() => _repo.getByArgument(arguments);
+  Future<Post> retrieve() => _repo.retrieve(lookupId);
 
   Future<void> update(Post item) async {
-    final updated = await _repo.update(arguments, item);
-    emit(AgPageState.success(updated));
+    emit(AgPageState.success(await _repo.update(lookupId, item)));
   }
 
-  /// jsonplaceholder never actually removes the post — this is a live
-  /// demo of the DELETE call itself, not a persistence guarantee — so on
-  /// success we simply pop back to the list rather than trying to reflect
-  /// the deletion anywhere.
-  Future<void> delete() async {
-    await _repo.delete(arguments);
-    AgNavigator.back<void>();
-  }
+  Future<void> destroy() => _repo.destroy(lookupId);
 }

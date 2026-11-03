@@ -18,8 +18,7 @@ class InitCommand extends Command<int> {
   final name = 'init';
 
   @override
-  final description =
-      'Bootstrap this project for AG: creates the lib/core/ skeleton.';
+  final description = 'Bootstrap this project for AG: creates the lib/core/ skeleton.';
 
   @override
   Future<int> run() async {
@@ -51,15 +50,20 @@ class InitCommand extends Command<int> {
         ..info(
           '  2. Set a real API base URL in lib/core/bindings/initial_binding.dart.',
         )
-        ..info('  3. Wire AgApp in your main.dart:')
-        ..info('       AgApp(')
-        ..info('         initialRoute: AppRoutes.initial,')
-        ..info('         initialBinding: InitialBinding(),')
-        ..info('         routes: AppPages.pages,')
-        ..info('       )')
-        ..info('  4. Run "ag g m <module>" to generate your first module.')
         ..info(
-          '  5. Enable the local architecture gate (optional, recommended):',
+          '  3. Add go_router — the app owns its router and its version:',
+        )
+        ..info('       dart pub add go_router')
+        ..info('  4. Wire the router in your main.dart:')
+        ..info('       void main() {')
+        ..info('         InitialBinding().dependencies();')
+        ..info(
+          '         runApp(MaterialApp.router(routerConfig: AppPages.router));',
+        )
+        ..info('       }')
+        ..info('  5. Run "ag g m <module>" to generate your first module.')
+        ..info(
+          '  6. Enable the local architecture gate (optional, recommended):',
         )
         ..info('       git config core.hooksPath .githooks')
         ..info(

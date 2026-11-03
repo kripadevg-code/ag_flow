@@ -14,7 +14,7 @@ class ProjectDetailsPage extends AgBasePage<ProjectDetailsController> {
       IconButton(
         icon: const Icon(Icons.delete_outline_rounded),
         tooltip: 'Delete project',
-        onPressed: controller.delete,
+        onPressed: controller.destroy,
       ),
     ],
   );

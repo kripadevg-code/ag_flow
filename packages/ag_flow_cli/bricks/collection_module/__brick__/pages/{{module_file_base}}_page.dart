@@ -31,7 +31,7 @@ class {{module_class_prefix}}Page extends AgBasePage<{{module_class_prefix}}Cont
 
   @override
   Widget buildSuccess(BuildContext context) {
-    return AgListBuilder<{{model_class}}, int>(
+    return AgListView<{{model_class}}>(
       controller: controller,
       itemBuilder: (context, item, index) =>
           {{component_class_prefix}}Item(item: item),

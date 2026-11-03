@@ -26,9 +26,7 @@ class ProfilePage extends StatelessWidget {
               Center(
                 child: CircleAvatar(
                   radius: 48,
-                  backgroundColor: Theme.of(
-                    context,
-                  ).colorScheme.primaryContainer,
+                  backgroundColor: Theme.of(context).colorScheme.primaryContainer,
                   child: Text(
                     controller.displayName.isNotEmpty
                         ? controller.displayName[0].toUpperCase()
@@ -45,17 +43,15 @@ class ProfilePage extends StatelessWidget {
               Center(
                 child: Text(
                   controller.displayName,
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: Theme.of(context).textTheme.headlineSmall
+                      ?.copyWith(fontWeight: FontWeight.bold),
                 ),
               ),
               Center(
                 child: Text(
                   'User ID: ${controller.userId}',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.outline,
-                  ),
+                  style: Theme.of(context).textTheme.bodyMedium
+                      ?.copyWith(color: Theme.of(context).colorScheme.outline),
                 ),
               ),
               const SizedBox(height: 40),
@@ -74,16 +70,15 @@ class ProfilePage extends StatelessWidget {
                   children: [
                     Text(
                       'AG Flow Architecture Notes',
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: Theme.of(context).textTheme.titleSmall
+                          ?.copyWith(fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 8),
                     const Text(
                       '• This screen uses AgBuilder directly — no async load.\n'
                       '• ProfileController reads from AuthService.instance (no generics).\n'
                       '• Sign out → AuthService.logout() → guard redirects to /login.\n'
-                      '• Shell stays alive across all three tabs (AgShellRoute).',
+                      '• Shell stays alive across all three tabs (go_router ShellRoute).',
                     ),
                   ],
                 ),

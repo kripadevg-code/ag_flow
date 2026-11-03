@@ -2,22 +2,21 @@ import 'package:ag_flow/ag_flow.dart';
 import 'package:ag_showcase_store/modules/product/models/product.dart';
 import 'package:ag_showcase_store/modules/product/services/products_service.dart';
 
+/// The module's one Repo: plain delegation to the Service today, and the
+/// place caching or offline support would go.
 class ProductsRepo extends AgBaseRepo {
   const ProductsRepo(this._service);
 
   final ProductsService _service;
 
-  Future<AgListPage<Product, int>> getPage(int pageKey) =>
-      _service.getPage(pageKey);
+  Future<List<Product>> list() => guard(() => _service.list());
 
-  Future<List<Product>> getAll() => _service.getAll();
+  Future<Product> create(Product item) => guard(() => _service.create(item));
 
-  Future<List<Product>> getByCategory(String category) =>
-      _service.getByCategory(category);
+  Future<void> destroy(int id) => guard(() => _service.destroy(id));
 
-  Future<List<String>> getCategories() => _service.getCategories();
+  Future<List<Product>> listByCategory(String category) =>
+      guard(() => _service.listByCategory(category));
 
-  Future<Product> add(Product item) => _service.add(item);
-
-  Future<void> delete(int id) => _service.delete(id);
+  Future<List<String>> categories() => guard(() => _service.categories());
 }

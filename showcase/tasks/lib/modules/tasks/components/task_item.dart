@@ -21,9 +21,7 @@ class TaskItem extends StatelessWidget {
       onTap: onTap,
       leading: IconButton(
         icon: Icon(
-          task.completed
-              ? Icons.check_circle_rounded
-              : Icons.radio_button_unchecked_rounded,
+          task.completed ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
           color: task.completed
               ? Theme.of(context).colorScheme.primary
               : Theme.of(context).colorScheme.outline,

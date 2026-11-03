@@ -26,8 +26,7 @@ List<RouteEntry> parseRouteTable(String appRoutesSource) {
 
   ClassDeclaration? routesImpl;
   for (final declaration in unit.declarations) {
-    if (declaration is ClassDeclaration &&
-        declaration.namePart.typeName.lexeme == '_Routes') {
+    if (declaration is ClassDeclaration && declaration.namePart.typeName.lexeme == '_Routes') {
       routesImpl = declaration;
       break;
     }

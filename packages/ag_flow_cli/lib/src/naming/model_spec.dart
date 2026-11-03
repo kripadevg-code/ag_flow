@@ -12,10 +12,7 @@ List<String> _keyWords(String jsonKey) {
     RegExp('(?<=[a-z0-9])([A-Z])'),
     (match) => '_${match[1]}',
   );
-  return separated
-      .split(RegExp(r'[_\-\s]+'))
-      .where((word) => word.isNotEmpty)
-      .toList();
+  return separated.split(RegExp(r'[_\-\s]+')).where((word) => word.isNotEmpty).toList();
 }
 
 String _pascalKey(String jsonKey) => _keyWords(
@@ -109,8 +106,8 @@ class ModelSpec {
   /// The snake_case file base, e.g. `product` for `Product`.
   String get fileBase => snakeCase(className);
 
-  /// The type of this model's `id`, used as `AgCrudService`'s second type
-  /// argument. Falls back to `Object` when the payload has no `id` — a
+  /// The type of this model's `id`, used as the `ID` type argument of the
+  /// Service's `AgRetrieveMixin`/`AgUpdateMixin`/`AgDestroyMixin`. Falls back to `Object` when the payload has no `id` — a
   /// module can still declare a different one by editing the Service.
   String get idType {
     for (final field in fields) {
@@ -208,8 +205,7 @@ class ModelSpec {
         jsonKey: jsonKey,
         dartName: dartName,
         dartType: nestedName,
-        fromJsonExpression:
-            '$nestedName.fromJson($read as Map<String, dynamic>)',
+        fromJsonExpression: '$nestedName.fromJson($read as Map<String, dynamic>)',
         toJsonExpression: '$dartName.toJson()',
       );
     }
@@ -263,9 +259,8 @@ class ModelSpec {
     return _dartKeywords.contains(camel) ? '${camel}Value' : camel;
   }
 
-  static String _singular(String word) => word.endsWith('s') && word.length > 1
-      ? word.substring(0, word.length - 1)
-      : word;
+  static String _singular(String word) =>
+      word.endsWith('s') && word.length > 1 ? word.substring(0, word.length - 1) : word;
 
   static const _dartKeywords = {
     'class',

@@ -2,28 +2,27 @@ import 'package:ag_flow/ag_flow.dart';
 import 'package:ag_showcase_blog/modules/post/models/post.dart';
 import 'package:ag_showcase_blog/modules/post/repos/posts_repo.dart';
 
-class PostsController extends AgListController<Post, int> {
-  PostsController(this._repo) : super(initialPageKey: 1);
+class PostsController extends AgBaseController<List<Post>> with AgLoadMore<Post> {
+  PostsController(this._repo);
 
   final PostsRepo _repo;
 
   @override
-  Future<AgListPage<Post, int>> fetchPage(int pageKey) =>
-      _repo.getPage(pageKey);
+  Future<List<Post>> list({int page = 1}) => _repo.list(page: page);
 
-  /// jsonplaceholder's POST always echoes back a fixed id and never
-  /// actually persists — `refresh()` re-fetching page 1 would never show
-  /// the "created" post, so reflect it directly via the pagination
-  /// escape hatch instead.
-  Future<void> add(Post item) async {
-    final created = await _repo.add(item);
-    updateItems((items) => [created, ...items]);
+  @override
+  bool isLastPage(List<Post> items) => _repo.isLastPage(items);
+
+  /// jsonplaceholder never persists writes, so a `refresh()` would not show
+  /// the change — the shown list is updated in place instead.
+  Future<void> create(Post item) async {
+    final created = await _repo.create(item);
+    emit(AgPageState.success([created, ...?state.dataOrNull]));
   }
 
-  /// Same reasoning as [add] — reflect the delete directly rather than
-  /// refetching a backend that doesn't actually persist writes.
-  Future<void> delete(int id) async {
-    await _repo.delete(id);
-    updateItems((items) => items.where((p) => p.id != id).toList());
+  Future<void> destroy(int id) async {
+    await _repo.destroy(id);
+    final shown = state.dataOrNull ?? const <Post>[];
+    emit(AgPageState.success(shown.where((p) => p.id != id).toList()));
   }
 }

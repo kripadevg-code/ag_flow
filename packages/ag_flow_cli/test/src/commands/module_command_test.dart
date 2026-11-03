@@ -109,9 +109,14 @@ void main() {
           'products_controller.dart',
         ),
       ).readAsStringSync();
-      expect(controller, contains('Future<void> add('));
-      expect(controller, contains('Future<void> update('));
-      expect(controller, contains('Future<void> delete('));
+      expect(
+        controller,
+        allOf(
+          contains('Future<void> create('),
+          contains('Future<void> update('),
+          contains('Future<void> destroy('),
+        ),
+      );
     },
   );
 
@@ -119,7 +124,7 @@ void main() {
     '--methods= lets a developer generate only the stubs they want',
     () async {
       expect(await run(['init']), 0);
-      expect(await run(['g', 'm', 'product', '--methods=add,delete']), 0);
+      expect(await run(['g', 'm', 'product', '--methods=create,destroy']), 0);
 
       final controller = File(
         p.join(
@@ -131,9 +136,26 @@ void main() {
           'products_controller.dart',
         ),
       ).readAsStringSync();
-      expect(controller, contains('Future<void> add('));
-      expect(controller, isNot(contains('Future<void> update(')));
-      expect(controller, contains('Future<void> delete('));
+      expect(controller, contains('Future<void> create('));
+      expect(controller, contains('Future<void> destroy('));
+      expect(controller, isNot(contains('update(')));
+      final service = File(
+        p.join(
+          appDir.path,
+          'lib',
+          'modules',
+          'product',
+          'services',
+          'products_service.dart',
+        ),
+      ).readAsStringSync();
+      // The Service gets exactly the matching action mixins — no update()
+      // inherited for the controller to never call.
+      expect(service, contains('AgCreateMixin<dynamic>'));
+      expect(service, isNot(contains('AgUpdateMixin')));
+      expect(service, contains('AgDestroyMixin<Object>'));
+      expect(service, contains('resourceEndpoint'));
+      expect(service, contains('toJson('));
     },
   );
 
@@ -153,10 +175,27 @@ void main() {
           'products_controller.dart',
         ),
       ).readAsStringSync();
-      expect(controller, isNot(contains('Future<void> add(')));
-      expect(controller, isNot(contains('Future<void> update(')));
-      expect(controller, isNot(contains('Future<void> delete(')));
-      expect(controller, contains('fetchPage'));
+      // Read-only all the way down: only the list load.
+      expect(controller, contains('extends AgBaseController<List<dynamic>>'));
+      expect(controller, isNot(contains('Future<void> ')));
+      final service = File(
+        p.join(
+          appDir.path,
+          'lib',
+          'modules',
+          'product',
+          'services',
+          'products_service.dart',
+        ),
+      ).readAsStringSync();
+      // Read-only: listing alone, so no item endpoint and no encoder to
+      // declare.
+      expect(service, contains('AgListMixin<dynamic> {'));
+      expect(service, isNot(contains('AgCreateMixin')));
+      expect(service, isNot(contains('AgUpdateMixin')));
+      expect(service, isNot(contains('AgDestroyMixin')));
+      expect(service, isNot(contains('resourceEndpoint')));
+      expect(service, isNot(contains('toJson(')));
     },
   );
 
@@ -166,20 +205,20 @@ void main() {
     () async {
       expect(await run(['init']), 0);
       await expectLater(
-        () => run(['g', 'm', 'product', '--methods=create']),
+        () => run(['g', 'm', 'product', '--methods=add']),
         throwsA(isA<UsageException>()),
       );
     },
   );
 
   test(
-    '--methods=add is silently dropped for a detail module — it has no '
+    '--methods=create is silently dropped for a detail module — it has no '
     '"create a new one" concept',
     () async {
       expect(await run(['init']), 0);
       expect(await run(['g', 'm', 'product']), 0);
       expect(
-        await run(['g', 'm', 'product/details', '--methods=add,delete']),
+        await run(['g', 'm', 'product/details', '--methods=create,destroy']),
         0,
       );
 
@@ -193,8 +232,135 @@ void main() {
           'product_details_controller.dart',
         ),
       ).readAsStringSync();
-      expect(controller, isNot(contains('Future<void> add(')));
-      expect(controller, contains('Future<void> delete('));
+      expect(controller, contains('Future<void> destroy() =>'));
+      expect(controller, isNot(contains('Create')));
+      final repo = File(
+        p.join(
+          appDir.path,
+          'lib',
+          'modules',
+          'product',
+          'repos',
+          'product_details_repo.dart',
+        ),
+      ).readAsStringSync();
+      expect(repo, contains('Future<void> destroy('));
+      expect(repo, isNot(contains('Create')));
+      final service = File(
+        p.join(
+          appDir.path,
+          'lib',
+          'modules',
+          'product',
+          'services',
+          'product_details_service.dart',
+        ),
+      ).readAsStringSync();
+      expect(service, contains('AgRetrieveMixin<dynamic, Object>'));
+      expect(service, isNot(contains('AgCreateMixin')));
+      expect(service, contains('AgDestroyMixin<Object>'));
+      // A detail module has no collection to read, so no collection
+      // endpoint — and with no update, nothing to encode.
+      expect(service, isNot(contains('collectionEndpoint')));
+      expect(service, isNot(contains('toJson(')));
     },
   );
+
+  test(
+    'paging is opt-in: --paginate adds AgPagination to the Service and '
+    'AgLoadMore to the Controller, and without it neither appears',
+    () async {
+      expect(await run(['init']), 0);
+      expect(await run(['g', 'm', 'product', '--paginate']), 0);
+      expect(await run(['g', 'm', 'order']), 0);
+
+      String read(String root, String layer, String file) => File(
+        p.join(appDir.path, 'lib', 'modules', root, layer, file),
+      ).readAsStringSync();
+
+      expect(
+        read('product', 'services', 'products_service.dart'),
+        allOf(
+          contains('AgPagination get pagination =>'),
+          contains('list({int page = 1})'),
+          contains('queryParams: pagination.query(page)'),
+        ),
+      );
+      expect(
+        read('product', 'repos', 'products_repo.dart'),
+        contains('_service.pagination.isLastPage(items)'),
+      );
+      expect(
+        read('product', 'controllers', 'products_controller.dart'),
+        allOf(
+          contains('with AgLoadMore<dynamic>'),
+          contains('list({int page = 1}) => _repo.list(page: page)'),
+          contains('isLastPage(List<dynamic> items)'),
+          isNot(contains('with AgList')),
+        ),
+      );
+
+      expect(
+        read('order', 'services', 'orders_service.dart'),
+        allOf(isNot(contains('pagination')), contains('list() => get(')),
+      );
+      expect(
+        read('order', 'controllers', 'orders_controller.dart'),
+        allOf(
+          isNot(contains('AgLoadMore')),
+          contains('with AgList<dynamic>'),
+          contains('list() => _repo.list()'),
+        ),
+      );
+
+      // Each starter test's fake Service must override `list` with the
+      // Service's own signature, or the app's test file doesn't compile.
+      String readTest(String root, String file) =>
+          File(p.join(appDir.path, 'test', 'modules', root, file)).readAsStringSync();
+      expect(
+        readTest('product', 'products_test.dart'),
+        contains('Future<List<dynamic>> list({int page = 1}) async'),
+      );
+      expect(
+        readTest('order', 'orders_test.dart'),
+        contains('Future<List<dynamic>> list() async'),
+      );
+    },
+  );
+
+  group('a child module with no --model', () {
+    String read(String layer, String file) => File(
+      p.join(appDir.path, 'lib', 'modules', 'product', layer, file),
+    ).readAsStringSync();
+
+    test("reuses its root's model and id type", () async {
+      final sample = File(p.join(appDir.path, 'product.json'))
+        ..writeAsStringSync('[{"id": 1, "title": "Pen"}]');
+      expect(await run(['init']), 0);
+      expect(await run(['g', 'm', 'product', '--from-json=${sample.path}']), 0);
+      final model = read('models', 'product.dart');
+
+      expect(await run(['g', 'm', 'product/details']), 0);
+
+      expect(read('models', 'product.dart'), model, reason: 'never rewritten');
+      expect(
+        read('controllers', 'product_details_controller.dart'),
+        allOf(
+          contains('AgBaseController<Product>'),
+          contains('int get lookupId => int.parse(argument.id)'),
+        ),
+      );
+    });
+
+    test('stays dynamic when the root has no model', () async {
+      expect(await run(['init']), 0);
+      expect(await run(['g', 'm', 'product']), 0);
+      expect(await run(['g', 'm', 'product/details']), 0);
+
+      expect(
+        read('controllers', 'product_details_controller.dart'),
+        contains('AgBaseController<dynamic>'),
+      );
+    });
+  });
 }

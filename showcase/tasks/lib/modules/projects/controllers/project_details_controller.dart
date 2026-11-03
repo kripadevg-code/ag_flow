@@ -1,32 +1,35 @@
 import 'package:ag_flow/ag_flow.dart';
 import 'package:ag_showcase_tasks/core/arguments/arguments.dart';
+import 'package:ag_showcase_tasks/core/routes/route_management.dart';
 import 'package:ag_showcase_tasks/modules/projects/models/project.dart';
 import 'package:ag_showcase_tasks/modules/projects/repos/project_details_repo.dart';
 
-class ProjectDetailsController
-    extends AgDetailController<Project, ProjectDetailsPageArgument> {
-  ProjectDetailsController(this._repo);
-
-  static ProjectDetailsController get find =>
-      AgLocator.find<ProjectDetailsController>();
+/// Detail controller for a single project: loads it, updates it, and
+/// deletes it.
+class ProjectDetailsController extends AgBaseController<Project> with AgRetrieve<Project> {
+  ProjectDetailsController(this._repo)
+    : argument = ProjectDetailsPageArgument.fromPathParameters(
+        AgRouteData.pathParameters,
+      );
 
   final ProjectDetailsRepo _repo;
 
-  @override
-  ProjectDetailsPageArgument? argumentsFromPath(
-    Map<String, String> pathParameters,
-  ) => ProjectDetailsPageArgument.fromPathParameters(pathParameters);
+  final ProjectDetailsPageArgument argument;
+
+  static ProjectDetailsController get find => AgLocator.find<ProjectDetailsController>();
+
+  int get lookupId => argument.projectId;
 
   @override
-  Future<Project> fetch() => _repo.getByArgument(arguments);
+  Future<Project> retrieve() => _repo.retrieve(lookupId);
 
   Future<void> update(Project item) async {
-    final saved = await _repo.update(arguments, item);
-    emit(AgPageState.success(saved));
+    emit(AgPageState.success(await _repo.update(lookupId, item)));
   }
 
-  Future<void> delete() async {
-    await _repo.delete(arguments);
-    AgNavigator.back<void>();
+  /// Deletes the project, then leaves its now-empty page.
+  Future<void> destroy() async {
+    await _repo.destroy(lookupId);
+    RouteManagement.back<void>();
   }
 }

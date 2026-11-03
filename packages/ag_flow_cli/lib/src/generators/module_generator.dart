@@ -43,10 +43,11 @@ class ParentModuleNotFoundException implements Exception {
 /// [AggregatorFileNotFoundException].
 /// The mutation-method stubs `ModuleGenerator` can generate across
 /// Service/Repo/Controller, beyond the always-present read method
-/// (`getPage`/`getByArgument`). `add` only applies to collection modules —
-/// a detail module has no "create a new one" concept, so it's silently
-/// dropped for those rather than treated as an error.
-const generatableMethods = {'add', 'update', 'delete'};
+/// (`list`/`retrieve`), named after the Service action mixins they
+/// implement. `create` only applies to collection modules — a detail
+/// module has no "create a new one" concept, so it's silently dropped for
+/// those rather than treated as an error.
+const generatableMethods = {'create', 'update', 'destroy'};
 
 class ModuleGenerator {
   ModuleGenerator({
@@ -54,6 +55,8 @@ class ModuleGenerator {
     this.pluralizer = defaultPluralizer,
     this.methods = generatableMethods,
     this.model,
+    this.paginate = false,
+    this.withTests = true,
   });
 
   final Project project;
@@ -79,6 +82,18 @@ class ModuleGenerator {
   /// lock-in: delete whatever a module doesn't need, exactly as freely as
   /// any other generated code.
   final Set<String> methods;
+
+  /// Whether a collection module's list pages: the Service declares an
+  /// `AgPagination` and the Controller mixes in `AgLoadMore`. Off by
+  /// default — paging is opt-in, the same as in the framework. Ignored
+  /// for detail modules.
+  final bool paginate;
+
+  /// Whether to write the module's starter test under
+  /// `test/modules/<root>/`. On by default; `--no-test` turns it off for
+  /// an app that keeps its tests elsewhere or doesn't depend on
+  /// `package:ag_flow/testing.dart`.
+  final bool withTests;
 
   static final _formatter = DartFormatter(
     languageVersion: DartFormatter.latestLanguageVersion,
@@ -113,24 +128,39 @@ class ModuleGenerator {
       'model_class': model?.className ?? 'dynamic',
       'model_file_base': model?.fileBase ?? 'model',
       'id_type': model?.idType ?? 'Object',
-      'id_of_expression': _idOfExpression(model, spec.serviceClass),
+      'lookup_id_expression': _lookupIdExpression(model, spec.controllerClass),
       'module_class_prefix': spec.classPrefix,
       'module_file_base': spec.layerFileBase,
       'component_class_prefix': spec.componentClassPrefix,
       'component_file_base': spec.fileBase,
       'component_namespace': spec.componentNamespace,
-      'generate_add': methods.contains('add'),
+      'generate_create': methods.contains('create'),
       'generate_update': methods.contains('update'),
-      'generate_delete': methods.contains('delete'),
+      'generate_destroy': methods.contains('destroy'),
+      'paginate': paginate,
+      // Mustache has no `||`, and each action mixin the Service lists
+      // declares only what it uses — so these decide whether the Service
+      // declares `resourceEndpoint`/`toJson` at all. Declaring one that no
+      // generated method uses would hand the developer dead code.
+      'needs_resource_endpoint':
+          spec.isDetail || methods.contains('update') || methods.contains('destroy'),
+      'needs_to_json': methods.contains('update') || (!spec.isDetail && methods.contains('create')),
     };
 
     final target = _RecordingGeneratorTarget();
     await generator.generate(target, vars: vars);
 
     final moduleRoot = project.moduleRootDir(modulePath.rootSegment);
+    final testRoot = project.moduleTestDir(modulePath.rootSegment);
     final ops = <FileOp>[];
     for (final entry in target.files.entries) {
-      final outputPath = p.join(moduleRoot, entry.key);
+      // A brick's `test/` files are the module's starter tests; they go
+      // under the app's own test/ directory, not inside lib/.
+      final isTest = p.isWithin('test', entry.key);
+      if (isTest && !withTests) continue;
+      final outputPath = isTest
+          ? p.join(testRoot, p.relative(entry.key, from: 'test'))
+          : p.join(moduleRoot, entry.key);
       if (File(outputPath).existsSync()) {
         ops.add(FileOp.skipExisting(path: outputPath));
         continue;
@@ -162,32 +192,24 @@ class ModuleGenerator {
     return ops;
   }
 
-  /// How a detail Service turns its page argument into the resource id.
+  /// How a detail Controller turns its page argument into the lookup —
+  /// the value the Service's `retrieve` takes.
   ///
   /// Path parameters are always strings, so a model whose id is an `int`
   /// needs the parse written for it — that conversion is the one piece a
   /// developer would otherwise have to remember on every detail module.
-  static String _idOfExpression(ModelSpec? model, String serviceClass) {
+  /// Untyped, the id type is `Object`, which the string itself already is.
+  static String _lookupIdExpression(ModelSpec? model, String controllerClass) {
     switch (model?.idType) {
-      case 'String':
+      case null || 'String' || 'Object':
         return 'argument.id';
       case 'int':
         return 'int.parse(argument.id)';
-      case null:
-        return _unimplementedIdOf(
-          serviceClass,
-          'return the id field from the argument.',
-        );
       default:
-        return _unimplementedIdOf(
-          serviceClass,
-          'convert argument.id to ${model!.idType}.',
-        );
+        return "throw UnimplementedError('$controllerClass.lookupId — "
+            "convert argument.id to ${model!.idType}.')";
     }
   }
-
-  static String _unimplementedIdOf(String serviceClass, String hint) =>
-      "throw UnimplementedError('$serviceClass.idOf — $hint')";
 }
 
 /// Records rendered files in memory instead of writing them to disk — lets

@@ -2,11 +2,11 @@ import 'package:ag_flow/ag_flow.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-class _FakeController extends AgBaseController<String> {
+class _FakeController extends AgBaseController<String> with AgRetrieve<String> {
   _FakeController() : super(autoLoadOnInit: false);
 
   @override
-  Future<String> fetch() async => 'data';
+  Future<String> retrieve() async => 'data';
 
   void setState(AgPageState<String> next) => emit(next);
 }
@@ -20,8 +20,8 @@ void main() {
       (
         tester,
       ) async {
-        final controller = _FakeController()
-          ..setState(const AgPageState.loading());
+        final controller = _FakeController()..setState(const AgPageState.loading());
+        addTearDown(controller.dispose);
         await tester.pumpWidget(
           _harness(
             AgPage<String>(
@@ -37,8 +37,8 @@ void main() {
     testWidgets(
       'renders the AG default AgError when no errorBuilder is supplied',
       (tester) async {
-        final controller = _FakeController()
-          ..setState(const AgPageState.error('boom'));
+        final controller = _FakeController()..setState(const AgPageState.error('boom'));
+        addTearDown(controller.dispose);
         await tester.pumpWidget(
           _harness(
             AgPage<String>(
@@ -54,8 +54,8 @@ void main() {
     testWidgets(
       'renders the AG default AgEmpty when no emptyBuilder is supplied',
       (tester) async {
-        final controller = _FakeController()
-          ..setState(const AgPageState.empty());
+        final controller = _FakeController()..setState(const AgPageState.empty());
+        addTearDown(controller.dispose);
         await tester.pumpWidget(
           _harness(
             AgPage<String>(
@@ -73,12 +73,12 @@ void main() {
       'independent-override guarantee',
       (tester) async {
         final controller = _FakeController();
+        addTearDown(controller.dispose);
         Widget build() => _harness(
           AgPage<String>(
             controller: controller,
             builder: (context, data) => Text(data),
-            errorBuilder: (context, error, stackTrace, retry) =>
-                const Text('custom error'),
+            errorBuilder: (context, error, stackTrace, retry) => const Text('custom error'),
           ),
         );
 
@@ -110,6 +110,7 @@ void main() {
       'combination — Error and Empty stay AG defaults there instead',
       (tester) async {
         final controller = _FakeController();
+        addTearDown(controller.dispose);
         Widget build() => _harness(
           AgPage<String>(
             controller: controller,
@@ -137,8 +138,8 @@ void main() {
       (
         tester,
       ) async {
-        final controller = _FakeController()
-          ..setState(const AgPageState.success('hello'));
+        final controller = _FakeController()..setState(const AgPageState.success('hello'));
+        addTearDown(controller.dispose);
         await tester.pumpWidget(
           _harness(
             AgPage<String>(
@@ -157,8 +158,8 @@ void main() {
     testWidgets('tapping retry in the default AgError calls controller.retry', (
       tester,
     ) async {
-      final controller = _FakeController()
-        ..setState(const AgPageState.error('boom'));
+      final controller = _FakeController()..setState(const AgPageState.error('boom'));
+      addTearDown(controller.dispose);
       await tester.pumpWidget(
         _harness(
           AgPage<String>(
@@ -179,8 +180,8 @@ void main() {
     testWidgets('a scrolled list keeps its position when a refresh starts', (
       tester,
     ) async {
-      final controller = _FakeController()
-        ..setState(const AgPageState.success('data'));
+      final controller = _FakeController()..setState(const AgPageState.success('data'));
+      addTearDown(controller.dispose);
 
       await tester.pumpWidget(
         _harness(
@@ -212,10 +213,7 @@ void main() {
       await tester.pump();
 
       expect(
-        tester
-            .state<ScrollableState>(find.byType(Scrollable).first)
-            .position
-            .pixels,
+        tester.state<ScrollableState>(find.byType(Scrollable).first).position.pixels,
         offsetBefore,
         reason:
             'the success content must keep its element — changing the '
@@ -228,15 +226,14 @@ void main() {
     testWidgets('success content is laid out identically while refreshing', (
       tester,
     ) async {
-      final controller = _FakeController()
-        ..setState(const AgPageState.success('data'));
+      final controller = _FakeController()..setState(const AgPageState.success('data'));
+      addTearDown(controller.dispose);
 
       await tester.pumpWidget(
         _harness(
           AgPage<String>(
             controller: controller,
-            builder: (context, data) =>
-                const SizedBox.expand(key: ValueKey('content')),
+            builder: (context, data) => const SizedBox.expand(key: ValueKey('content')),
           ),
         ),
       );

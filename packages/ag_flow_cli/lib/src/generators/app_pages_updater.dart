@@ -3,10 +3,68 @@ import 'package:ag_flow_cli/src/generators/patch.dart';
 import 'package:ag_flow_cli/src/naming/module_spec.dart';
 import 'package:analyzer/dart/analysis/utilities.dart';
 import 'package:analyzer/dart/ast/ast.dart';
+import 'package:analyzer/dart/ast/visitor.dart';
 
-/// Idempotently ensures [spec]'s `AgRoute` entry (and the imports it
+/// Whether [unit] (the contents of `core/routes/app_pages.dart`) already
+/// declares a `GoRoute` whose `path:` is `AppRoutes.<routeConstant>`.
+///
+/// Searches the *whole* file, not just the top level of `AppPages.pages`:
+/// the app owns this router, and a developer is expected to move a
+/// generated `GoRoute` into a `ShellRoute`'s `routes:` or under a parent
+/// route. A top-level-only check would miss it there and re-add a
+/// duplicate on the next `ag g m`. Shared with `ag analyze`'s route-wiring
+/// check, so the generator and the validator can never disagree.
+bool hasGoRouteFor(CompilationUnit unit, String routeConstant) {
+  final finder = _GoRouteFinder('AppRoutes.$routeConstant');
+  unit.accept(finder);
+  return finder.found;
+}
+
+class _GoRouteFinder extends RecursiveAstVisitor<void> {
+  _GoRouteFinder(this.pathExpression);
+
+  final String pathExpression;
+  bool found = false;
+
+  // A bare `GoRoute(...)` call — no `const`/`new` — parses syntactically
+  // as a MethodInvocation, not an InstanceCreationExpression: `parseString`
+  // only parses syntax, and telling "constructor call" from "function call"
+  // for an unprefixed `Identifier(...)` needs semantic resolution, which
+  // offset-splice editing deliberately never does. A `const GoRoute(...)`
+  // does parse as an InstanceCreationExpression, so both are checked.
+  @override
+  void visitMethodInvocation(MethodInvocation node) {
+    if (node.target == null && node.methodName.name == 'GoRoute') {
+      _check(node.argumentList);
+    }
+    super.visitMethodInvocation(node);
+  }
+
+  @override
+  void visitInstanceCreationExpression(InstanceCreationExpression node) {
+    if (node.constructorName.type.name.lexeme == 'GoRoute') {
+      _check(node.argumentList);
+    }
+    super.visitInstanceCreationExpression(node);
+  }
+
+  void _check(ArgumentList arguments) {
+    if (arguments.arguments.whereType<NamedArgument>().any(
+      (arg) => arg.name.lexeme == 'path' && arg.argumentExpression.toSource() == pathExpression,
+    )) {
+      found = true;
+    }
+  }
+}
+
+/// Idempotently ensures [spec]'s `GoRoute` entry (and the imports it
 /// needs) exist in [source] (the contents of `core/routes/app_pages
 /// .dart`).
+///
+/// The router is plain go_router, owned by the app: the entry is written
+/// the way a developer would write it by hand, with `AgRoutePage` as the
+/// only AG piece in it — that page is what registers the module's binding
+/// on entry and releases it once the route is gone.
 AggregatorUpdateResult updateAppPages(
   String source,
   ModuleSpec spec, {
@@ -38,29 +96,14 @@ AggregatorUpdateResult updateAppPages(
     );
   }
 
-  // A bare `AgRoute(...)` call — no `const`/`new` — parses syntactically
-  // as a MethodInvocation, not an InstanceCreationExpression:
-  // `parseString` only parses syntax, and disambiguating "constructor
-  // call" from "function call" for an unprefixed `Identifier(...)`
-  // requires semantic resolution, which this deliberately avoids needing
-  // (offset-splice editing only needs syntax, never a resolved element
-  // model).
-  final routeConstantExpr = 'AppRoutes.${spec.routeConstant}';
-  final alreadyRegistered = pagesList.elements
-      .whereType<MethodInvocation>()
-      .any(
-        (invocation) =>
-            invocation.methodName.name == 'AgRoute' &&
-            invocation.argumentList.arguments.whereType<NamedExpression>().any(
-              (arg) =>
-                  arg.name.label.name == 'path' &&
-                  arg.expression.toSource() == routeConstantExpr,
-            ),
-      );
-  if (alreadyRegistered) return AggregatorUpdateResult.unchanged(source);
+  if (hasGoRouteFor(unit, spec.routeConstant)) {
+    return AggregatorUpdateResult.unchanged(source);
+  }
 
+  final route = 'AppRoutes.${spec.routeConstant}';
   final patches = <Patch>[
     ...[
+      insertImportPatch(unit, 'package:go_router/go_router.dart'),
       insertImportPatch(
         unit,
         'package:$appPackageName/$moduleImportPath/pages/${spec.pageFile}',
@@ -72,11 +115,17 @@ AggregatorUpdateResult updateAppPages(
     ].whereType<Patch>(),
     Patch.insertion(
       pagesList.rightBracket.offset,
-      '\n    AgRoute(\n'
-      '      path: AppRoutes.${spec.routeConstant},\n'
-      '      page: ${spec.pageClass}.new,\n'
-      '      binding: ${spec.bindingClass}(),\n'
-      '      transition: AppPages.defaultTransition,\n'
+      '\n    GoRoute(\n'
+      '      path: $route,\n'
+      '      name: $route,\n'
+      '      pageBuilder: (context, state) => AgRoutePage<void>(\n'
+      '        key: state.pageKey,\n'
+      '        pathParameters: state.pathParameters,\n'
+      '        extra: state.extra,\n'
+      '        binding: ${spec.bindingClass}(),\n'
+      '        transition: AppPages.defaultTransition,\n'
+      '        child: ${spec.pageClass}(key: state.pageKey),\n'
+      '      ),\n'
       '    ),',
     ),
   ];

@@ -64,8 +64,7 @@ class AggregatorUpdater {
       ),
       _planOne(
         relativePath: p.join('core', 'routes', 'route_management.dart'),
-        update: (source) =>
-            updateRouteManagement(source, spec, appPackageName: appPackageName),
+        update: (source) => updateRouteManagement(source, spec, appPackageName: appPackageName),
       ),
     ];
 
