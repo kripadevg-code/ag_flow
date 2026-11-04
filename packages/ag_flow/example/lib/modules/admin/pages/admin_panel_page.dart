@@ -4,10 +4,10 @@ import 'package:flutter/material.dart';
 /// Admin panel — only reachable when the user is logged in AND has the
 /// [UserRole.admin] role.  Two guards protect this route:
 ///
-///   guards: [AuthGuard(), RoleGuard(UserRole.admin)]
+///   guards: [AgAuthGuard(auth, loginPath: '/login'), RoleGuard(UserRole.admin)]
 ///
 /// Guard order matters:
-///   1. AuthGuard runs first.  If not logged in → redirect to /login.
+///   1. AgAuthGuard runs first.  If not logged in → redirect to /login.
 ///      RoleGuard never runs.
 ///   2. RoleGuard runs second.  If logged in but role != admin → redirect
 ///      to /home.

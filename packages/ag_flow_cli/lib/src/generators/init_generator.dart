@@ -199,6 +199,15 @@ page is deep-linkable. Guards are `AgGuard`s run from a route's `redirect:`
 via `AgGuard.check`. Build each route's page with `XPage(key: state.pageKey)`,
 never `const XPage()`: each route then gets its own controller.
 
+## Auth
+
+Tokens never appear in a Service, Repo or Controller. The app's one
+`AgAuth` subclass (`readToken`, optional `refreshToken`/`clearToken`) is
+passed to `ApiProvider(auth: ...)`, which adds the header and refreshes once
+on a `401`; public endpoints use `AgEndpoint(..., auth: false)`. Routes that
+need a session use `AgAuthGuard(auth, loginPath: ...)`, with the same
+`AgAuth` as the router's `refreshListenable`.
+
 ## Tests
 
 `ag g m` writes each module's starter test to

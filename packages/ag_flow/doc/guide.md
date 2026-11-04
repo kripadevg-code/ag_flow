@@ -440,21 +440,26 @@ and the first redirect wins; a blocked route never builds, so its binding
 never registers:
 
 ```dart
-class AuthGuard extends AgGuard {
-  const AuthGuard();
+class AdminGuard extends AgGuard {
+  const AdminGuard();
 
   @override
   String? redirect(String path) =>
-      AuthService.instance.isLoggedIn ? null : AppRoutes.login;
+      Session.instance.isAdmin ? null : AppRoutes.home;
 }
 
 GoRoute(
   path: AppRoutes.orders,
-  redirect: (context, state) =>
-      AgGuard.check(const [AuthGuard(), AdminGuard()], state.fullPath!),
+  redirect: (context, state) => AgGuard.check(
+    [AgAuthGuard(auth, loginPath: AppRoutes.login), const AdminGuard()],
+    state.fullPath!,
+  ),
   pageBuilder: ...,
 )
 ```
+
+`AgAuthGuard` is the ready-made "needs a session" guard — see
+[Authentication](#authentication).
 
 **Persistent chrome** (a bottom bar, a rail) is a go_router `ShellRoute`.
 Wrap it in `AgShellScope` to give the shell a binding that lives exactly as
@@ -495,7 +500,7 @@ put<ApiProvider>(
   ApiProvider(
     baseUrl: 'https://api.example.com',
     retryPolicy: const AgRetryPolicy(maxAttempts: 3),
-    interceptors: [AuthInterceptor()],
+    auth: auth, // optional — see Authentication below
   ),
   permanent: true,
 );
@@ -538,6 +543,79 @@ Future<List<Product>> search(String term) => get(
   ],
 );
 ```
+
+### Authentication
+
+Auth is opt-in: without `auth:`, `ApiProvider` sends no token and runs no
+extra interceptor. Token storage is the app's — extend `AgAuth` and tell it
+where the token lives:
+
+```dart
+class AppAuth extends AgAuth {
+  AppAuth(this._storage);
+
+  final SecureStorage _storage; // whichever storage the app uses
+
+  @override
+  Future<String?> readToken() => _storage.read('access_token');
+
+  @override
+  Future<bool> refreshToken() async {
+    // Call the refresh endpoint (declared with `auth: false`), store the new
+    // token, return true. Return false (or throw) when it fails.
+  }
+
+  @override
+  Future<void> clearToken() => _storage.delete('access_token');
+}
+```
+
+What the app gets:
+
+- **Every request carries `Authorization: Bearer <token>`.** Override
+  `headerName`/`headerValue` for another scheme. A public endpoint opts out
+  with `AgEndpoint('/login', auth: false)`; a header the request sets itself
+  is never overwritten. Services and Repos never touch a token.
+- **A `401` refreshes once.** `refreshToken()` runs once for all requests
+  that failed together, and each is sent again, once, with the new token.
+  When the refresh fails, the session ends (`logOut()`) and the requests
+  fail with their `401`.
+- **Login state for the router.** `AgAuth` is a `Listenable` with a
+  synchronous `isLoggedIn`. Call `restoreSession()` once at start-up,
+  `logIn()` after storing a new token and `logOut()` to end the session.
+  `onLoggedOut()` runs after a logout for any extra clean-up.
+
+Wire it once:
+
+```dart
+// main.dart
+final auth = AppAuth(storage);
+await auth.restoreSession();
+AgLocator.put<ApiProvider>(
+  ApiProvider(baseUrl: 'https://api.example.com', auth: auth),
+  permanent: true,
+);
+
+// core/routes/app_pages.dart
+static final GoRouter router = GoRouter(
+  refreshListenable: auth, // re-runs the guards on login/logout
+  routes: pages,
+);
+
+GoRoute(
+  path: AppRoutes.orders,
+  name: AppRoutes.orders,
+  redirect: (context, state) => AgGuard.check(
+    [AgAuthGuard(auth, loginPath: AppRoutes.login)],
+    state.fullPath!,
+  ),
+  pageBuilder: ...,
+)
+```
+
+With `refreshListenable`, a logout — or a failed refresh — sends the user
+to the login route with no navigation code. The example app
+(`packages/ag_flow/example`) shows the whole flow.
 
 ## 11. Errors, caching and offline
 
@@ -649,9 +727,10 @@ to every module; how each method works is up to you.
   merge.
 - **`AGENTS.md`** states the standard for every developer and coding agent
   that opens the project, so new code follows the existing shape.
-- **App-wide services** (auth, theme, cart) extend `AgStateService` — a
+- **App-wide services** (theme, cart) extend `AgStateService` — a
   `ChangeNotifier` registered once in `InitialBinding` — and are read
-  anywhere via a static `instance` getter.
+  anywhere via a static `instance` getter. The session is the app's
+  `AgAuth` (see [Authentication](#authentication)), registered the same way.
 
 ## 14. Testing
 

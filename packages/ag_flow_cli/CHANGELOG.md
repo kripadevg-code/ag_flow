@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- `ag init`'s `AGENTS.md` has an **Auth** section: tokens live in the
+  app's `AgAuth` (ag_flow 0.5.0), never in a Service; routes that need a
+  session use `AgAuthGuard`.
+
 ## 0.5.0
 
 - **`ag mcp`: an MCP server for coding agents** (local stdio only, built on

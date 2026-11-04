@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.5.0
 
 - **`AgAuth` (opt-in):** pass `ApiProvider(auth: AppAuth())` and every
   request gets `Authorization: Bearer <token>` from the app's own
@@ -13,6 +13,14 @@
   and sends each request again with the new token. A failed refresh runs
   `clearToken()` then `onLoggedOut()`, and the requests fail with their
   `401`. A request is re-sent at most once.
+- **Login state and `AgAuthGuard`:** `AgAuth` is now a `ChangeNotifier`
+  with a synchronous `isLoggedIn`, set by `restoreSession()` (once at
+  start-up), `logIn()` and `logOut()` (`clearToken()` → logged out →
+  `onLoggedOut()`); a failed refresh calls `logOut()`. Guard routes with
+  `AgAuthGuard(auth, loginPath: ...)` and pass the same `AgAuth` as
+  go_router's `refreshListenable`, so a logout sends the user to the login
+  route with no navigation code. The guide has a new Authentication
+  section, and the example app uses `AgAuth` end to end.
 
 ## 0.4.0
 

@@ -1,38 +1,39 @@
+import 'dart:async';
+
 import 'package:ag_flow/ag_flow.dart';
 
-/// Holds the current session state for the whole app.
+/// The app's [AgAuth]: the login state routes are guarded by, and the token
+/// [ApiProvider] sends with every request.
 ///
-/// Registered as a permanent singleton in [InitialBinding] so every
-/// guard and widget can read it synchronously.
-///
-/// Access it anywhere without generics:
-/// ```dart
-/// final authService = AuthService.instance;
-/// ```
-class AuthService extends AgStateService {
-  /// Resolves this service from [AgLocator] — no generics at call sites:
-  /// ```dart
-  /// final authService = AuthService.instance;
-  /// ```
+/// Registered as a permanent singleton in `InitialBinding`. A real app keeps
+/// the token in secure storage; this demo keeps it in memory.
+class AuthService extends AgAuth {
+  /// Resolves this service from [AgLocator].
   static AuthService get instance => AgLocator.find<AuthService>();
 
-  bool _isLoggedIn = false;
+  String? _token;
   UserRole _role = UserRole.guest;
 
-  bool get isLoggedIn => _isLoggedIn;
   UserRole get role => _role;
 
-  void login({UserRole role = UserRole.user}) {
-    _isLoggedIn = true;
-    _role = role;
-    notifyListeners();
+  @override
+  String? readToken() => _token;
+
+  @override
+  void clearToken() {
+    _token = null;
+    _role = UserRole.guest;
   }
 
-  void logout() {
-    _isLoggedIn = false;
-    _role = UserRole.guest;
-    notifyListeners();
+  /// Stores the token a login call returned, then marks the session active.
+  void login({UserRole role = UserRole.user}) {
+    _token = 'demo-token-${role.name}';
+    _role = role;
+    logIn();
   }
+
+  /// Ends the session; the router leaves protected routes on its own.
+  void logout() => unawaited(logOut());
 }
 
 enum UserRole { guest, user, admin }

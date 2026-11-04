@@ -14,11 +14,8 @@ class HomePage extends StatelessWidget {
         title: const Text('Home'),
         actions: [
           TextButton(
-            onPressed: () {
-              authService.logout();
-              // AuthGuard on /home will redirect to /login automatically.
-              RouteManagement.resetToHomePage();
-            },
+            // AgAuthGuard on /home sends the user to /login on its own.
+            onPressed: authService.logout,
             child: const Text('Logout'),
           ),
         ],
