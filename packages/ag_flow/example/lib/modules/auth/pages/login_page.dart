@@ -1,5 +1,4 @@
 import 'package:ag_flow_example/core/auth/auth_service.dart';
-import 'package:ag_flow_example/core/routes/route_management.dart';
 import 'package:flutter/material.dart';
 
 class LoginPage extends StatelessWidget {
@@ -19,22 +18,16 @@ class LoginPage extends StatelessWidget {
             ),
             const SizedBox(height: 32),
 
-            // AuthGuard unlocks /home after login
+            // GuestGuard on /login sends the user to /home on its own.
             FilledButton(
-              onPressed: () {
-                AuthService.instance.login();
-                RouteManagement.resetToHomePage();
-              },
+              onPressed: AuthService.instance.login,
               child: const Text('Login as User'),
             ),
             const SizedBox(height: 12),
 
             // RoleGuard(admin) unlocks /admin after this login
             FilledButton.tonal(
-              onPressed: () {
-                AuthService.instance.login(role: UserRole.admin);
-                RouteManagement.resetToHomePage();
-              },
+              onPressed: () => AuthService.instance.login(role: UserRole.admin),
               child: const Text('Login as Admin'),
             ),
           ],

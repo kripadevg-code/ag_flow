@@ -22,10 +22,17 @@ abstract class AppPages {
   /// • Not logged in → LoginPage shown (GuestGuard passes through).
   /// • Already logged in (e.g. after hot restart with a persisted session)
   ///   → GuestGuard on /login fires and redirects to /home automatically.
+  ///
+  /// `refreshListenable` re-runs every guard when the login state changes, so
+  /// logging in or out needs no navigation call.
   static final GoRouter router = GoRouter(
     initialLocation: AppRoutes.login,
+    refreshListenable: AuthService.instance,
     routes: pages,
   );
+
+  /// Sends a logged-out user to /login.
+  static AgAuthGuard get _session => AgAuthGuard(AuthService.instance, loginPath: AppRoutes.login);
 
   static final List<RouteBase> pages = [
     // -------------------------------------------------------------------------
@@ -48,12 +55,12 @@ abstract class AppPages {
       ),
     ),
 
-    // Use-case 1 — AuthGuard
+    // Use-case 1 — AgAuthGuard
     // Only logged-in users can reach /home.  Everyone else lands on /login.
     GoRoute(
       path: AppRoutes.home,
       name: AppRoutes.home,
-      redirect: (context, state) => AgGuard.check(const [AuthGuard()], state.fullPath!),
+      redirect: (context, state) => AgGuard.check([_session], state.fullPath!),
       pageBuilder: (context, state) => AgRoutePage<void>(
         key: state.pageKey,
         pathParameters: state.pathParameters,
@@ -63,15 +70,15 @@ abstract class AppPages {
       ),
     ),
 
-    // Use-case 3 — AuthGuard + RoleGuard (multiple guards, left-to-right)
-    // • Not logged in          → AuthGuard fires  → /login  (RoleGuard skipped)
+    // Use-case 3 — AgAuthGuard + RoleGuard (multiple guards, left-to-right)
+    // • Not logged in          → AgAuthGuard fires  → /login  (RoleGuard skipped)
     // • Logged in, not admin   → RoleGuard fires  → /home
     // • Logged in, admin       → both pass        → /admin
     GoRoute(
       path: AppRoutes.adminPanel,
       name: AppRoutes.adminPanel,
       redirect: (context, state) => AgGuard.check(
-        const [AuthGuard(), RoleGuard(UserRole.admin)],
+        [_session, const RoleGuard(UserRole.admin)],
         state.fullPath!,
       ),
       pageBuilder: (context, state) => AgRoutePage<void>(

@@ -2,18 +2,7 @@ import 'package:ag_flow/ag_flow.dart';
 import 'package:ag_flow_example/core/auth/auth_service.dart';
 import 'package:ag_flow_example/core/routes/app_routes.dart';
 
-// ---------------------------------------------------------------------------
-// Use-case 1: AuthGuard
-// ---------------------------------------------------------------------------
-class AuthGuard extends AgGuard {
-  const AuthGuard();
-
-  @override
-  String? redirect(String routeName) {
-    final authService = AuthService.instance;
-    return authService.isLoggedIn ? null : AppRoutes.login;
-  }
-}
+// Use-case 1 (a session is required) is ag_flow's own `AgAuthGuard`.
 
 // ---------------------------------------------------------------------------
 // Use-case 2: GuestGuard

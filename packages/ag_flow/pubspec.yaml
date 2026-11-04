@@ -3,7 +3,7 @@ description: >-
   Opinionated clean architecture for Flutter: layered feature modules with
   built-in state, DI, route-scoped controllers, paging and a swappable
   network layer.
-version: 0.4.0
+version: 0.5.0
 repository: https://github.com/kripadevg-code/ag_flow
 homepage: https://github.com/kripadevg-code/ag_flow
 issue_tracker: https://github.com/kripadevg-code/ag_flow/issues
