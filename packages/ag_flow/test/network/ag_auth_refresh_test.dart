@@ -132,7 +132,7 @@ void main() {
   });
 
   test('a failed refresh clears the token, logs out and fails with the 401', () async {
-    final auth = _Auth(token: 'old');
+    final auth = _Auth(token: 'old')..logIn();
     final (api, _) = _provider(auth);
 
     await expectLater(_send(api), _throws401);
@@ -141,6 +141,7 @@ void main() {
     expect(auth.clears, 1);
     expect(auth.logouts, 1);
     expect(auth.token, isNull);
+    expect(auth.isLoggedIn, isFalse);
   });
 
   test('a refresh that throws counts as failed', () async {

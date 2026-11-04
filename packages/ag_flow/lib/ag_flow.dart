@@ -10,6 +10,7 @@ export 'src/controller/ag_base_controller.dart';
 export 'src/di/ag_initializable.dart';
 export 'src/di/ag_locator.dart' show AgLocator;
 export 'src/list/ag_list_view.dart';
+export 'src/navigation/ag_auth_guard.dart';
 export 'src/navigation/ag_binding.dart';
 export 'src/navigation/ag_guard.dart';
 export 'src/navigation/ag_route_data.dart';

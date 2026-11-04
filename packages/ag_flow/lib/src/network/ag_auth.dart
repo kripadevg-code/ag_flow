@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
+
 /// How the app's requests are authorized — supplied by the app, because
 /// every backend stores and names its tokens differently.
 ///
@@ -30,9 +32,42 @@ import 'dart:async';
 /// [clearToken] and then [onLoggedOut] run, and the requests fail with their
 /// `401`. Without a [refreshToken] override, every such `401` counts as a
 /// failed refresh.
-abstract class AgAuth {
-  /// Const so a stateless implementation can be a compile-time constant.
-  const AgAuth();
+///
+/// [isLoggedIn] is the login state routes are guarded by. Read the stored
+/// token once at start-up with [restoreSession], call [logIn] after storing a
+/// new token and [logOut] to end the session — a failed refresh calls
+/// [logOut] itself. Pass the instance as go_router's `refreshListenable` and
+/// guard routes with `AgAuthGuard`: every change re-runs the guards, so a
+/// logged-out user is sent to the login route without any navigation code.
+abstract class AgAuth extends ChangeNotifier {
+  bool _loggedIn = false;
+
+  /// Whether a session is active. Synchronous, so a route guard can read it.
+  bool get isLoggedIn => _loggedIn;
+
+  /// Sets [isLoggedIn] from the stored token — call once at start-up, before
+  /// the router first runs its guards.
+  Future<void> restoreSession() async => _setLoggedIn(await readToken() != null);
+
+  /// Marks the session active. Call it after storing the new token.
+  void logIn() => _setLoggedIn(true);
+
+  /// Ends the session: runs [clearToken], marks the user logged out (even
+  /// when clearing throws), then runs [onLoggedOut].
+  Future<void> logOut() async {
+    try {
+      await clearToken();
+    } finally {
+      _setLoggedIn(false);
+      await onLoggedOut();
+    }
+  }
+
+  void _setLoggedIn(bool value) {
+    if (_loggedIn == value) return;
+    _loggedIn = value;
+    notifyListeners();
+  }
 
   /// The current access token, or `null` when the user is logged out — a
   /// `null` token sends the request without the header.
@@ -46,11 +81,13 @@ abstract class AgAuth {
   /// `401` can never start another refresh.
   FutureOr<bool> refreshToken() => false;
 
-  /// Removes the stored tokens after a failed refresh. Defaults to nothing.
+  /// Removes the stored tokens when the session ends ([logOut]). Defaults to
+  /// nothing.
   FutureOr<void> clearToken() {}
 
-  /// Runs after [clearToken] when a refresh failed — the place to send the
-  /// user to the login screen. Defaults to nothing.
+  /// Runs at the end of [logOut]. With `AgAuthGuard` and `refreshListenable`
+  /// the router already leaves protected routes, so this is only for extra
+  /// clean-up. Defaults to nothing.
   FutureOr<void> onLoggedOut() {}
 
   /// The header the token is sent in. Defaults to `Authorization`.

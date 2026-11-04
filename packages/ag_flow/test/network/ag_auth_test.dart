@@ -50,8 +50,6 @@ class _Auth extends AgAuth {
 }
 
 class _ApiKeyAuth extends AgAuth {
-  const _ApiKeyAuth();
-
   @override
   String readToken() => 'k1';
 
@@ -63,8 +61,6 @@ class _ApiKeyAuth extends AgAuth {
 }
 
 class _BrokenAuth extends AgAuth {
-  const _BrokenAuth();
-
   @override
   Future<String?> readToken() async => throw StateError('storage locked');
 }
@@ -154,7 +150,7 @@ void main() {
   });
 
   test('headerName and headerValue customise the header', () async {
-    final (api, adapter) = _provider(auth: const _ApiKeyAuth());
+    final (api, adapter) = _provider(auth: _ApiKeyAuth());
 
     await api.send<Object?>(AgRequest(endpoint: _private));
 
@@ -163,7 +159,7 @@ void main() {
   });
 
   test('a failing readToken surfaces as AgApiException', () async {
-    final (api, adapter) = _provider(auth: const _BrokenAuth());
+    final (api, adapter) = _provider(auth: _BrokenAuth());
 
     await expectLater(
       api.send<Object?>(AgRequest(endpoint: _private)),

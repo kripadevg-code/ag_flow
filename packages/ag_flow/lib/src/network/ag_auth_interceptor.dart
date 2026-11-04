@@ -96,14 +96,7 @@ class AgAuthInterceptor extends Interceptor {
       } on Object {
         refreshed = false;
       }
-      if (!refreshed) {
-        // Log out even when clearing fails — the session is over either way.
-        try {
-          await auth.clearToken();
-        } finally {
-          await auth.onLoggedOut();
-        }
-      }
+      if (!refreshed) await auth.logOut();
       return refreshed;
     } finally {
       _refreshing = null;
